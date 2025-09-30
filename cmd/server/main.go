@@ -53,6 +53,10 @@ func main() {
 	if err := r.Run(":" + port); err != nil {
 		log.Fatal("Failed to run server:", err)
 	}
+
+	//redis
+	db.ConnectRedis()
+	defer db.Client.Close()
 }
 
 func waitPassing(cli *consulapi.Client, name string, timeout time.Duration) error {

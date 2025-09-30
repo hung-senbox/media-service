@@ -77,6 +77,13 @@ type Registry struct {
 	Host string `mapstructure:"host" validate:"required"`
 }
 
+type RedisConfig struct {
+	Host     string `yaml:"host"`
+	Port     string `yaml:"port"`
+	Password string `yaml:"password"`
+	DB       int    `yaml:"db"`
+}
+
 type AppConfigStruct struct {
 	Server   ServerConfig     `yaml:"server"`
 	Database DatabaseConfig   `yaml:"database"`
@@ -84,6 +91,7 @@ type AppConfigStruct struct {
 	Zap      ZapConfig        `mapstructure:"zap"`
 	Registry Registry         `mapstructure:"registry" validate:"required"`
 	App      AppConfiguration `mapstructure:"app"`
+	Redis    RedisConfig      `yaml:"redis"`
 }
 
 var AppConfig *AppConfigStruct

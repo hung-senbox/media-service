@@ -18,6 +18,12 @@ database:
     # password: ""
     name: "department_service"
 
+  redis:
+    host: "localhost"
+    port: "6379"
+    password: "senbox"
+    db: 1
+
 consul:
     host: "localhost"
     port: 8500
