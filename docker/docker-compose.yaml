@@ -1,0 +1,75 @@
+version: '3.9'
+
+services:
+
+  consul:
+    image: hashicorp/consul:latest
+    container_name: consul
+    hostname: consul
+    command: "consul agent -server -ui -data-dir /tmp -node=server-1 -bootstrap-expect=1 -client=0.0.0.0"
+    # environment:
+    #   CONSUL_BIND_INTERFACE: eth0
+    #   CONSUL_LOCAL_CONFIG: |
+    #     {
+    #       "client_addr": "0.0.0.0",
+    #       "recursors": [
+    #         "8.8.8.8",
+    #         "8.8.4.4"
+    #       ],
+    #       "dns_config": {
+    #         "recursor_strategy": "random"
+    #       },
+    #       "ports": {
+    #         "dns": 53
+    #       },
+    #       "server": true,
+    #       "bootstrap_expect": 1,
+    #       "ui_config": {
+    #         "enabled": true
+    #       },
+    #       "connect": {
+    #         "enabled": true
+    #       },
+    #       "datacenter": "dc1"
+    #     }
+    # networks:
+    #   vpcbr:
+    #     ipv4_address: 192.0.2.4
+    networks:
+      - microservices
+    ports:
+      - "8500:8500"  # Web UI for Consul
+      # - "8600:53/udp"
+      # - "8600:53/tcp"
+    restart: unless-stopped
+
+  media-service:
+    build:
+      context: ..
+      dockerfile: Dockerfile
+    container_name: media-service
+    ports:
+      - "8019:8019"
+    depends_on:
+      - term_db
+      - consul
+    volumes:
+      - ../configs/config.prod.yaml:/configs/config.yaml
+    networks:
+      - microservices
+
+  term_db:
+    image: mongo:6.0
+    container_name: term_db
+    ports:
+      - "27017:27017"
+    volumes:
+      - termdb_data:/data/db
+    networks:
+      - microservices
+
+volumes:
+  termdb_data:
+
+networks:
+  microservices:

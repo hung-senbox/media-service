@@ -1,0 +1,27 @@
+server:
+  port: "8019"
+
+database:
+  active: "mongodb" # or "mongodb"
+
+  mysql:
+    host: "localhost"
+    port: "3306"
+    user: "root"
+    password: ""
+    name: "department_service"
+
+  mongodb:
+    host: "department_db"
+    port: "27017"
+    # user: "Senbox"
+    # password: ""
+    name: "department_service"
+
+consul:
+    host: "localhost"
+    port: 8500
+    
+registry:
+  host: "localhost"
+

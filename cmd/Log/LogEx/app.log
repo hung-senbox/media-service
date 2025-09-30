@@ -1,0 +1,1627 @@
+{
+  "data": {
+    "method": "POST",
+    "service": "go-main-service",
+    "status_code": 400,
+    "url": "http://localhost:8001/v1/gateway/images/get-url"
+  },
+  "level": "warning",
+  "msg": "http error",
+  "time": "2025-09-09T16:07:44+07:00"
+}
+{
+  "data": {
+    "method": "POST",
+    "service": "go-main-service",
+    "status_code": 400,
+    "url": "http://localhost:8001/v1/gateway/images/get-url"
+  },
+  "level": "warning",
+  "msg": "http error",
+  "time": "2025-09-10T08:05:35+07:00"
+}
+{
+  "data": {
+    "method": "POST",
+    "service": "go-main-service",
+    "status_code": 400,
+    "url": "http://localhost:8001/v1/gateway/images/get-url"
+  },
+  "level": "warning",
+  "msg": "http error",
+  "time": "2025-09-10T08:13:51+07:00"
+}
+{
+  "data": {
+    "method": "POST",
+    "service": "go-main-service",
+    "status_code": 400,
+    "url": "http://localhost:8001/v1/gateway/images/get-url"
+  },
+  "level": "warning",
+  "msg": "http error",
+  "time": "2025-09-10T08:14:01+07:00"
+}
+{
+  "data": {
+    "method": "POST",
+    "service": "go-main-service",
+    "status_code": 400,
+    "url": "http://localhost:8001/v1/gateway/images/get-url"
+  },
+  "level": "warning",
+  "msg": "http error",
+  "time": "2025-09-10T08:14:24+07:00"
+}
+{
+  "data": {
+    "method": "POST",
+    "service": "go-main-service",
+    "status_code": 400,
+    "url": "http://localhost:8001/v1/gateway/images/get-url"
+  },
+  "level": "warning",
+  "msg": "http error",
+  "time": "2025-09-10T08:16:04+07:00"
+}
+{
+  "data": {
+    "method": "POST",
+    "service": "go-main-service",
+    "status_code": 400,
+    "url": "http://localhost:8001/v1/gateway/images/get-url"
+  },
+  "level": "warning",
+  "msg": "http error",
+  "time": "2025-09-10T08:16:26+07:00"
+}
+{
+  "data": {
+    "method": "POST",
+    "service": "go-main-service",
+    "status_code": 400,
+    "url": "http://localhost:8001/v1/gateway/images/get-url"
+  },
+  "level": "warning",
+  "msg": "http error",
+  "time": "2025-09-10T08:16:39+07:00"
+}
+{
+  "data": {
+    "method": "POST",
+    "service": "go-main-service",
+    "status_code": 400,
+    "url": "http://localhost:8001/v1/gateway/images/get-url"
+  },
+  "level": "warning",
+  "msg": "http error",
+  "time": "2025-09-10T08:18:13+07:00"
+}
+{
+  "data": {
+    "method": "POST",
+    "service": "go-main-service",
+    "status_code": 400,
+    "url": "http://localhost:8001/v1/gateway/images/get-url"
+  },
+  "level": "warning",
+  "msg": "http error",
+  "time": "2025-09-10T08:18:58+07:00"
+}
+{
+  "data": {
+    "method": "POST",
+    "service": "go-main-service",
+    "status_code": 400,
+    "url": "http://localhost:8001/v1/gateway/images/get-url"
+  },
+  "level": "warning",
+  "msg": "http error",
+  "time": "2025-09-10T10:12:22+07:00"
+}
+{
+  "data": {
+    "method": "POST",
+    "service": "go-main-service",
+    "status_code": 400,
+    "url": "http://localhost:8001/v1/gateway/images/get-url"
+  },
+  "level": "warning",
+  "msg": "http error",
+  "time": "2025-09-10T10:19:40+07:00"
+}
+{
+  "data": {
+    "method": "POST",
+    "service": "go-main-service",
+    "status_code": 400,
+    "url": "http://localhost:8001/v1/gateway/images/get-url"
+  },
+  "level": "warning",
+  "msg": "http error",
+  "time": "2025-09-10T10:20:24+07:00"
+}
+{
+  "data": {
+    "method": "POST",
+    "service": "go-main-service",
+    "status_code": 400,
+    "url": "http://localhost:8001/v1/gateway/images/get-url"
+  },
+  "level": "warning",
+  "msg": "http error",
+  "time": "2025-09-10T10:20:24+07:00"
+}
+{
+  "data": {
+    "method": "POST",
+    "service": "go-main-service",
+    "status_code": 400,
+    "url": "http://localhost:8001/v1/gateway/images/get-url"
+  },
+  "level": "warning",
+  "msg": "http error",
+  "time": "2025-09-10T10:21:08+07:00"
+}
+{
+  "data": {
+    "method": "POST",
+    "service": "go-main-service",
+    "status_code": 400,
+    "url": "http://localhost:8001/v1/gateway/images/get-url"
+  },
+  "level": "warning",
+  "msg": "http error",
+  "time": "2025-09-10T10:21:08+07:00"
+}
+{
+  "data": {
+    "method": "POST",
+    "service": "go-main-service",
+    "status_code": 400,
+    "url": "http://localhost:8001/v1/gateway/images/get-url"
+  },
+  "level": "warning",
+  "msg": "http error",
+  "time": "2025-09-10T10:21:32+07:00"
+}
+{
+  "data": {
+    "method": "POST",
+    "service": "go-main-service",
+    "status_code": 400,
+    "url": "http://localhost:8001/v1/gateway/images/get-url"
+  },
+  "level": "warning",
+  "msg": "http error",
+  "time": "2025-09-10T10:21:32+07:00"
+}
+{
+  "data": {
+    "method": "POST",
+    "service": "go-main-service",
+    "status_code": 400,
+    "url": "http://localhost:8001/v1/gateway/images/get-url"
+  },
+  "level": "warning",
+  "msg": "http error",
+  "time": "2025-09-10T10:22:00+07:00"
+}
+{
+  "data": {
+    "method": "POST",
+    "service": "go-main-service",
+    "status_code": 400,
+    "url": "http://localhost:8001/v1/gateway/images/get-url"
+  },
+  "level": "warning",
+  "msg": "http error",
+  "time": "2025-09-10T10:22:00+07:00"
+}
+{
+  "data": {
+    "method": "POST",
+    "service": "go-main-service",
+    "status_code": 400,
+    "url": "http://localhost:8001/v1/gateway/images/get-url"
+  },
+  "level": "warning",
+  "msg": "http error",
+  "time": "2025-09-10T10:23:02+07:00"
+}
+{
+  "data": {
+    "method": "POST",
+    "service": "go-main-service",
+    "status_code": 400,
+    "url": "http://localhost:8001/v1/gateway/images/get-url"
+  },
+  "level": "warning",
+  "msg": "http error",
+  "time": "2025-09-10T10:23:02+07:00"
+}
+{
+  "data": {
+    "method": "POST",
+    "service": "go-main-service",
+    "status_code": 400,
+    "url": "http://localhost:8001/v1/gateway/images/get-url"
+  },
+  "level": "warning",
+  "msg": "http error",
+  "time": "2025-09-10T10:23:02+07:00"
+}
+{
+  "data": {
+    "method": "POST",
+    "service": "go-main-service",
+    "status_code": 400,
+    "url": "http://localhost:8001/v1/gateway/images/get-url"
+  },
+  "level": "warning",
+  "msg": "http error",
+  "time": "2025-09-10T10:24:00+07:00"
+}
+{
+  "data": {
+    "method": "POST",
+    "service": "go-main-service",
+    "status_code": 400,
+    "url": "http://localhost:8001/v1/gateway/images/get-url"
+  },
+  "level": "warning",
+  "msg": "http error",
+  "time": "2025-09-10T10:24:00+07:00"
+}
+{
+  "data": {
+    "method": "POST",
+    "service": "go-main-service",
+    "status_code": 400,
+    "url": "http://localhost:8001/v1/gateway/images/get-url"
+  },
+  "level": "warning",
+  "msg": "http error",
+  "time": "2025-09-10T10:24:00+07:00"
+}
+{
+  "data": {
+    "method": "POST",
+    "service": "go-main-service",
+    "status_code": 400,
+    "url": "http://localhost:8001/v1/gateway/images/get-url"
+  },
+  "level": "warning",
+  "msg": "http error",
+  "time": "2025-09-10T10:39:32+07:00"
+}
+{
+  "data": {
+    "method": "POST",
+    "service": "go-main-service",
+    "status_code": 400,
+    "url": "http://localhost:8001/v1/gateway/images/get-url"
+  },
+  "level": "warning",
+  "msg": "http error",
+  "time": "2025-09-10T10:39:32+07:00"
+}
+{
+  "data": {
+    "method": "POST",
+    "service": "go-main-service",
+    "status_code": 400,
+    "url": "http://localhost:8001/v1/gateway/images/get-url"
+  },
+  "level": "warning",
+  "msg": "http error",
+  "time": "2025-09-10T10:39:32+07:00"
+}
+{
+  "data": {
+    "method": "POST",
+    "service": "go-main-service",
+    "status_code": 400,
+    "url": "http://localhost:8001/v1/gateway/images/get-url"
+  },
+  "level": "warning",
+  "msg": "http error",
+  "time": "2025-09-10T10:49:28+07:00"
+}
+{
+  "data": {
+    "method": "POST",
+    "service": "go-main-service",
+    "status_code": 400,
+    "url": "http://localhost:8001/v1/gateway/images/get-url"
+  },
+  "level": "warning",
+  "msg": "http error",
+  "time": "2025-09-10T10:49:28+07:00"
+}
+{
+  "data": {
+    "method": "POST",
+    "service": "go-main-service",
+    "status_code": 400,
+    "url": "http://localhost:8001/v1/gateway/images/get-url"
+  },
+  "level": "warning",
+  "msg": "http error",
+  "time": "2025-09-10T10:49:28+07:00"
+}
+{
+  "data": {
+    "method": "POST",
+    "service": "go-main-service",
+    "status_code": 400,
+    "url": "http://localhost:8001/v1/gateway/images/get-url"
+  },
+  "level": "warning",
+  "msg": "http error",
+  "time": "2025-09-10T10:50:14+07:00"
+}
+{
+  "data": {
+    "method": "POST",
+    "service": "go-main-service",
+    "status_code": 400,
+    "url": "http://localhost:8001/v1/gateway/images/get-url"
+  },
+  "level": "warning",
+  "msg": "http error",
+  "time": "2025-09-10T10:50:14+07:00"
+}
+{
+  "data": {
+    "method": "POST",
+    "service": "go-main-service",
+    "status_code": 400,
+    "url": "http://localhost:8001/v1/gateway/images/get-url"
+  },
+  "level": "warning",
+  "msg": "http error",
+  "time": "2025-09-10T10:50:14+07:00"
+}
+{
+  "data": {
+    "method": "POST",
+    "service": "go-main-service",
+    "status_code": 400,
+    "url": "http://localhost:8001/v1/gateway/images/get-url"
+  },
+  "level": "warning",
+  "msg": "http error",
+  "time": "2025-09-10T10:50:25+07:00"
+}
+{
+  "data": {
+    "method": "POST",
+    "service": "go-main-service",
+    "status_code": 400,
+    "url": "http://localhost:8001/v1/gateway/images/get-url"
+  },
+  "level": "warning",
+  "msg": "http error",
+  "time": "2025-09-10T10:50:25+07:00"
+}
+{
+  "data": {
+    "method": "POST",
+    "service": "go-main-service",
+    "status_code": 400,
+    "url": "http://localhost:8001/v1/gateway/images/get-url"
+  },
+  "level": "warning",
+  "msg": "http error",
+  "time": "2025-09-10T10:50:25+07:00"
+}
+{
+  "data": {
+    "error_code": "ERR_INVALID_REQUEST",
+    "method": "POST",
+    "path": "/api/v1/admin/departments/assign/staff",
+    "status_code": 400
+  },
+  "level": "error",
+  "msg": "Key: 'AssignStaffRequest.Index' Error:Field validation for 'Index' failed on the 'required' tag",
+  "time": "2025-09-10T11:35:26+07:00"
+}
+{
+  "data": {
+    "method": "POST",
+    "service": "go-main-service",
+    "status_code": 400,
+    "url": "http://localhost:8001/v1/gateway/images/get-url"
+  },
+  "level": "warning",
+  "msg": "http error",
+  "time": "2025-09-10T11:37:24+07:00"
+}
+{
+  "data": {
+    "method": "POST",
+    "service": "go-main-service",
+    "status_code": 400,
+    "url": "http://localhost:8001/v1/gateway/images/get-url"
+  },
+  "level": "warning",
+  "msg": "http error",
+  "time": "2025-09-10T11:37:24+07:00"
+}
+{
+  "data": {
+    "method": "POST",
+    "service": "go-main-service",
+    "status_code": 400,
+    "url": "http://localhost:8001/v1/gateway/images/get-url"
+  },
+  "level": "warning",
+  "msg": "http error",
+  "time": "2025-09-10T11:37:24+07:00"
+}
+{
+  "data": {
+    "error_code": "ERR_INVALID_OPERATION",
+    "method": "POST",
+    "path": "/api/v1/admin/departments/assign/staff",
+    "status_code": 500
+  },
+  "level": "error",
+  "msg": "the staff already exists at index=0",
+  "time": "2025-09-12T09:59:36+07:00"
+}
+{
+  "data": {
+    "method": "GET",
+    "service": "go-main-service",
+    "status_code": 500,
+    "url": "http://localhost:8001/v1/gateway/menus/department/68c0ec8554c9e8516b2fe57a"
+  },
+  "level": "warning",
+  "msg": "http error",
+  "time": "2025-09-22T09:31:49+07:00"
+}
+{
+  "data": {
+    "method": "POST",
+    "service": "go-main-service",
+    "status_code": 400,
+    "url": "http://localhost:8001/v1/gateway/images/get-url"
+  },
+  "level": "warning",
+  "msg": "http error",
+  "time": "2025-09-22T09:31:49+07:00"
+}
+{
+  "data": {
+    "method": "GET",
+    "service": "go-main-service",
+    "status_code": 500,
+    "url": "http://localhost:8001/v1/gateway/menus/department/68c0ee7492c23d74bfe85fa4"
+  },
+  "level": "warning",
+  "msg": "http error",
+  "time": "2025-09-22T09:31:49+07:00"
+}
+{
+  "data": {
+    "method": "POST",
+    "service": "go-main-service",
+    "status_code": 400,
+    "url": "http://localhost:8001/v1/gateway/images/get-url"
+  },
+  "level": "warning",
+  "msg": "http error",
+  "time": "2025-09-22T09:31:49+07:00"
+}
+{
+  "data": {
+    "method": "POST",
+    "service": "go-main-service",
+    "status_code": 400,
+    "url": "http://localhost:8001/v1/gateway/images/get-url"
+  },
+  "level": "warning",
+  "msg": "http error",
+  "time": "2025-09-22T09:31:49+07:00"
+}
+{
+  "data": {
+    "method": "GET",
+    "service": "go-main-service",
+    "status_code": 500,
+    "url": "http://localhost:8001/v1/gateway/menus/department/68c0ec8554c9e8516b2fe57a"
+  },
+  "level": "warning",
+  "msg": "http error",
+  "time": "2025-09-22T09:33:13+07:00"
+}
+{
+  "data": {
+    "method": "POST",
+    "service": "go-main-service",
+    "status_code": 400,
+    "url": "http://localhost:8001/v1/gateway/images/get-url"
+  },
+  "level": "warning",
+  "msg": "http error",
+  "time": "2025-09-22T09:33:13+07:00"
+}
+{
+  "data": {
+    "method": "GET",
+    "service": "go-main-service",
+    "status_code": 500,
+    "url": "http://localhost:8001/v1/gateway/menus/department/68c0ee7492c23d74bfe85fa4"
+  },
+  "level": "warning",
+  "msg": "http error",
+  "time": "2025-09-22T09:33:13+07:00"
+}
+{
+  "data": {
+    "method": "POST",
+    "service": "go-main-service",
+    "status_code": 400,
+    "url": "http://localhost:8001/v1/gateway/images/get-url"
+  },
+  "level": "warning",
+  "msg": "http error",
+  "time": "2025-09-22T09:33:13+07:00"
+}
+{
+  "data": {
+    "method": "POST",
+    "service": "go-main-service",
+    "status_code": 400,
+    "url": "http://localhost:8001/v1/gateway/images/get-url"
+  },
+  "level": "warning",
+  "msg": "http error",
+  "time": "2025-09-22T09:33:48+07:00"
+}
+{
+  "data": {
+    "method": "GET",
+    "service": "go-main-service",
+    "status_code": 500,
+    "url": "http://localhost:8001/v1/gateway/menus/department/68c0ec8554c9e8516b2fe57a"
+  },
+  "level": "warning",
+  "msg": "http error",
+  "time": "2025-09-22T09:34:51+07:00"
+}
+{
+  "data": {
+    "method": "POST",
+    "service": "go-main-service",
+    "status_code": 400,
+    "url": "http://localhost:8001/v1/gateway/images/get-url"
+  },
+  "level": "warning",
+  "msg": "http error",
+  "time": "2025-09-22T09:34:51+07:00"
+}
+{
+  "data": {
+    "method": "GET",
+    "service": "go-main-service",
+    "status_code": 500,
+    "url": "http://localhost:8001/v1/gateway/menus/department/68c0ee7492c23d74bfe85fa4"
+  },
+  "level": "warning",
+  "msg": "http error",
+  "time": "2025-09-22T09:34:51+07:00"
+}
+{
+  "data": {
+    "method": "POST",
+    "service": "go-main-service",
+    "status_code": 400,
+    "url": "http://localhost:8001/v1/gateway/images/get-url"
+  },
+  "level": "warning",
+  "msg": "http error",
+  "time": "2025-09-22T09:34:51+07:00"
+}
+{
+  "data": {
+    "method": "POST",
+    "service": "go-main-service",
+    "status_code": 400,
+    "url": "http://localhost:8001/v1/gateway/images/get-url"
+  },
+  "level": "warning",
+  "msg": "http error",
+  "time": "2025-09-22T09:35:17+07:00"
+}
+{
+  "data": {
+    "method": "GET",
+    "service": "go-main-service",
+    "status_code": 500,
+    "url": "http://localhost:8001/v1/gateway/menus/department/68c0ec8554c9e8516b2fe57a"
+  },
+  "level": "warning",
+  "msg": "http error",
+  "time": "2025-09-22T09:36:50+07:00"
+}
+{
+  "data": {
+    "method": "POST",
+    "service": "go-main-service",
+    "status_code": 400,
+    "url": "http://localhost:8001/v1/gateway/images/get-url"
+  },
+  "level": "warning",
+  "msg": "http error",
+  "time": "2025-09-22T09:36:51+07:00"
+}
+{
+  "data": {
+    "method": "GET",
+    "service": "go-main-service",
+    "status_code": 500,
+    "url": "http://localhost:8001/v1/gateway/menus/department/68c0ee7492c23d74bfe85fa4"
+  },
+  "level": "warning",
+  "msg": "http error",
+  "time": "2025-09-22T09:36:51+07:00"
+}
+{
+  "data": {
+    "method": "POST",
+    "service": "go-main-service",
+    "status_code": 400,
+    "url": "http://localhost:8001/v1/gateway/images/get-url"
+  },
+  "level": "warning",
+  "msg": "http error",
+  "time": "2025-09-22T09:36:51+07:00"
+}
+{
+  "data": {
+    "method": "POST",
+    "service": "go-main-service",
+    "status_code": 400,
+    "url": "http://localhost:8001/v1/gateway/images/get-url"
+  },
+  "level": "warning",
+  "msg": "http error",
+  "time": "2025-09-22T09:37:01+07:00"
+}
+{
+  "data": {
+    "method": "GET",
+    "service": "go-main-service",
+    "status_code": 500,
+    "url": "http://localhost:8001/v1/gateway/menus/department/68c0ec8554c9e8516b2fe57a"
+  },
+  "level": "warning",
+  "msg": "http error",
+  "time": "2025-09-22T09:38:24+07:00"
+}
+{
+  "data": {
+    "method": "POST",
+    "service": "go-main-service",
+    "status_code": 400,
+    "url": "http://localhost:8001/v1/gateway/images/get-url"
+  },
+  "level": "warning",
+  "msg": "http error",
+  "time": "2025-09-22T09:38:24+07:00"
+}
+{
+  "data": {
+    "method": "GET",
+    "service": "go-main-service",
+    "status_code": 500,
+    "url": "http://localhost:8001/v1/gateway/menus/department/68c0ee7492c23d74bfe85fa4"
+  },
+  "level": "warning",
+  "msg": "http error",
+  "time": "2025-09-22T09:38:30+07:00"
+}
+{
+  "data": {
+    "method": "POST",
+    "service": "go-main-service",
+    "status_code": 400,
+    "url": "http://localhost:8001/v1/gateway/images/get-url"
+  },
+  "level": "warning",
+  "msg": "http error",
+  "time": "2025-09-22T09:38:30+07:00"
+}
+{
+  "data": {
+    "method": "POST",
+    "service": "go-main-service",
+    "status_code": 400,
+    "url": "http://localhost:8001/v1/gateway/images/get-url"
+  },
+  "level": "warning",
+  "msg": "http error",
+  "time": "2025-09-22T09:38:58+07:00"
+}
+{
+  "data": {
+    "method": "POST",
+    "service": "go-main-service",
+    "status_code": 400,
+    "url": "http://localhost:8001/v1/gateway/images/get-url"
+  },
+  "level": "warning",
+  "msg": "http error",
+  "time": "2025-09-22T09:50:43+07:00"
+}
+{
+  "data": {
+    "method": "POST",
+    "service": "go-main-service",
+    "status_code": 400,
+    "url": "http://localhost:8001/v1/gateway/images/get-url"
+  },
+  "level": "warning",
+  "msg": "http error",
+  "time": "2025-09-22T09:50:43+07:00"
+}
+{
+  "data": {
+    "method": "POST",
+    "service": "go-main-service",
+    "status_code": 400,
+    "url": "http://localhost:8001/v1/gateway/images/get-url"
+  },
+  "level": "warning",
+  "msg": "http error",
+  "time": "2025-09-22T09:50:43+07:00"
+}
+{
+  "data": {
+    "method": "POST",
+    "service": "go-main-service",
+    "status_code": 400,
+    "url": "http://localhost:8001/v1/gateway/images/get-url"
+  },
+  "level": "warning",
+  "msg": "http error",
+  "time": "2025-09-22T09:51:36+07:00"
+}
+{
+  "data": {
+    "method": "POST",
+    "service": "go-main-service",
+    "status_code": 400,
+    "url": "http://localhost:8001/v1/gateway/images/get-url"
+  },
+  "level": "warning",
+  "msg": "http error",
+  "time": "2025-09-22T09:51:36+07:00"
+}
+{
+  "data": {
+    "method": "POST",
+    "service": "go-main-service",
+    "status_code": 400,
+    "url": "http://localhost:8001/v1/gateway/images/get-url"
+  },
+  "level": "warning",
+  "msg": "http error",
+  "time": "2025-09-22T09:51:37+07:00"
+}
+{
+  "data": {
+    "method": "POST",
+    "service": "go-main-service",
+    "status_code": 400,
+    "url": "http://localhost:8001/v1/gateway/images/get-url"
+  },
+  "level": "warning",
+  "msg": "http error",
+  "time": "2025-09-22T09:54:40+07:00"
+}
+{
+  "data": {
+    "method": "POST",
+    "service": "go-main-service",
+    "status_code": 400,
+    "url": "http://localhost:8001/v1/gateway/images/get-url"
+  },
+  "level": "warning",
+  "msg": "http error",
+  "time": "2025-09-22T09:54:40+07:00"
+}
+{
+  "data": {
+    "method": "POST",
+    "service": "go-main-service",
+    "status_code": 400,
+    "url": "http://localhost:8001/v1/gateway/images/get-url"
+  },
+  "level": "warning",
+  "msg": "http error",
+  "time": "2025-09-22T09:54:40+07:00"
+}
+{
+  "data": {
+    "method": "POST",
+    "service": "go-main-service",
+    "status_code": 400,
+    "url": "http://localhost:8001/v1/gateway/images/get-url"
+  },
+  "level": "warning",
+  "msg": "http error",
+  "time": "2025-09-22T10:01:34+07:00"
+}
+{
+  "data": {
+    "method": "POST",
+    "service": "go-main-service",
+    "status_code": 400,
+    "url": "http://localhost:8001/v1/gateway/images/get-url"
+  },
+  "level": "warning",
+  "msg": "http error",
+  "time": "2025-09-22T10:01:34+07:00"
+}
+{
+  "data": {
+    "method": "POST",
+    "service": "go-main-service",
+    "status_code": 400,
+    "url": "http://localhost:8001/v1/gateway/images/get-url"
+  },
+  "level": "warning",
+  "msg": "http error",
+  "time": "2025-09-22T10:01:34+07:00"
+}
+{
+  "data": {
+    "method": "POST",
+    "service": "go-main-service",
+    "status_code": 400,
+    "url": "http://localhost:8001/v1/gateway/images/get-url"
+  },
+  "level": "warning",
+  "msg": "http error",
+  "time": "2025-09-22T10:05:03+07:00"
+}
+{
+  "data": {
+    "method": "POST",
+    "service": "go-main-service",
+    "status_code": 400,
+    "url": "http://localhost:8001/v1/gateway/images/get-url"
+  },
+  "level": "warning",
+  "msg": "http error",
+  "time": "2025-09-22T10:05:03+07:00"
+}
+{
+  "data": {
+    "method": "POST",
+    "service": "go-main-service",
+    "status_code": 400,
+    "url": "http://localhost:8001/v1/gateway/images/get-url"
+  },
+  "level": "warning",
+  "msg": "http error",
+  "time": "2025-09-22T10:05:03+07:00"
+}
+{
+  "data": {
+    "method": "GET",
+    "service": "go-main-service",
+    "status_code": 500,
+    "url": "http://localhost:8001/v1/gateway/menus/department/68c0ec8554c9e8516b2fe57a/organization/4bbfb697-cd9f-48fc-8cfc-d0e2a17f75d3"
+  },
+  "level": "warning",
+  "msg": "http error",
+  "time": "2025-09-22T10:15:23+07:00"
+}
+{
+  "data": {
+    "method": "POST",
+    "service": "go-main-service",
+    "status_code": 400,
+    "url": "http://localhost:8001/v1/gateway/images/get-url"
+  },
+  "level": "warning",
+  "msg": "http error",
+  "time": "2025-09-22T10:15:23+07:00"
+}
+{
+  "data": {
+    "method": "GET",
+    "service": "go-main-service",
+    "status_code": 500,
+    "url": "http://localhost:8001/v1/gateway/menus/department/68c0ee7492c23d74bfe85fa4/organization/4bbfb697-cd9f-48fc-8cfc-d0e2a17f75d3"
+  },
+  "level": "warning",
+  "msg": "http error",
+  "time": "2025-09-22T10:15:23+07:00"
+}
+{
+  "data": {
+    "method": "POST",
+    "service": "go-main-service",
+    "status_code": 400,
+    "url": "http://localhost:8001/v1/gateway/images/get-url"
+  },
+  "level": "warning",
+  "msg": "http error",
+  "time": "2025-09-22T10:15:23+07:00"
+}
+{
+  "data": {
+    "method": "POST",
+    "service": "go-main-service",
+    "status_code": 400,
+    "url": "http://localhost:8001/v1/gateway/images/get-url"
+  },
+  "level": "warning",
+  "msg": "http error",
+  "time": "2025-09-22T10:15:23+07:00"
+}
+{
+  "data": {
+    "method": "POST",
+    "service": "go-main-service",
+    "status_code": 400,
+    "url": "http://localhost:8001/v1/gateway/images/get-url"
+  },
+  "level": "warning",
+  "msg": "http error",
+  "time": "2025-09-22T10:16:27+07:00"
+}
+{
+  "data": {
+    "method": "POST",
+    "service": "go-main-service",
+    "status_code": 400,
+    "url": "http://localhost:8001/v1/gateway/images/get-url"
+  },
+  "level": "warning",
+  "msg": "http error",
+  "time": "2025-09-22T10:16:27+07:00"
+}
+{
+  "data": {
+    "method": "POST",
+    "service": "go-main-service",
+    "status_code": 400,
+    "url": "http://localhost:8001/v1/gateway/images/get-url"
+  },
+  "level": "warning",
+  "msg": "http error",
+  "time": "2025-09-22T10:16:27+07:00"
+}
+{
+  "data": {
+    "method": "POST",
+    "service": "go-main-service",
+    "status_code": 400,
+    "url": "http://localhost:8001/v1/gateway/images/get-url"
+  },
+  "level": "warning",
+  "msg": "http error",
+  "time": "2025-09-22T14:04:08+07:00"
+}
+{
+  "data": {
+    "method": "POST",
+    "service": "go-main-service",
+    "status_code": 400,
+    "url": "http://localhost:8001/v1/gateway/images/get-url"
+  },
+  "level": "warning",
+  "msg": "http error",
+  "time": "2025-09-22T14:04:08+07:00"
+}
+{
+  "data": {
+    "method": "POST",
+    "service": "go-main-service",
+    "status_code": 400,
+    "url": "http://localhost:8001/v1/gateway/images/get-url"
+  },
+  "level": "warning",
+  "msg": "http error",
+  "time": "2025-09-22T14:04:08+07:00"
+}
+{
+  "data": {
+    "method": "POST",
+    "service": "go-main-service",
+    "status_code": 400,
+    "url": "http://localhost:8001/v1/gateway/images/get-url"
+  },
+  "level": "warning",
+  "msg": "http error",
+  "time": "2025-09-22T14:05:05+07:00"
+}
+{
+  "data": {
+    "method": "POST",
+    "service": "go-main-service",
+    "status_code": 400,
+    "url": "http://localhost:8001/v1/gateway/images/get-url"
+  },
+  "level": "warning",
+  "msg": "http error",
+  "time": "2025-09-22T14:05:05+07:00"
+}
+{
+  "data": {
+    "method": "POST",
+    "service": "go-main-service",
+    "status_code": 400,
+    "url": "http://localhost:8001/v1/gateway/images/get-url"
+  },
+  "level": "warning",
+  "msg": "http error",
+  "time": "2025-09-22T14:05:05+07:00"
+}
+{
+  "data": {
+    "error_code": "ERR_INVALID_REQUEST",
+    "method": "POST",
+    "path": "/api/v1/admin/departments",
+    "status_code": 400
+  },
+  "level": "error",
+  "msg": "Key: 'UploadDepartmentRequest.LanguageID' Error:Field validation for 'LanguageID' failed on the 'required' tag",
+  "time": "2025-09-25T15:33:22+07:00"
+}
+{
+  "data": {
+    "method": "GET",
+    "service": "go-main-service",
+    "status_code": 401,
+    "url": "http://localhost:8001/v1/user/current-user"
+  },
+  "level": "warning",
+  "msg": "http error",
+  "time": "2025-09-25T15:33:53+07:00"
+}
+{
+  "data": {
+    "error_code": "ERR_INVALID_OPERATION",
+    "method": "POST",
+    "path": "/api/v1/admin/departments",
+    "status_code": 500
+  },
+  "level": "error",
+  "msg": "get current user info failed",
+  "time": "2025-09-25T15:33:53+07:00"
+}
+{
+  "data": {
+    "error_code": "ERR_INVALID_REQUEST",
+    "method": "PUT",
+    "path": "/api/v1/admin/departments/68d5003935b619a3a3eb50b7",
+    "status_code": 400
+  },
+  "level": "error",
+  "msg": "Key: 'UpdateDepartmentRequest.LanguageID' Error:Field validation for 'LanguageID' failed on the 'required' tag",
+  "time": "2025-09-25T15:49:22+07:00"
+}
+{
+  "data": {
+    "error_code": "ERR_INVALID_OPERATION",
+    "method": "PUT",
+    "path": "/api/v1/admin/departments/68d5003935b619a3a3eb50b7",
+    "status_code": 500
+  },
+  "level": "error",
+  "msg": "access denied: super admin cannot perform this action",
+  "time": "2025-09-25T15:49:48+07:00"
+}
+{
+  "data": {
+    "method": "POST",
+    "service": "go-main-service",
+    "status_code": 400,
+    "url": "http://localhost:8001/v1/gateway/images/get-url"
+  },
+  "level": "warning",
+  "msg": "http error",
+  "time": "2025-09-26T09:53:37+07:00"
+}
+{
+  "data": {
+    "method": "POST",
+    "service": "go-main-service",
+    "status_code": 400,
+    "url": "http://localhost:8001/v1/gateway/images/get-url"
+  },
+  "level": "warning",
+  "msg": "http error",
+  "time": "2025-09-26T09:53:37+07:00"
+}
+{
+  "data": {
+    "method": "POST",
+    "service": "go-main-service",
+    "status_code": 400,
+    "url": "http://localhost:8001/v1/gateway/images/get-url"
+  },
+  "level": "warning",
+  "msg": "http error",
+  "time": "2025-09-26T09:53:37+07:00"
+}
+{
+  "data": {
+    "method": "POST",
+    "service": "go-main-service",
+    "status_code": 400,
+    "url": "http://localhost:8001/v1/gateway/images/get-url"
+  },
+  "level": "warning",
+  "msg": "http error",
+  "time": "2025-09-26T09:53:37+07:00"
+}
+{
+  "data": {
+    "method": "POST",
+    "service": "go-main-service",
+    "status_code": 400,
+    "url": "http://localhost:8001/v1/gateway/images/get-url"
+  },
+  "level": "warning",
+  "msg": "http error",
+  "time": "2025-09-26T09:53:37+07:00"
+}
+{
+  "data": {
+    "method": "POST",
+    "service": "go-main-service",
+    "status_code": 400,
+    "url": "http://localhost:8001/v1/gateway/images/get-url"
+  },
+  "level": "warning",
+  "msg": "http error",
+  "time": "2025-09-26T09:53:37+07:00"
+}
+{
+  "data": {
+    "method": "POST",
+    "service": "go-main-service",
+    "status_code": 400,
+    "url": "http://localhost:8001/v1/gateway/images/get-url"
+  },
+  "level": "warning",
+  "msg": "http error",
+  "time": "2025-09-26T09:57:05+07:00"
+}
+{
+  "data": {
+    "method": "POST",
+    "service": "go-main-service",
+    "status_code": 400,
+    "url": "http://localhost:8001/v1/gateway/images/get-url"
+  },
+  "level": "warning",
+  "msg": "http error",
+  "time": "2025-09-26T09:57:05+07:00"
+}
+{
+  "data": {
+    "method": "POST",
+    "service": "go-main-service",
+    "status_code": 400,
+    "url": "http://localhost:8001/v1/gateway/images/get-url"
+  },
+  "level": "warning",
+  "msg": "http error",
+  "time": "2025-09-26T09:57:05+07:00"
+}
+{
+  "data": {
+    "method": "POST",
+    "service": "go-main-service",
+    "status_code": 400,
+    "url": "http://localhost:8001/v1/gateway/images/get-url"
+  },
+  "level": "warning",
+  "msg": "http error",
+  "time": "2025-09-26T09:57:05+07:00"
+}
+{
+  "data": {
+    "method": "POST",
+    "service": "go-main-service",
+    "status_code": 400,
+    "url": "http://localhost:8001/v1/gateway/images/get-url"
+  },
+  "level": "warning",
+  "msg": "http error",
+  "time": "2025-09-26T09:57:06+07:00"
+}
+{
+  "data": {
+    "method": "POST",
+    "service": "go-main-service",
+    "status_code": 400,
+    "url": "http://localhost:8001/v1/gateway/images/get-url"
+  },
+  "level": "warning",
+  "msg": "http error",
+  "time": "2025-09-26T09:57:06+07:00"
+}
+{
+  "data": {
+    "method": "POST",
+    "service": "go-main-service",
+    "status_code": 400,
+    "url": "http://localhost:8001/v1/gateway/images/get-url"
+  },
+  "level": "warning",
+  "msg": "http error",
+  "time": "2025-09-26T10:37:18+07:00"
+}
+{
+  "data": {
+    "method": "POST",
+    "service": "go-main-service",
+    "status_code": 400,
+    "url": "http://localhost:8001/v1/gateway/images/get-url"
+  },
+  "level": "warning",
+  "msg": "http error",
+  "time": "2025-09-26T10:37:18+07:00"
+}
+{
+  "data": {
+    "method": "POST",
+    "service": "go-main-service",
+    "status_code": 400,
+    "url": "http://localhost:8001/v1/gateway/images/get-url"
+  },
+  "level": "warning",
+  "msg": "http error",
+  "time": "2025-09-26T10:37:18+07:00"
+}
+{
+  "data": {
+    "method": "POST",
+    "service": "go-main-service",
+    "status_code": 400,
+    "url": "http://localhost:8001/v1/gateway/images/get-url"
+  },
+  "level": "warning",
+  "msg": "http error",
+  "time": "2025-09-26T10:37:18+07:00"
+}
+{
+  "data": {
+    "method": "POST",
+    "service": "go-main-service",
+    "status_code": 400,
+    "url": "http://localhost:8001/v1/gateway/images/get-url"
+  },
+  "level": "warning",
+  "msg": "http error",
+  "time": "2025-09-26T10:37:18+07:00"
+}
+{
+  "data": {
+    "method": "POST",
+    "service": "go-main-service",
+    "status_code": 400,
+    "url": "http://localhost:8001/v1/gateway/images/get-url"
+  },
+  "level": "warning",
+  "msg": "http error",
+  "time": "2025-09-26T10:37:18+07:00"
+}
+{
+  "data": {
+    "method": "POST",
+    "service": "go-main-service",
+    "status_code": 400,
+    "url": "http://localhost:8001/v1/gateway/images/get-url"
+  },
+  "level": "warning",
+  "msg": "http error",
+  "time": "2025-09-26T15:22:06+07:00"
+}
+{
+  "data": {
+    "method": "POST",
+    "service": "go-main-service",
+    "status_code": 400,
+    "url": "http://localhost:8001/v1/gateway/images/get-url"
+  },
+  "level": "warning",
+  "msg": "http error",
+  "time": "2025-09-26T15:22:06+07:00"
+}
+{
+  "data": {
+    "method": "POST",
+    "service": "go-main-service",
+    "status_code": 400,
+    "url": "http://localhost:8001/v1/gateway/images/get-url"
+  },
+  "level": "warning",
+  "msg": "http error",
+  "time": "2025-09-26T15:22:06+07:00"
+}
+{
+  "data": {
+    "method": "POST",
+    "service": "go-main-service",
+    "status_code": 400,
+    "url": "http://localhost:8001/v1/gateway/images/get-url"
+  },
+  "level": "warning",
+  "msg": "http error",
+  "time": "2025-09-26T15:22:06+07:00"
+}
+{
+  "data": {
+    "method": "POST",
+    "service": "go-main-service",
+    "status_code": 400,
+    "url": "http://localhost:8001/v1/gateway/images/get-url"
+  },
+  "level": "warning",
+  "msg": "http error",
+  "time": "2025-09-26T15:22:06+07:00"
+}
+{
+  "data": {
+    "method": "POST",
+    "service": "go-main-service",
+    "status_code": 400,
+    "url": "http://localhost:8001/v1/gateway/images/get-url"
+  },
+  "level": "warning",
+  "msg": "http error",
+  "time": "2025-09-26T15:22:06+07:00"
+}
+{
+  "data": {
+    "error": "Get \"http://localhost:8001/v1/user/current-user\": dial tcp [::1]:8001: connect: connection refused",
+    "method": "GET",
+    "service": "go-main-service",
+    "url": "http://localhost:8001/v1/user/current-user"
+  },
+  "level": "error",
+  "msg": "http call failed",
+  "time": "2025-09-27T08:30:21+07:00"
+}
+{
+  "data": {
+    "error_code": "ERR_INVALID_OPERATION",
+    "method": "GET",
+    "path": "/api/v1/user/departments",
+    "status_code": 500
+  },
+  "level": "error",
+  "msg": "get current user info failed: call API user fail: http call failed: Get \"http://localhost:8001/v1/user/current-user\": dial tcp [::1]:8001: connect: connection refused",
+  "time": "2025-09-27T08:30:21+07:00"
+}
+{
+  "data": {
+    "error_code": "ERR_INVALID_OPERATION",
+    "method": "PUT",
+    "path": "/api/v1/admin/departments/68d5003935b619a3a3eb50b7",
+    "status_code": 500
+  },
+  "level": "error",
+  "msg": "department not found",
+  "time": "2025-09-27T08:38:20+07:00"
+}
+{
+  "data": {
+    "error_code": "ERR_INVALID_OPERATION",
+    "method": "PUT",
+    "path": "/api/v1/admin/departments/68c0ec8554c9e8516b2fe57a",
+    "status_code": 500
+  },
+  "level": "error",
+  "msg": "department not found",
+  "time": "2025-09-27T08:38:53+07:00"
+}
+{
+  "data": {
+    "error_code": "ERR_INVALID_OPERATION",
+    "method": "PUT",
+    "path": "/api/v1/admin/departments/68c0ec8554c9e8516b2fe57a",
+    "status_code": 500
+  },
+  "level": "error",
+  "msg": "department not found",
+  "time": "2025-09-27T08:38:56+07:00"
+}
+{
+  "data": {
+    "error_code": "ERR_INVALID_OPERATION",
+    "method": "PUT",
+    "path": "/api/v1/admin/departments/68c0ec8554c9e8516b2fe57a",
+    "status_code": 500
+  },
+  "level": "error",
+  "msg": "department not found",
+  "time": "2025-09-27T08:39:10+07:00"
+}
+{
+  "data": {
+    "method": "GET",
+    "service": "go-main-service",
+    "status_code": 400,
+    "url": "http://localhost:8001/v1/gateway/messages/get-by-language?type=department\u0026type_id=68c0ec8554c9e8516b2fe57a\u0026language=1"
+  },
+  "level": "warning",
+  "msg": "http error",
+  "time": "2025-09-27T09:06:48+07:00"
+}
+{
+  "data": {
+    "method": "GET",
+    "service": "go-main-service",
+    "status_code": 400,
+    "url": "http://localhost:8001/v1/gateway/messages/get-by-language?type=department\u0026type_id=68c0ec8554c9e8516b2fe57a\u0026language=1"
+  },
+  "level": "warning",
+  "msg": "http error",
+  "time": "2025-09-27T09:07:14+07:00"
+}
+{
+  "data": {
+    "method": "GET",
+    "service": "go-main-service",
+    "status_code": 400,
+    "url": "http://localhost:8001/v1/gateway/messages/get-by-language?type=department\u0026type_id=68c0ec8554c9e8516b2fe57a\u0026language_id=1"
+  },
+  "level": "warning",
+  "msg": "http error",
+  "time": "2025-09-27T09:08:45+07:00"
+}
+{
+  "data": {
+    "method": "GET",
+    "service": "go-main-service",
+    "status_code": 400,
+    "url": "http://localhost:8001/v1/gateway/messages/get-by-language?type=department\u0026type_id=68c0ec8554c9e8516b2fe57a\u0026language_id=1"
+  },
+  "level": "warning",
+  "msg": "http error",
+  "time": "2025-09-27T09:09:36+07:00"
+}
+{
+  "data": {
+    "method": "GET",
+    "service": "go-main-service",
+    "status_code": 400,
+    "url": "http://localhost:8001/v1/gateway/messages/get-by-language?type=department\u0026type_id=68c0ec8554c9e8516b2fe57a\u0026language_id=1"
+  },
+  "level": "warning",
+  "msg": "http error",
+  "time": "2025-09-27T09:10:35+07:00"
+}
+{
+  "data": {
+    "method": "POST",
+    "service": "go-main-service",
+    "status_code": 400,
+    "url": "http://localhost:8001/v1/gateway/images/get-url"
+  },
+  "level": "warning",
+  "msg": "http error",
+  "time": "2025-09-27T14:35:41+07:00"
+}
+{
+  "data": {
+    "error": "service inventory-service not found in Consul",
+    "service": "inventory-service"
+  },
+  "level": "error",
+  "msg": "service discovery failed",
+  "time": "2025-09-27T14:35:41+07:00"
+}
+{
+  "data": {
+    "method": "POST",
+    "service": "go-main-service",
+    "status_code": 400,
+    "url": "http://localhost:8001/v1/gateway/images/get-url"
+  },
+  "level": "warning",
+  "msg": "http error",
+  "time": "2025-09-27T14:35:41+07:00"
+}
+{
+  "data": {
+    "error": "service inventory-service not found in Consul",
+    "service": "inventory-service"
+  },
+  "level": "error",
+  "msg": "service discovery failed",
+  "time": "2025-09-27T14:35:41+07:00"
+}
+{
+  "data": {
+    "method": "POST",
+    "service": "go-main-service",
+    "status_code": 400,
+    "url": "http://localhost:8001/v1/gateway/images/get-url"
+  },
+  "level": "warning",
+  "msg": "http error",
+  "time": "2025-09-27T14:35:41+07:00"
+}
+{
+  "data": {
+    "error": "service inventory-service not found in Consul",
+    "service": "inventory-service"
+  },
+  "level": "error",
+  "msg": "service discovery failed",
+  "time": "2025-09-27T14:35:41+07:00"
+}
+{
+  "data": {
+    "method": "POST",
+    "service": "go-main-service",
+    "status_code": 400,
+    "url": "http://localhost:8001/v1/gateway/images/get-url"
+  },
+  "level": "warning",
+  "msg": "http error",
+  "time": "2025-09-27T14:35:41+07:00"
+}
+{
+  "data": {
+    "error": "service inventory-service not found in Consul",
+    "service": "inventory-service"
+  },
+  "level": "error",
+  "msg": "service discovery failed",
+  "time": "2025-09-27T14:35:41+07:00"
+}
+{
+  "data": {
+    "method": "POST",
+    "service": "go-main-service",
+    "status_code": 400,
+    "url": "http://localhost:8001/v1/gateway/images/get-url"
+  },
+  "level": "warning",
+  "msg": "http error",
+  "time": "2025-09-27T14:35:41+07:00"
+}
+{
+  "data": {
+    "error": "service inventory-service not found in Consul",
+    "service": "inventory-service"
+  },
+  "level": "error",
+  "msg": "service discovery failed",
+  "time": "2025-09-27T14:35:41+07:00"
+}
+{
+  "data": {
+    "method": "POST",
+    "service": "go-main-service",
+    "status_code": 400,
+    "url": "http://localhost:8001/v1/gateway/images/get-url"
+  },
+  "level": "warning",
+  "msg": "http error",
+  "time": "2025-09-27T14:35:41+07:00"
+}
+{
+  "data": {
+    "error": "service inventory-service not found in Consul",
+    "service": "inventory-service"
+  },
+  "level": "error",
+  "msg": "service discovery failed",
+  "time": "2025-09-27T14:35:41+07:00"
+}
