@@ -1,13 +1,16 @@
 package gateway
 
 import (
+	"bytes"
 	"context"
 	"encoding/json"
 	"fmt"
+	"io"
 	"media-service/internal/gateway/dto"
 	gw_request "media-service/internal/gateway/dto/request"
 	gw_response "media-service/internal/gateway/dto/response"
 	"media-service/pkg/constants"
+	"mime/multipart"
 
 	"github.com/hashicorp/consul/api"
 )
@@ -30,6 +33,43 @@ func NewFileGateway(serviceName string, consulClient *api.Client) FileGateway {
 	}
 }
 
+func buildMultipartBody(req gw_request.UploadFileRequest) (*bytes.Buffer, string, error) {
+	body := &bytes.Buffer{}
+	writer := multipart.NewWriter(body)
+
+	// --- add file ---
+	if req.File != nil {
+		file, err := req.File.Open()
+		if err != nil {
+			return nil, "", fmt.Errorf("open file fail: %w", err)
+		}
+		defer file.Close()
+
+		part, err := writer.CreateFormFile("file", req.File.Filename)
+		if err != nil {
+			return nil, "", fmt.Errorf("create form file fail: %w", err)
+		}
+		if _, err := io.Copy(part, file); err != nil {
+			return nil, "", fmt.Errorf("copy file fail: %w", err)
+		}
+	}
+
+	// --- add text fields ---
+	_ = writer.WriteField("folder", req.Folder)
+	_ = writer.WriteField("file_name", req.FileName)
+	_ = writer.WriteField("mode", req.Mode)
+	if req.ImageName != "" {
+		_ = writer.WriteField("image_name", req.ImageName)
+	}
+
+	if err := writer.Close(); err != nil {
+		return nil, "", fmt.Errorf("close writer fail: %w", err)
+	}
+
+	return body, writer.FormDataContentType(), nil
+}
+
+// --- Upload Image ---
 func (g *fileGateway) UploadImage(ctx context.Context, req gw_request.UploadFileRequest) (*gw_response.UploadImageResponse, error) {
 	token, ok := ctx.Value(constants.Token).(string)
 	if !ok {
@@ -41,7 +81,12 @@ func (g *fileGateway) UploadImage(ctx context.Context, req gw_request.UploadFile
 		return nil, err
 	}
 
-	resp, err := client.Call("POST", "/v1/gateway/images/upload", req)
+	body, contentType, err := buildMultipartBody(req)
+	if err != nil {
+		return nil, err
+	}
+
+	resp, err := client.CallWithMultipart("POST", "/v1/gateway/images/upload", body, contentType)
 	if err != nil {
 		return nil, err
 	}
@@ -58,6 +103,7 @@ func (g *fileGateway) UploadImage(ctx context.Context, req gw_request.UploadFile
 	return &gwResp.Data, nil
 }
 
+// --- Upload Video ---
 func (g *fileGateway) UploadVideo(ctx context.Context, req gw_request.UploadFileRequest) (*gw_response.UploadVideoResponse, error) {
 	token, ok := ctx.Value(constants.Token).(string)
 	if !ok {
@@ -69,7 +115,12 @@ func (g *fileGateway) UploadVideo(ctx context.Context, req gw_request.UploadFile
 		return nil, err
 	}
 
-	resp, err := client.Call("POST", "/v1/gateway/videos/upload", req)
+	body, contentType, err := buildMultipartBody(req)
+	if err != nil {
+		return nil, err
+	}
+
+	resp, err := client.CallWithMultipart("POST", "/v1/gateway/videos/upload", body, contentType)
 	if err != nil {
 		return nil, err
 	}
@@ -97,7 +148,13 @@ func (g *fileGateway) UploadAudio(ctx context.Context, req gw_request.UploadFile
 		return nil, err
 	}
 
-	resp, err := client.Call("POST", "/v1/gateway/audios/upload", req)
+	// multipart body
+	body, contentType, err := buildMultipartBody(req)
+	if err != nil {
+		return nil, err
+	}
+
+	resp, err := client.CallWithMultipart("POST", "/v1/gateway/audios/upload", body, contentType)
 	if err != nil {
 		return nil, err
 	}

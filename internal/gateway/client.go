@@ -117,3 +117,69 @@ func (c *GatewayClient) Call(method, path string, body interface{}) ([]byte, err
 
 	return data, nil
 }
+
+// CallWithMultipart gọi API multipart/form-data
+func (c *GatewayClient) CallWithMultipart(method, path string, body *bytes.Buffer, contentType string) ([]byte, error) {
+	service, err := c.ServiceDiscovery.DiscoverService()
+	if err != nil {
+		logger.WriteLogEx("error", "service discovery failed", map[string]any{
+			"service": c.ServiceName,
+			"error":   err.Error(),
+		})
+		return nil, fmt.Errorf("service discovery failed: %v", err)
+	}
+
+	url := fmt.Sprintf("http://%s:%d%s", service.ServiceAddress, service.ServicePort, path)
+
+	req, err := http.NewRequest(method, url, body)
+	if err != nil {
+		logger.WriteLogEx("error", "create multipart request failed", map[string]any{
+			"service": c.ServiceName,
+			"url":     url,
+			"error":   err.Error(),
+		})
+		return nil, fmt.Errorf("create request failed: %v", err)
+	}
+
+	req.Header.Set("Content-Type", contentType)
+	if c.Token != "" {
+		req.Header.Set("Authorization", "Bearer "+c.Token)
+	}
+
+	resp, err := c.HTTPClient.Do(req)
+	if err != nil {
+		logger.WriteLogEx("error", "http multipart call failed", map[string]any{
+			"service": c.ServiceName,
+			"url":     url,
+			"method":  method,
+			"error":   err.Error(),
+		})
+		return nil, fmt.Errorf("http call failed: %v", err)
+	}
+	defer resp.Body.Close()
+
+	if resp.StatusCode >= 400 {
+		respBody, _ := io.ReadAll(resp.Body)
+		logger.WriteLogEx("warn", "http multipart error", map[string]any{
+			"service":     c.ServiceName,
+			"url":         url,
+			"method":      method,
+			"status_code": resp.StatusCode,
+			"response":    string(respBody),
+		})
+		return nil, fmt.Errorf("http error: %s", resp.Status)
+	}
+
+	data, err := io.ReadAll(resp.Body)
+	if err != nil {
+		logger.WriteLogEx("error", "read multipart response body failed", map[string]any{
+			"service": c.ServiceName,
+			"url":     url,
+			"method":  method,
+			"error":   err.Error(),
+		})
+		return nil, fmt.Errorf("read response body failed: %v", err)
+	}
+
+	return data, nil
+}

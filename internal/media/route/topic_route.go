@@ -15,7 +15,7 @@ func RegisterTopicRoutes(r *gin.Engine, h *handler.TopicHandler) {
 		topicsAdmin := adminGroup.Group("/topics")
 		{
 			topicsAdmin.POST("", h.UploadTopic)
-
+			topicsAdmin.GET("/:topic_id/progress", h.GetPregressUpload)
 		}
 	}
 }

@@ -10,7 +10,9 @@ import (
 	"media-service/internal/media/model"
 	"media-service/internal/media/repository"
 	"media-service/internal/redis"
+	"media-service/pkg/constants"
 	"mime/multipart"
+	"time"
 
 	"go.mongodb.org/mongo-driver/bson/primitive"
 )
@@ -37,10 +39,19 @@ func NewTopicService(topicRepo repository.TopicRepository, fileGw gateway.FileGa
 }
 
 func (s *topicService) UploadTopic(ctx context.Context, req request.UploadTopicRequest) (*model.Topic, error) {
-	// --- Step 1: Tạo topic trước ---
+	currentUser, err := s.userGateway.GetCurrentUser(ctx)
+	if err != nil {
+		return nil, fmt.Errorf("get current user info failed")
+	}
+	if currentUser.IsSuperAdmin || currentUser.OrganizationAdmin.ID == "" {
+		return nil, fmt.Errorf("access denied")
+	}
+
+	// Tạo topic
 	topic := &model.Topic{
-		ID:          primitive.NewObjectID(),
-		IsPublished: req.IsPublished,
+		ID:             primitive.NewObjectID(),
+		OrganizationID: currentUser.OrganizationAdmin.ID,
+		IsPublished:    req.IsPublished,
 		LanguageConfig: []model.TopicLanguageConfig{
 			{
 				LanguageID:  req.LanguageID,
@@ -54,131 +65,107 @@ func (s *topicService) UploadTopic(ctx context.Context, req request.UploadTopicR
 			},
 		},
 	}
-
 	if err := s.topicRepo.UploadTopic(ctx, topic); err != nil {
 		return nil, fmt.Errorf("create topic fail: %w", err)
 	}
 
-	// --- Step 2: Tính số task cần upload ---
+	// Tính total task
 	totalTasks := 0
-	if req.AudioFile != nil {
-		totalTasks++
+	files := []interface{}{
+		req.AudioFile, req.VideoFile, req.FullBackgroundFile, req.ClearBackgroundFile,
+		req.ClipPartFile, req.DrawingFile, req.IconFile, req.BMFile,
 	}
-	if req.VideoFile != nil {
-		totalTasks++
-	}
-	if req.FullBackgroundFile != nil {
-		totalTasks++
-	}
-	if req.ClearBackgroundFile != nil {
-		totalTasks++
-	}
-	if req.ClipPartFile != nil {
-		totalTasks++
-	}
-	if req.DrawingFile != nil {
-		totalTasks++
-	}
-	if req.IconFile != nil {
-		totalTasks++
-	}
-	if req.BMFile != nil {
-		totalTasks++
+	for _, f := range files {
+		if f != nil {
+			totalTasks++
+		}
 	}
 
 	if totalTasks > 0 {
 		_ = s.redisService.InitUploadProgress(ctx, topic.ID.Hex(), totalTasks)
 	}
 
-	// --- Step 3: Upload async ---
-	go s.uploadFilesAsync(topic.ID.Hex(), req)
+	// Upload async
+	go func(topicID string, req request.UploadTopicRequest) {
+		ctxUpload, cancel := context.WithTimeout(context.Background(), 5*time.Minute)
+		defer cancel()
+		token, _ := ctx.Value(constants.Token).(string)
+		ctxUpload = context.WithValue(ctxUpload, constants.Token, token)
+
+		s.uploadFilesAsync(ctxUpload, topicID, req)
+	}(topic.ID.Hex(), req)
 
 	return topic, nil
 }
 
-func (s *topicService) uploadFilesAsync(topicID string, req request.UploadTopicRequest) {
-	ctx := context.Background()
-
-	defer func() {
-		if r := recover(); r != nil {
-			// log error nếu cần
+// --- Upload async ---
+func (s *topicService) uploadFilesAsync(ctx context.Context, topicID string, req request.UploadTopicRequest) {
+	decrementTask := func() {
+		remaining, _ := s.redisService.DecrementUploadTask(ctx, topicID)
+		if remaining <= 0 {
+			_ = s.redisService.SetUploadProgress(ctx, topicID, 0) // progress = 100%
 		}
-	}()
+	}
 
-	// --- audio ---
 	if req.AudioFile != nil {
-		s.uploadAndSaveAudio(ctx, topicID, req)
-		_, _ = s.redisService.DecrementUploadTask(ctx, topicID)
+		s.uploadAndSaveAudio(ctx, topicID, req, decrementTask)
 	}
-
-	// --- video ---
 	if req.VideoFile != nil {
-		s.uploadAndSaveVideo(ctx, topicID, req)
-		_, _ = s.redisService.DecrementUploadTask(ctx, topicID)
+		s.uploadAndSaveVideo(ctx, topicID, req, decrementTask)
 	}
-
-	// --- images ---
-	numImages := s.uploadAndSaveImages(ctx, topicID, req)
-	for i := 0; i < numImages; i++ {
-		_, _ = s.redisService.DecrementUploadTask(ctx, topicID)
-	}
+	s.uploadAndSaveImages(ctx, topicID, req, decrementTask)
 }
 
-// --- Upload & Save Audio ---
-func (s *topicService) uploadAndSaveAudio(ctx context.Context, topicID string, req request.UploadTopicRequest) {
+// --- Upload audio ---
+func (s *topicService) uploadAndSaveAudio(ctx context.Context, topicID string, req request.UploadTopicRequest, decrementTask func()) {
 	if req.AudioFile == nil {
 		return
 	}
-
-	uploadReq := gw_request.UploadFileRequest{
+	resp, err := s.fileGateway.UploadAudio(ctx, gw_request.UploadFileRequest{
 		File:     req.AudioFile,
 		Folder:   "topic_audios",
 		FileName: req.AudioFile.Filename,
 		Mode:     "private",
-	}
-	audioResp, err := s.fileGateway.UploadAudio(ctx, uploadReq)
-	if err != nil {
-		//log.Errorf("upload audio fail: %v", err)
-		return
-	}
-
-	_ = s.topicRepo.AddAudioToTopic(ctx, topicID, model.TopicAudioConfig{
-		AudioKey:  audioResp.Key,
-		LinkUrl:   req.AudioLinkUrl,
-		StartTime: req.AudioStart,
-		EndTime:   req.AudioEnd,
 	})
+	if err != nil {
+		_ = s.redisService.SetUploadError(ctx, topicID, "audio_error", err.Error())
+	} else {
+		_ = s.topicRepo.AddAudioToTopic(ctx, topicID, model.TopicAudioConfig{
+			AudioKey:  resp.Key,
+			LinkUrl:   req.AudioLinkUrl,
+			StartTime: req.AudioStart,
+			EndTime:   req.AudioEnd,
+		})
+	}
+	decrementTask()
 }
 
-// --- Upload & Save Video ---
-func (s *topicService) uploadAndSaveVideo(ctx context.Context, topicID string, req request.UploadTopicRequest) {
+// --- Upload video ---
+func (s *topicService) uploadAndSaveVideo(ctx context.Context, topicID string, req request.UploadTopicRequest, decrementTask func()) {
 	if req.VideoFile == nil {
 		return
 	}
-
-	uploadReq := gw_request.UploadFileRequest{
+	resp, err := s.fileGateway.UploadVideo(ctx, gw_request.UploadFileRequest{
 		File:     req.VideoFile,
 		Folder:   "topic_videos",
 		FileName: req.VideoFile.Filename,
 		Mode:     "private",
-	}
-	videoResp, err := s.fileGateway.UploadVideo(ctx, uploadReq)
-	if err != nil {
-		//log.Errorf("upload video fail: %v", err)
-		return
-	}
-
-	_ = s.topicRepo.AddVideoToTopic(ctx, topicID, model.TopicVideoConfig{
-		VideoKey:  videoResp.Key,
-		LinkUrl:   req.VideoLinkUrl,
-		StartTime: req.VideoStart,
-		EndTime:   req.VideoEnd,
 	})
+	if err != nil {
+		_ = s.redisService.SetUploadError(ctx, topicID, "video_error", err.Error())
+	} else {
+		_ = s.topicRepo.AddVideoToTopic(ctx, topicID, model.TopicVideoConfig{
+			VideoKey:  resp.Key,
+			LinkUrl:   req.VideoLinkUrl,
+			StartTime: req.VideoStart,
+			EndTime:   req.VideoEnd,
+		})
+	}
+	decrementTask()
 }
 
-// --- Upload & Save Images ---
-// return số lượng ảnh được upload thành công
-func (s *topicService) uploadAndSaveImages(ctx context.Context, topicID string, req request.UploadTopicRequest) int {
+// --- Upload images ---
+func (s *topicService) uploadAndSaveImages(ctx context.Context, topicID string, req request.UploadTopicRequest, decrementTask func()) {
 	imageFiles := []struct {
 		file *multipart.FileHeader
 		link string
@@ -191,50 +178,60 @@ func (s *topicService) uploadAndSaveImages(ctx context.Context, topicID string, 
 		{req.IconFile, req.IconLink, "icon"},
 		{req.BMFile, req.BMLink, "bm"},
 	}
-
-	count := 0
 	for _, img := range imageFiles {
 		if img.file == nil {
 			continue
 		}
-
-		uploadReq := gw_request.UploadFileRequest{
+		resp, err := s.fileGateway.UploadImage(ctx, gw_request.UploadFileRequest{
 			File:      img.file,
 			Folder:    "topic_images",
 			FileName:  img.file.Filename,
 			ImageName: img.typ,
 			Mode:      "private",
-		}
-		imgResp, err := s.fileGateway.UploadImage(ctx, uploadReq)
-		if err != nil {
-			//log.Errorf("upload image (%s) fail: %v", img.typ, err)
-			continue
-		}
-
-		_ = s.topicRepo.AddImageToTopic(ctx, topicID, model.TopicImageConfig{
-			ImageKey:  imgResp.Key,
-			ImageType: img.typ,
-			LinkUrl:   img.link,
 		})
-		count++
+		if err != nil {
+			_ = s.redisService.SetUploadError(ctx, topicID, "image_"+img.typ, err.Error())
+		} else {
+			_ = s.topicRepo.AddImageToTopic(ctx, topicID, model.TopicImageConfig{
+				ImageKey:  resp.Key,
+				ImageType: img.typ,
+				LinkUrl:   img.link,
+			})
+		}
+		decrementTask()
 	}
-	return count
 }
 
+// --- Get upload progress ---
 func (s *topicService) GetUploadProgress(ctx context.Context, topicID string) (*response.GetUploadProgressResponse, error) {
-	total, err := s.redisService.GetTotalUploadTask(ctx, topicID)
-	if err != nil || total == 0 {
-		return &response.GetUploadProgressResponse{Progress: 0}, err
+	total, _ := s.redisService.GetTotalUploadTask(ctx, topicID)
+	remaining, _ := s.redisService.GetUploadProgress(ctx, topicID)
+
+	progress := 0
+	if total > 0 {
+		progress = int((total - remaining) * 100 / total)
+		if progress > 100 {
+			progress = 100
+		}
 	}
 
-	remaining, err := s.redisService.GetUploadProgress(ctx, topicID)
-	if err != nil {
-		return &response.GetUploadProgressResponse{Progress: 0}, err
-	}
+	rawErrors, _ := s.redisService.GetUploadErrors(ctx, topicID)
 
-	progress := int((total - remaining) * 100 / total)
+	imageErr := map[string]string{
+		"full_background":  rawErrors["image_full_background"],
+		"clear_background": rawErrors["image_clear_background"],
+		"clip_part":        rawErrors["image_clip_part"],
+		"drawing":          rawErrors["image_drawing"],
+		"icon":             rawErrors["image_icon"],
+		"bm":               rawErrors["image_bm"],
+	}
 
 	return &response.GetUploadProgressResponse{
 		Progress: progress,
+		UploadErrors: map[string]any{
+			"audio_error": rawErrors["audio_error"],
+			"video_error": rawErrors["video_error"],
+			"image_error": imageErr,
+		},
 	}, nil
 }
