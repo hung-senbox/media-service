@@ -15,6 +15,7 @@ type DatabaseConfig struct {
 	Active string        `yaml:"active"` // "mysql" or "mongodb"
 	MySQL  MySQLConfig   `yaml:"mysql"`
 	Mongo  MongoDBConfig `yaml:"mongodb"`
+	Redis  RedisConfig   `yaml:"redis"`
 }
 
 type MySQLConfig struct {
@@ -91,7 +92,6 @@ type AppConfigStruct struct {
 	Zap      ZapConfig        `mapstructure:"zap"`
 	Registry Registry         `mapstructure:"registry" validate:"required"`
 	App      AppConfiguration `mapstructure:"app"`
-	Redis    RedisConfig      `yaml:"redis"`
 }
 
 var AppConfig *AppConfigStruct

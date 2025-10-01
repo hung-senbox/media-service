@@ -48,15 +48,15 @@ func main() {
 	//db
 	db.ConnectMongoDB()
 
-	r := router.SetupRouter(consulClient, db.DepartmentCollection, db.RegionCollection)
+	//redis
+	db.ConnectRedis()
+	defer db.Client.Close()
+
+	r := router.SetupRouter(consulClient, db.TopicCollection)
 	port := cfg.Server.Port
 	if err := r.Run(":" + port); err != nil {
 		log.Fatal("Failed to run server:", err)
 	}
-
-	//redis
-	db.ConnectRedis()
-	defer db.Client.Close()
 }
 
 func waitPassing(cli *consulapi.Client, name string, timeout time.Duration) error {

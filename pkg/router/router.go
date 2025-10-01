@@ -1,38 +1,32 @@
 package router
 
 import (
-	"media-service/internal/department/handler"
-	"media-service/internal/department/repository"
-	"media-service/internal/department/route"
-	"media-service/internal/department/service"
 	"media-service/internal/gateway"
+	"media-service/internal/media/handler"
+	"media-service/internal/media/repository"
+	"media-service/internal/media/route"
+	"media-service/internal/media/service"
+	"media-service/internal/redis"
 
 	"github.com/gin-gonic/gin"
 	"github.com/hashicorp/consul/api"
 	"go.mongodb.org/mongo-driver/mongo"
 )
 
-func SetupRouter(consulClient *api.Client, departmentCollection *mongo.Collection, regionCollection *mongo.Collection) *gin.Engine {
+func SetupRouter(consulClient *api.Client, topicCollection *mongo.Collection) *gin.Engine {
 	r := gin.Default()
 
 	// gateway
 	userGateway := gateway.NewUserGateway("go-main-service", consulClient)
-	menuGateway := gateway.NewMenuGateway("go-main-service", consulClient)
-	messageLangGw := gateway.NewMessageLanguageGateway("go-main-service", consulClient)
-	classroomGW := gateway.NewClassroomGateway("inventory-service", consulClient)
+	fileGateway := gateway.NewFileGateway("go-main-service", consulClient)
+	redisService := redis.NewRedisService()
 
-	// region
-	regionRepo := repository.NewRegionRepository(regionCollection)
-	regionService := service.NewRegionService(regionRepo, userGateway)
-	regionHandler := handler.NewRegionHandler(regionService)
-
-	// department
-	departmentRepo := repository.NewDepartmentRepository(departmentCollection)
-	departmentService := service.NewDepartmentService(departmentRepo, userGateway, messageLangGw, menuGateway, classroomGW, regionRepo)
-	departmentHandler := handler.NewDepartmentHandler(departmentService)
+	// topic
+	topicRepo := repository.NewTopicRepository(topicCollection)
+	topicService := service.NewTopicService(topicRepo, fileGateway, redisService, userGateway)
+	topicHandler := handler.NewTopicHandler(topicService)
 
 	// Register routes
-	route.RegisterDepartmentRoutes(r, departmentHandler, regionHandler)
-	//route.RegisterRegionRoutes(r, regionHandler)
+	route.RegisterTopicRoutes(r, topicHandler)
 	return r
 }

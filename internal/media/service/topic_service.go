@@ -6,6 +6,7 @@ import (
 	"media-service/internal/gateway"
 	gw_request "media-service/internal/gateway/dto/request"
 	"media-service/internal/media/dto/request"
+	"media-service/internal/media/dto/response"
 	"media-service/internal/media/model"
 	"media-service/internal/media/repository"
 	"media-service/internal/redis"
@@ -16,20 +17,22 @@ import (
 
 type TopicService interface {
 	UploadTopic(ctx context.Context, req request.UploadTopicRequest) (*model.Topic, error)
-	GetUploadProgress(ctx context.Context, topicID string) (int64, error)
+	GetUploadProgress(ctx context.Context, topicID string) (*response.GetUploadProgressResponse, error)
 }
 
 type topicService struct {
+	userGateway  gateway.UserGateway
 	fileGateway  gateway.FileGateway
 	redisService *redis.RedisService
 	topicRepo    repository.TopicRepository
 }
 
-func NewTopicService(topicRepo repository.TopicRepository, fileGateway gateway.FileGateway, redisService *redis.RedisService) TopicService {
+func NewTopicService(topicRepo repository.TopicRepository, fileGw gateway.FileGateway, redisService *redis.RedisService, userGw gateway.UserGateway) TopicService {
 	return &topicService{
 		topicRepo:    topicRepo,
 		redisService: redisService,
-		fileGateway:  fileGateway,
+		fileGateway:  fileGw,
+		userGateway:  userGw,
 	}
 }
 
@@ -218,6 +221,20 @@ func (s *topicService) uploadAndSaveImages(ctx context.Context, topicID string, 
 	return count
 }
 
-func (s *topicService) GetUploadProgress(ctx context.Context, topicID string) (int64, error) {
-	return s.redisService.GetUploadProgress(ctx, topicID)
+func (s *topicService) GetUploadProgress(ctx context.Context, topicID string) (*response.GetUploadProgressResponse, error) {
+	total, err := s.redisService.GetTotalUploadTask(ctx, topicID)
+	if err != nil || total == 0 {
+		return &response.GetUploadProgressResponse{Progress: 0}, err
+	}
+
+	remaining, err := s.redisService.GetUploadProgress(ctx, topicID)
+	if err != nil {
+		return &response.GetUploadProgressResponse{Progress: 0}, err
+	}
+
+	progress := int((total - remaining) * 100 / total)
+
+	return &response.GetUploadProgressResponse{
+		Progress: progress,
+	}, nil
 }

@@ -3,6 +3,7 @@ package db
 import (
 	"context"
 	"fmt"
+	"log"
 	"media-service/pkg/config"
 
 	goredis "github.com/redis/go-redis/v9"
@@ -12,7 +13,7 @@ var Ctx = context.Background()
 var Client *goredis.Client
 
 func ConnectRedis() {
-	cfg := config.AppConfig.Redis
+	cfg := config.AppConfig.Database.Redis
 	addr := fmt.Sprintf("%s:%s", cfg.Host, cfg.Port)
 
 	Client = goredis.NewClient(&goredis.Options{
@@ -25,4 +26,6 @@ func ConnectRedis() {
 	if err := Client.Ping(Ctx).Err(); err != nil {
 		panic(fmt.Sprintf("failed to connect to Redis: %v", err))
 	}
+
+	log.Println("Connected to Redis successfully")
 }

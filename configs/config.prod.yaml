@@ -1,5 +1,5 @@
 server:
-  port: "8019"
+  port: "8022"
 
 database:
   active: "mongodb" # or "mongodb"
@@ -9,14 +9,14 @@ database:
     port: "3306"
     user: "root"
     password: ""
-    name: "department_service"
+    name: "media_service"
 
   mongodb:
-    host: "department_db"
+    host: "media_db"
     port: "27017"
     # user: "Senbox"
     # password: ""
-    name: "department_service"
+    name: "media_service"
 
   redis:
     host: "localhost"

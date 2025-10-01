@@ -49,7 +49,7 @@ services:
       dockerfile: Dockerfile
     container_name: media-service
     ports:
-      - "8019:8019"
+      - "8022:8022"
     depends_on:
       - term_db
       - consul

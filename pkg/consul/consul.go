@@ -108,7 +108,7 @@ func (c *service) setupConsul() {
 		Name:    serviceName, // Service name
 		Port:    port,        // Service port
 		Address: hostname,    // Service address
-		Tags:    []string{"go", "department-service"},
+		Tags:    []string{"go", "media-service"},
 		Check:   check,
 	}
 
