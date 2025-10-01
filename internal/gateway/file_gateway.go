@@ -170,3 +170,87 @@ func (g *fileGateway) UploadAudio(ctx context.Context, req gw_request.UploadFile
 
 	return &gwResp.Data, nil
 }
+
+func (g *fileGateway) DeleteAudio(ctx context.Context, audioKey string) error {
+	token, ok := ctx.Value(constants.Token).(string)
+	if !ok {
+		return fmt.Errorf("token not found in context")
+	}
+
+	client, err := NewGatewayClient(g.serviceName, token, g.consul, nil)
+	if err != nil {
+		return err
+	}
+
+	resp, err := client.Call("DELETE", "/v1/gateway/audios/"+audioKey, nil)
+	if err != nil {
+		return err
+	}
+
+	var gwResp dto.APIGateWayResponse[string]
+	if err := json.Unmarshal(resp, &gwResp); err != nil {
+		return fmt.Errorf("unmarshal response fail: %w", err)
+	}
+
+	if gwResp.StatusCode != 200 {
+		return fmt.Errorf("call gateway delete audio fail: %s", gwResp.Message)
+	}
+
+	return nil
+}
+
+func (g *fileGateway) DeleteVideo(ctx context.Context, videoKey string) error {
+	token, ok := ctx.Value(constants.Token).(string)
+	if !ok {
+		return fmt.Errorf("token not found in context")
+	}
+
+	client, err := NewGatewayClient(g.serviceName, token, g.consul, nil)
+	if err != nil {
+		return err
+	}
+
+	resp, err := client.Call("DELETE", "/v1/gateway/videos/"+videoKey, nil)
+	if err != nil {
+		return err
+	}
+
+	var gwResp dto.APIGateWayResponse[string]
+	if err := json.Unmarshal(resp, &gwResp); err != nil {
+		return fmt.Errorf("unmarshal response fail: %w", err)
+	}
+
+	if gwResp.StatusCode != 200 {
+		return fmt.Errorf("call gateway delete audio fail: %s", gwResp.Message)
+	}
+
+	return nil
+}
+
+func (g *fileGateway) DeleteImage(ctx context.Context, imageKey string) error {
+	token, ok := ctx.Value(constants.Token).(string)
+	if !ok {
+		return fmt.Errorf("token not found in context")
+	}
+
+	client, err := NewGatewayClient(g.serviceName, token, g.consul, nil)
+	if err != nil {
+		return err
+	}
+
+	resp, err := client.Call("DELETE", "/v1/gateway/images/"+imageKey, nil)
+	if err != nil {
+		return err
+	}
+
+	var gwResp dto.APIGateWayResponse[string]
+	if err := json.Unmarshal(resp, &gwResp); err != nil {
+		return fmt.Errorf("unmarshal response fail: %w", err)
+	}
+
+	if gwResp.StatusCode != 200 {
+		return fmt.Errorf("call gateway delete image fail: %s", gwResp.Message)
+	}
+
+	return nil
+}

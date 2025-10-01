@@ -47,26 +47,43 @@ func (s *topicService) UploadTopic(ctx context.Context, req request.UploadTopicR
 		return nil, fmt.Errorf("access denied")
 	}
 
-	// Tạo topic
-	topic := &model.Topic{
-		ID:             primitive.NewObjectID(),
-		OrganizationID: currentUser.OrganizationAdmin.ID,
-		IsPublished:    req.IsPublished,
-		LanguageConfig: []model.TopicLanguageConfig{
-			{
-				LanguageID:  req.LanguageID,
-				FileName:    req.FileName,
-				Title:       req.Title,
-				Note:        req.Note,
-				Description: req.Description,
-				Images:      []model.TopicImageConfig{},
-				Videos:      []model.TopicVideoConfig{},
-				Audios:      []model.TopicAudioConfig{},
-			},
-		},
+	topicID := req.TopicID
+	if topicID == "" {
+		topicID = primitive.NewObjectID().Hex()
 	}
+
+	// Tạo topic
+	oid, err := primitive.ObjectIDFromHex(topicID)
+	if err != nil {
+		return nil, fmt.Errorf("invalid topicID: %w", err)
+	}
+
+	topic := &model.Topic{
+		ID:             oid,
+		OrganizationID: currentUser.OrganizationAdmin.ID,
+		ParentID:       req.ParentID,
+		IsPublished:    req.IsPublished,
+		LanguageConfig: []model.TopicLanguageConfig{}, // khởi tạo rỗng
+	}
+
+	// upsert LanguageConfig
+	langConfig := model.TopicLanguageConfig{
+		LanguageID:  req.LanguageID,
+		FileName:    req.FileName,
+		Title:       req.Title,
+		Note:        req.Note,
+		Description: req.Description,
+		Images:      []model.TopicImageConfig{},
+		Videos:      []model.TopicVideoConfig{},
+		Audios:      []model.TopicAudioConfig{},
+	}
+
 	if err := s.topicRepo.UploadTopic(ctx, topic); err != nil {
 		return nil, fmt.Errorf("create topic fail: %w", err)
+	}
+
+	if err := s.topicRepo.AddLanguageConfigToTopic(ctx, topic.ID.Hex(), langConfig); err != nil {
+		return nil, fmt.Errorf("upsert language config fail: %w", err)
 	}
 
 	// Tính total task
@@ -124,13 +141,13 @@ func (s *topicService) uploadAndSaveAudio(ctx context.Context, topicID string, r
 	resp, err := s.fileGateway.UploadAudio(ctx, gw_request.UploadFileRequest{
 		File:     req.AudioFile,
 		Folder:   "topic_audios",
-		FileName: req.AudioFile.Filename,
+		FileName: req.Title,
 		Mode:     "private",
 	})
 	if err != nil {
 		_ = s.redisService.SetUploadError(ctx, topicID, "audio_error", err.Error())
 	} else {
-		_ = s.topicRepo.AddAudioToTopic(ctx, topicID, model.TopicAudioConfig{
+		_ = s.topicRepo.AddAudioToTopic(ctx, topicID, req.LanguageID, req.AudioOldKey, model.TopicAudioConfig{
 			AudioKey:  resp.Key,
 			LinkUrl:   req.AudioLinkUrl,
 			StartTime: req.AudioStart,
@@ -145,43 +162,48 @@ func (s *topicService) uploadAndSaveVideo(ctx context.Context, topicID string, r
 	if req.VideoFile == nil {
 		return
 	}
+
 	resp, err := s.fileGateway.UploadVideo(ctx, gw_request.UploadFileRequest{
 		File:     req.VideoFile,
 		Folder:   "topic_videos",
-		FileName: req.VideoFile.Filename,
+		FileName: req.Title,
 		Mode:     "private",
 	})
 	if err != nil {
 		_ = s.redisService.SetUploadError(ctx, topicID, "video_error", err.Error())
 	} else {
-		_ = s.topicRepo.AddVideoToTopic(ctx, topicID, model.TopicVideoConfig{
+		_ = s.topicRepo.AddVideoToTopic(ctx, topicID, req.LanguageID, req.VideoOldKey, model.TopicVideoConfig{
 			VideoKey:  resp.Key,
 			LinkUrl:   req.VideoLinkUrl,
 			StartTime: req.VideoStart,
 			EndTime:   req.VideoEnd,
 		})
 	}
+
 	decrementTask()
 }
 
 // --- Upload images ---
 func (s *topicService) uploadAndSaveImages(ctx context.Context, topicID string, req request.UploadTopicRequest, decrementTask func()) {
 	imageFiles := []struct {
-		file *multipart.FileHeader
-		link string
-		typ  string
+		file   *multipart.FileHeader
+		link   string
+		oldKey string
+		typ    string
 	}{
-		{req.FullBackgroundFile, req.FullBackgroundLink, "full_background"},
-		{req.ClearBackgroundFile, req.ClearBackgroundLink, "clear_background"},
-		{req.ClipPartFile, req.ClipPartLink, "clip_part"},
-		{req.DrawingFile, req.DrawingLink, "drawing"},
-		{req.IconFile, req.IconLink, "icon"},
-		{req.BMFile, req.BMLink, "bm"},
+		{req.FullBackgroundFile, req.FullBackgroundLink, req.FullBackgroundOldKey, "full_background"},
+		{req.ClearBackgroundFile, req.ClearBackgroundLink, req.ClearBackgroundOldKey, "clear_background"},
+		{req.ClipPartFile, req.ClipPartLink, req.ClipPartOldKey, "clip_part"},
+		{req.DrawingFile, req.DrawingLink, req.DrawingOldKey, "drawing"},
+		{req.IconFile, req.IconLink, req.IconOldKey, "icon"},
+		{req.BMFile, req.BMLink, req.BMOldKey, "bm"},
 	}
+
 	for _, img := range imageFiles {
 		if img.file == nil {
 			continue
 		}
+
 		resp, err := s.fileGateway.UploadImage(ctx, gw_request.UploadFileRequest{
 			File:      img.file,
 			Folder:    "topic_images",
@@ -192,12 +214,14 @@ func (s *topicService) uploadAndSaveImages(ctx context.Context, topicID string, 
 		if err != nil {
 			_ = s.redisService.SetUploadError(ctx, topicID, "image_"+img.typ, err.Error())
 		} else {
-			_ = s.topicRepo.AddImageToTopic(ctx, topicID, model.TopicImageConfig{
+			// Add hoặc update image dựa trên oldKey và languageID
+			_ = s.topicRepo.AddImageToTopic(ctx, topicID, req.LanguageID, img.typ, img.oldKey, model.TopicImageConfig{
 				ImageKey:  resp.Key,
 				ImageType: img.typ,
 				LinkUrl:   img.link,
 			})
 		}
+
 		decrementTask()
 	}
 }
