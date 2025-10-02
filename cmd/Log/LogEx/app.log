@@ -20,3 +20,14 @@
   "msg": "access denied",
   "time": "2025-10-02T11:19:36+07:00"
 }
+{
+  "data": {
+    "error_code": "ERR_INVALID_OPERATION",
+    "method": "GET",
+    "path": "/api/v2/admin/topics/parents/68de00a3f89d59d2cc45798d",
+    "status_code": 500
+  },
+  "level": "error",
+  "msg": "get topic failed: error decoding key language_config.0.language_id: cannot decode string into an integer type",
+  "time": "2025-10-02T15:34:03+07:00"
+}

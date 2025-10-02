@@ -23,6 +23,8 @@ type TopicService interface {
 	UpdateParentTopic(ctx context.Context, req request.UpdateTopicRequest) error
 	GetUploadProgress(ctx context.Context, topicID string) (*response.GetUploadProgressResponse, error)
 	GetParentTopics4Web(ctx context.Context) ([]response.TopicResponse, error)
+	GetParentTopic4Web(ctx context.Context, topicID string) (*response.TopicResponse, error)
+	UpdateAudio(ctx context.Context, req request.UpdateAudioRequest) error
 }
 
 type topicService struct {
@@ -248,8 +250,12 @@ func (s *topicService) GetUploadProgress(ctx context.Context, topicID string) (*
 		"bm":               rawErrors["image_bm"],
 	}
 
+	// get file_name
+	topic, _ := s.topicRepo.GetByID(ctx, topicID)
+
 	return &response.GetUploadProgressResponse{
 		Progress: progress,
+		FileName: topic.LanguageConfig[0].FileName,
 		UploadErrors: map[string]any{
 			"audio_error": rawErrors["audio_error"],
 			"video_error": rawErrors["video_error"],
@@ -276,13 +282,8 @@ func (s *topicService) GetParentTopics4Web(ctx context.Context) ([]response.Topi
 }
 
 func (s *topicService) UpdateParentTopic(ctx context.Context, req request.UpdateTopicRequest) error {
-	// Lấy topic hiện tại
-	objID, err := primitive.ObjectIDFromHex(req.TopicID)
-	if err != nil {
-		return fmt.Errorf("invalid topic id: %w", err)
-	}
 
-	oldTopic, err := s.topicRepo.GetByID(ctx, objID)
+	oldTopic, err := s.topicRepo.GetByID(ctx, req.TopicID)
 	if err != nil {
 		return fmt.Errorf("get topic failed: %w", err)
 	}
@@ -302,4 +303,106 @@ func (s *topicService) UpdateParentTopic(ctx context.Context, req request.Update
 
 	// Call repo update
 	return s.topicRepo.UpdateTopic(ctx, oldTopic)
+}
+
+func (s *topicService) GetParentTopic4Web(ctx context.Context, topicID string) (*response.TopicResponse, error) {
+
+	topic, err := s.topicRepo.GetByID(ctx, topicID)
+	if err != nil {
+		return nil, fmt.Errorf("get topic failed: %w", err)
+	}
+	return mapper.ToTopicResponse(topic), nil
+}
+
+func (s *topicService) UpdateAudio(ctx context.Context, req request.UpdateAudioRequest) error {
+
+	currentUser, err := s.userGateway.GetCurrentUser(ctx)
+	if err != nil {
+		return fmt.Errorf("get current user info failed")
+	}
+	if currentUser.IsSuperAdmin || currentUser.OrganizationAdmin.ID == "" {
+		return fmt.Errorf("access denied")
+	}
+	orgID := currentUser.OrganizationAdmin.ID
+	// get topic
+	topic, err := s.topicRepo.GetByID(ctx, req.TopicID)
+	if err != nil {
+		return err
+	}
+
+	if req.AudioFile != nil {
+		inProgress, err := s.redisService.HasAnyUploadInProgress(ctx, orgID)
+		if err == nil && inProgress {
+			return fmt.Errorf("please wait until the previous upload is completed")
+		}
+
+		// neu co old key thi xoa
+		if req.AudioOldKey != "" {
+			if err := s.fileGateway.DeleteAudio(ctx, req.AudioOldKey); err != nil {
+				return err
+			}
+		}
+
+		_ = s.redisService.InitUploadProgress(ctx, orgID, topic.ID.Hex(), 1)
+		var createTopicReq request.CreateTopicRequest
+		createTopicReq.AudioFile = req.AudioFile
+		createTopicReq.AudioLinkUrl = req.AudioLinkUrl
+		createTopicReq.AudioStart = req.AudioStart
+		createTopicReq.AudioEnd = req.AudioEnd
+		s.uploadFilesAsync(ctx, orgID, topic.ID.Hex(), createTopicReq)
+	}
+
+	return s.topicRepo.SetAudio(ctx, topic.ID.Hex(), req.LanguageID, model.TopicAudioConfig{
+		AudioKey:  req.AudioOldKey,
+		LinkUrl:   req.AudioLinkUrl,
+		StartTime: req.AudioStart,
+		EndTime:   req.AudioEnd,
+	})
+}
+
+func (s *topicService) UpdateVideo(ctx context.Context, req request.UpdateVideoRequest) error {
+
+	currentUser, err := s.userGateway.GetCurrentUser(ctx)
+	if err != nil {
+		return fmt.Errorf("get current user info failed")
+	}
+	if currentUser.IsSuperAdmin || currentUser.OrganizationAdmin.ID == "" {
+		return fmt.Errorf("access denied")
+	}
+	orgID := currentUser.OrganizationAdmin.ID
+	// get topic
+	topic, err := s.topicRepo.GetByID(ctx, req.TopicID)
+	if err != nil {
+		return err
+	}
+
+	if req.VideoFile != nil {
+		inProgress, err := s.redisService.HasAnyUploadInProgress(ctx, orgID)
+		if err == nil && inProgress {
+			return fmt.Errorf("please wait until the previous upload is completed")
+		}
+
+		// neu co old key thi xoa
+		if req.VideoOldKey != "" {
+			if err := s.fileGateway.DeleteVideo(ctx, req.VideoOldKey); err != nil {
+				return err
+			}
+		}
+
+		_ = s.redisService.InitUploadProgress(ctx, orgID, topic.ID.Hex(), 1)
+		var createTopicReq request.CreateTopicRequest
+		createTopicReq.VideoFile = req.VideoFile
+		createTopicReq.VideoLinkUrl = req.VideoLinkUrl
+		createTopicReq.VideoStart = req.VideoStart
+		createTopicReq.VideoEnd = req.VideoEnd
+		s.uploadFilesAsync(ctx, orgID, topic.ID.Hex(), createTopicReq)
+	}
+
+	return s.topicRepo.SetVideo(ctx, topic.ID.Hex(), req.LanguageID, model.TopicVideoConfig{
+		VideoKey:  req.VideoOldKey,
+		LinkUrl:   req.VideoLinkUrl,
+		StartTime: req.VideoStart,
+		EndTime:   req.VideoEnd,
+	})
+
 }

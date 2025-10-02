@@ -79,3 +79,63 @@ func strPtr(s string) *string {
 	}
 	return &s
 }
+
+func ToTopicResponse(t *model.Topic) *response.TopicResponse {
+	if t == nil {
+		return nil
+	}
+
+	resp := &response.TopicResponse{
+		ID:          t.ID.Hex(),
+		IsPublished: t.IsPublished,
+	}
+
+	var langs []response.MessageLanguageEntry
+	for _, lc := range t.LanguageConfig {
+		entry := response.MessageLanguageEntry{
+			LanguageID: int(lc.LanguageID),
+			Contents: response.LanguageContents{
+				FileName:    lc.FileName,
+				Title:       lc.Title,
+				Note:        lc.Note,
+				Description: lc.Description,
+			},
+		}
+
+		// map audio
+		if lc.Audio.LinkUrl != "" {
+			entry.Contents.Audio = &response.MediaContent{
+				UploadedURL: &lc.Audio.AudioKey,
+				LinkURL:     lc.Audio.LinkUrl,
+				StartTime:   strPtr(trimQuotes(lc.Audio.StartTime)),
+				EndTime:     strPtr(trimQuotes(lc.Audio.EndTime)),
+			}
+		}
+
+		// map video
+		if lc.Video.LinkUrl != "" {
+			entry.Contents.Video = &response.MediaContent{
+				UploadedURL: &lc.Video.VideoKey,
+				LinkURL:     lc.Video.LinkUrl,
+				StartTime:   strPtr(trimQuotes(lc.Video.StartTime)),
+				EndTime:     strPtr(trimQuotes(lc.Video.EndTime)),
+			}
+		}
+
+		// map images slice → object
+		imgMap := make(map[string]response.ImgEntry)
+		for _, img := range lc.Images {
+			uploaded := img.ImageKey
+			imgMap[img.ImageType] = response.ImgEntry{
+				UploadedURL: &uploaded,
+				LinkURL:     img.LinkUrl,
+			}
+		}
+		entry.Contents.Images = imgMap
+
+		langs = append(langs, entry)
+	}
+
+	resp.MessageLangs = langs
+	return resp
+}

@@ -19,7 +19,7 @@ type TopicRepository interface {
 	SetAudio(ctx context.Context, topicID string, languageID uint, aud model.TopicAudioConfig) error
 	SetVideo(ctx context.Context, topicID string, languageID uint, vid model.TopicVideoConfig) error
 	GetAllParentByOrganizationID(ctx context.Context, orgID string) ([]model.Topic, error)
-	GetByID(ctx context.Context, id primitive.ObjectID) (*model.Topic, error)
+	GetByID(ctx context.Context, id string) (*model.Topic, error)
 }
 
 type topicRepository struct {
@@ -116,22 +116,28 @@ func (r *topicRepository) SetLanguageConfig(ctx context.Context, topicID string,
 func (r *topicRepository) SetVideo(ctx context.Context, topicID string, languageID uint, vid model.TopicVideoConfig) error {
 	objID, err := primitive.ObjectIDFromHex(topicID)
 	if err != nil {
-		fmt.Printf("[SetVideo4Topic] invalid topicID=%s: %v\n", topicID, err)
-		return err
+		return fmt.Errorf("[SetVideo4Topic] invalid topicID=%s: %w", topicID, err)
 	}
 
 	filter := bson.M{
 		"_id":                         objID,
 		"language_config.language_id": languageID,
 	}
+
 	update := bson.M{
-		"$set": bson.M{"language_config.$.video": vid},
+		"$set": bson.M{
+			"language_config.$.video": bson.M{
+				"video_key":  vid.VideoKey,
+				"link_url":   vid.LinkUrl,
+				"start_time": vid.StartTime,
+				"end_time":   vid.EndTime,
+			},
+		},
 	}
 
 	_, err = r.topicCollection.UpdateOne(ctx, filter, update)
 	if err != nil {
-		fmt.Printf("[SetVideoForTopic] Update failed: %v\n", err)
-		return err
+		return fmt.Errorf("[SetVideoForTopic] update failed: %w", err)
 	}
 
 	return nil
@@ -227,9 +233,17 @@ func (r *topicRepository) UpdateTopic(ctx context.Context, topic *model.Topic) e
 	return err
 }
 
-func (r *topicRepository) GetByID(ctx context.Context, id primitive.ObjectID) (*model.Topic, error) {
+func (r *topicRepository) GetByID(ctx context.Context, topicID string) (*model.Topic, error) {
+	objID, err := primitive.ObjectIDFromHex(topicID)
+	if err != nil {
+		return nil, fmt.Errorf("invalid topicID=%s: %w", topicID, err)
+	}
+
+	filter := bson.M{"_id": objID}
 	var topic model.Topic
-	filter := bson.M{"_id": id}
-	err := r.topicCollection.FindOne(ctx, filter).Decode(&topic)
-	return &topic, err
+	err = r.topicCollection.FindOne(ctx, filter).Decode(&topic)
+	if err != nil {
+		return nil, err
+	}
+	return &topic, nil
 }

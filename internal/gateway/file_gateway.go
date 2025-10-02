@@ -19,6 +19,9 @@ type FileGateway interface {
 	UploadImage(ctx context.Context, req gw_request.UploadFileRequest) (*gw_response.UploadImageResponse, error)
 	UploadVideo(ctx context.Context, req gw_request.UploadFileRequest) (*gw_response.UploadVideoResponse, error)
 	UploadAudio(ctx context.Context, req gw_request.UploadFileRequest) (*gw_response.UploadAudioResponse, error)
+	DeleteVideo(ctx context.Context, videoKey string) error
+	DeleteAudio(ctx context.Context, audioKey string) error
+	DeleteImage(ctx context.Context, imageKey string) error
 }
 
 type fileGateway struct {

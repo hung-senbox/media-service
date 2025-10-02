@@ -56,3 +56,18 @@ func (h TopicHandler) GetParentTopics4Web(c *gin.Context) {
 
 	helper.SendSuccess(c, http.StatusOK, "get topics success", res)
 }
+
+func (h TopicHandler) GetParentTopic4Web(c *gin.Context) {
+	topicID := c.Param("topic_id")
+	if topicID == "" {
+		helper.SendError(c, http.StatusBadRequest, nil, helper.ErrInvalidRequest)
+		return
+	}
+	res, err := h.service.GetParentTopic4Web(c.Request.Context(), topicID)
+	if err != nil {
+		helper.SendError(c, http.StatusInternalServerError, err, helper.ErrInvalidOperation)
+		return
+	}
+
+	helper.SendSuccess(c, http.StatusOK, "get topic success", res)
+}
