@@ -27,7 +27,7 @@ type TopicAudioConfig struct {
 }
 
 type TopicLanguageConfig struct {
-	LanguageID  string             `json:"language" bson:"language_id"`
+	LanguageID  string             `json:"language_id" bson:"language_id"`
 	FileName    string             `json:"file_name" bson:"file_name"`
 	Title       string             `json:"title" bson:"title"`
 	Note        string             `json:"note" bson:"note"`

@@ -16,6 +16,7 @@ type TopicRepository interface {
 	SetImage(ctx context.Context, topicID, languageID string, img model.TopicImageConfig) error
 	SetAudio(ctx context.Context, topicID, languageID string, aud model.TopicAudioConfig) error
 	SetVideo(ctx context.Context, topicID, languageID string, vid model.TopicVideoConfig) error
+	GetAllParentByOrganizationID(ctx context.Context, orgID string) ([]model.Topic, error)
 }
 
 type topicRepository struct {
@@ -140,4 +141,25 @@ func (r *topicRepository) SetAudio(ctx context.Context, topicID, languageID stri
 	}
 
 	return nil
+}
+
+func (r *topicRepository) GetAllParentByOrganizationID(ctx context.Context, orgID string) ([]model.Topic, error) {
+	var topics []model.Topic
+	filter := bson.M{
+		"organization_id": orgID,
+		"$or": []bson.M{
+			{"parent_id": ""},
+			{"parent_id": bson.M{"$exists": false}},
+			{"parent_id": nil},
+		},
+	}
+
+	cursor, err := r.topicCollection.Find(ctx, filter)
+	if err != nil {
+		return nil, err
+	}
+	if err := cursor.All(ctx, &topics); err != nil {
+		return nil, err
+	}
+	return topics, nil
 }

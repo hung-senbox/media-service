@@ -8,6 +8,7 @@ import (
 	"media-service/internal/media/model"
 	"media-service/internal/media/v2/dto/request"
 	"media-service/internal/media/v2/dto/response"
+	"media-service/internal/media/v2/mapper"
 	"media-service/internal/media/v2/repository"
 	"media-service/internal/redis"
 	"media-service/pkg/constants"
@@ -20,6 +21,7 @@ import (
 type TopicService interface {
 	CreateTopic(ctx context.Context, req request.UploadTopicRequest) (*model.Topic, error)
 	GetUploadProgress(ctx context.Context, topicID string) (*response.GetUploadProgressResponse, error)
+	GetParentTopics4Web(ctx context.Context) ([]response.TopicResponse, error)
 }
 
 type topicService struct {
@@ -120,9 +122,11 @@ func (s *topicService) uploadFilesAsync(ctx context.Context, orgID, topicID stri
 	}
 
 	if req.AudioFile != nil {
+		time.Sleep(4 * time.Second)
 		s.uploadAndSaveAudio(ctx, orgID, topicID, req, decrementTask)
 	}
 	if req.VideoFile != nil {
+		time.Sleep(4 * time.Second)
 		s.uploadAndSaveVideo(ctx, orgID, topicID, req, decrementTask)
 	}
 	s.uploadAndSaveImages(ctx, orgID, topicID, req, decrementTask)
@@ -133,7 +137,7 @@ func (s *topicService) uploadAndSaveAudio(ctx context.Context, orgID, topicID st
 	resp, err := s.fileGateway.UploadAudio(ctx, gw_request.UploadFileRequest{
 		File:     req.AudioFile,
 		Folder:   "topic_media",
-		FileName: req.Title,
+		FileName: req.Title + "_audio",
 		Mode:     "private",
 	})
 	if err != nil {
@@ -154,7 +158,7 @@ func (s *topicService) uploadAndSaveVideo(ctx context.Context, orgID, topicID st
 	resp, err := s.fileGateway.UploadVideo(ctx, gw_request.UploadFileRequest{
 		File:     req.VideoFile,
 		Folder:   "topic_media",
-		FileName: req.Title,
+		FileName: req.Title + "_video",
 		Mode:     "private",
 	})
 	if err != nil {
@@ -186,13 +190,14 @@ func (s *topicService) uploadAndSaveImages(ctx context.Context, orgID, topicID s
 	}
 
 	for _, img := range imageFiles {
+		time.Sleep(2 * time.Second)
 		if img.file == nil {
 			continue
 		}
 		resp, err := s.fileGateway.UploadImage(ctx, gw_request.UploadFileRequest{
 			File:      img.file,
 			Folder:    "topic_media",
-			FileName:  img.file.Filename,
+			FileName:  req.Title + "_" + img.typ + "_image",
 			ImageName: img.typ,
 			Mode:      "private",
 		})
@@ -251,4 +256,21 @@ func (s *topicService) GetUploadProgress(ctx context.Context, topicID string) (*
 			"image_error": imageErr,
 		},
 	}, nil
+}
+
+func (s *topicService) GetParentTopics4Web(ctx context.Context) ([]response.TopicResponse, error) {
+	currentUser, err := s.userGateway.GetCurrentUser(ctx)
+	if err != nil {
+		return nil, fmt.Errorf("get current user info failed")
+	}
+	if currentUser.IsSuperAdmin || currentUser.OrganizationAdmin.ID == "" {
+		return nil, fmt.Errorf("access denied")
+	}
+	orgID := currentUser.OrganizationAdmin.ID
+	topics, err := s.topicRepo.GetAllParentByOrganizationID(ctx, orgID)
+	if err != nil {
+		return nil, err
+	}
+	return mapper.ToTopicResponses(topics), nil
+
 }

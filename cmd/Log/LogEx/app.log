@@ -1,0 +1,22 @@
+{
+  "data": {
+    "error_code": "ERR_INVALID_OPERATION",
+    "method": "GET",
+    "path": "/api/v2/admin/topics/parents",
+    "status_code": 500
+  },
+  "level": "error",
+  "msg": "access denied",
+  "time": "2025-10-02T11:19:07+07:00"
+}
+{
+  "data": {
+    "error_code": "ERR_INVALID_OPERATION",
+    "method": "GET",
+    "path": "/api/v2/admin/topics/parents",
+    "status_code": 500
+  },
+  "level": "error",
+  "msg": "access denied",
+  "time": "2025-10-02T11:19:36+07:00"
+}

@@ -1,5 +1,5 @@
 Terms
-GET     /api/v1/terms
+GET     /api/v2/terms
 GET     /api/v1/terms/:id
 POST    /api/v1/terms
 PUT     /api/v1/terms/:id

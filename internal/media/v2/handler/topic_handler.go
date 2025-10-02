@@ -46,3 +46,13 @@ func (h TopicHandler) GetPregressUpload(c *gin.Context) {
 
 	helper.SendSuccess(c, http.StatusOK, "get progress upload success", res)
 }
+
+func (h TopicHandler) GetParentTopics4Web(c *gin.Context) {
+	res, err := h.service.GetParentTopics4Web(c.Request.Context())
+	if err != nil {
+		helper.SendError(c, http.StatusInternalServerError, err, helper.ErrInvalidOperation)
+		return
+	}
+
+	helper.SendSuccess(c, http.StatusOK, "get topics success", res)
+}
