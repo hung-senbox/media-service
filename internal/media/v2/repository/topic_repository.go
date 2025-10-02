@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 	"media-service/internal/media/model"
+	"time"
 
 	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/bson/primitive"
@@ -12,11 +13,13 @@ import (
 
 type TopicRepository interface {
 	CreateTopic(ctx context.Context, topic *model.Topic) error
+	UpdateTopic(ctx context.Context, topic *model.Topic) error
 	SetLanguageConfig(ctx context.Context, topicID string, lang model.TopicLanguageConfig) error
-	SetImage(ctx context.Context, topicID, languageID string, img model.TopicImageConfig) error
-	SetAudio(ctx context.Context, topicID, languageID string, aud model.TopicAudioConfig) error
-	SetVideo(ctx context.Context, topicID, languageID string, vid model.TopicVideoConfig) error
+	SetImage(ctx context.Context, topicID string, languageID uint, img model.TopicImageConfig) error
+	SetAudio(ctx context.Context, topicID string, languageID uint, aud model.TopicAudioConfig) error
+	SetVideo(ctx context.Context, topicID string, languageID uint, vid model.TopicVideoConfig) error
 	GetAllParentByOrganizationID(ctx context.Context, orgID string) ([]model.Topic, error)
+	GetByID(ctx context.Context, id primitive.ObjectID) (*model.Topic, error)
 }
 
 type topicRepository struct {
@@ -36,19 +39,35 @@ func (r *topicRepository) CreateTopic(ctx context.Context, topic *model.Topic) e
 	return nil
 }
 
-func (r *topicRepository) SetImage(ctx context.Context, topicID, languageID string, img model.TopicImageConfig) error {
+func (r *topicRepository) SetImage(ctx context.Context, topicID string, languageID uint, img model.TopicImageConfig) error {
+	// convert string topicID → ObjectID
 	objID, err := primitive.ObjectIDFromHex(topicID)
 	if err != nil {
-		return fmt.Errorf("[AddImageToTopic] invalid topicID=%s: %w", topicID, err)
+		return fmt.Errorf("[SetImageForTopic] invalid topicID=%s: %w", topicID, err)
 	}
 
-	filter := bson.M{"_id": objID, "language_config.language_id": languageID}
-	update := bson.M{"$push": bson.M{"language_config.$.images": img}}
+	// filter theo topicID và languageID
+	filter := bson.M{
+		"_id":                         objID,
+		"language_config.language_id": languageID,
+	}
+
+	// push 1 image mới vào mảng images
+	update := bson.M{
+		"$push": bson.M{
+			"language_config.$.images": bson.M{
+				"image_type": img.ImageType,
+				"image_key":  img.ImageKey,
+				"link_url":   img.LinkUrl,
+			},
+		},
+	}
 
 	_, err = r.topicCollection.UpdateOne(ctx, filter, update)
 	if err != nil {
-		return fmt.Errorf("[AddImageToTopic] push failed: %w", err)
+		return fmt.Errorf("[SetImageForTopic] push failed: %w", err)
 	}
+
 	return nil
 }
 
@@ -94,7 +113,7 @@ func (r *topicRepository) SetLanguageConfig(ctx context.Context, topicID string,
 	return nil
 }
 
-func (r *topicRepository) SetVideo(ctx context.Context, topicID, languageID string, vid model.TopicVideoConfig) error {
+func (r *topicRepository) SetVideo(ctx context.Context, topicID string, languageID uint, vid model.TopicVideoConfig) error {
 	objID, err := primitive.ObjectIDFromHex(topicID)
 	if err != nil {
 		fmt.Printf("[SetVideo4Topic] invalid topicID=%s: %v\n", topicID, err)
@@ -118,21 +137,26 @@ func (r *topicRepository) SetVideo(ctx context.Context, topicID, languageID stri
 	return nil
 }
 
-func (r *topicRepository) SetAudio(ctx context.Context, topicID, languageID string, aud model.TopicAudioConfig) error {
+func (r *topicRepository) SetAudio(ctx context.Context, topicID string, languageID uint, aud model.TopicAudioConfig) error {
 	objID, err := primitive.ObjectIDFromHex(topicID)
 	if err != nil {
 		return fmt.Errorf("[SetAudio4Topic] invalid topicID=%s: %w", topicID, err)
 	}
 
-	// filter theo topicID và languageID
 	filter := bson.M{
 		"_id":                         objID,
 		"language_config.language_id": languageID,
 	}
 
-	// set audio mới, ghi đè audio cũ
 	update := bson.M{
-		"$set": bson.M{"language_config.$.audio": aud},
+		"$set": bson.M{
+			"language_config.$.audio": bson.M{
+				"audio_key":  aud.AudioKey,
+				"link_url":   aud.LinkUrl,
+				"start_time": aud.StartTime,
+				"end_time":   aud.EndTime,
+			},
+		},
 	}
 
 	_, err = r.topicCollection.UpdateOne(ctx, filter, update)
@@ -162,4 +186,50 @@ func (r *topicRepository) GetAllParentByOrganizationID(ctx context.Context, orgI
 		return nil, err
 	}
 	return topics, nil
+}
+
+func (r *topicRepository) UpdateTopic(ctx context.Context, topic *model.Topic) error {
+	filter := bson.M{"_id": topic.ID}
+
+	// update fields động
+	updateFields := bson.M{
+		"is_published": topic.IsPublished,
+		"updated_at":   time.Now(),
+	}
+
+	// xử lý LanguageConfig
+	if len(topic.LanguageConfig) > 0 {
+		var langs []bson.M
+		for _, lc := range topic.LanguageConfig {
+			langUpdate := bson.M{
+				"language_id": lc.LanguageID,
+				"file_name":   lc.FileName,
+				"title":       lc.Title,
+				"note":        lc.Note,
+				"description": lc.Description,
+			}
+
+			langUpdate["audio"] = lc.Audio
+
+			langUpdate["video"] = lc.Video
+
+			langUpdate["images"] = lc.Images
+
+			langs = append(langs, langUpdate)
+		}
+
+		updateFields["language_config"] = langs
+	}
+
+	update := bson.M{"$set": updateFields}
+
+	_, err := r.topicCollection.UpdateOne(ctx, filter, update)
+	return err
+}
+
+func (r *topicRepository) GetByID(ctx context.Context, id primitive.ObjectID) (*model.Topic, error) {
+	var topic model.Topic
+	filter := bson.M{"_id": id}
+	err := r.topicCollection.FindOne(ctx, filter).Decode(&topic)
+	return &topic, err
 }

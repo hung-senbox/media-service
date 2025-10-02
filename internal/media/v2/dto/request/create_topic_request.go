@@ -2,9 +2,8 @@ package request
 
 import "mime/multipart"
 
-type UploadTopicRequest struct {
-	LanguageID  string `form:"language_id"`
-	ParentID    string `form:"parent_id"`
+type CreateTopicRequest struct {
+	LanguageID  uint   `form:"language_id"`
 	IsPublished bool   `form:"is_published"`
 	FileName    string `form:"file_name"`
 	Title       string `form:"title"`

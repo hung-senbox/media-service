@@ -19,7 +19,8 @@ import (
 )
 
 type TopicService interface {
-	CreateTopic(ctx context.Context, req request.UploadTopicRequest) (*model.Topic, error)
+	CreateParentTopic(ctx context.Context, req request.CreateTopicRequest) (*model.Topic, error)
+	UpdateParentTopic(ctx context.Context, req request.UpdateTopicRequest) error
 	GetUploadProgress(ctx context.Context, topicID string) (*response.GetUploadProgressResponse, error)
 	GetParentTopics4Web(ctx context.Context) ([]response.TopicResponse, error)
 }
@@ -41,7 +42,7 @@ func NewTopicService(topicRepo repository.TopicRepository, fileGw gateway.FileGa
 }
 
 // ------------------- Create Topic -------------------
-func (s *topicService) CreateTopic(ctx context.Context, req request.UploadTopicRequest) (*model.Topic, error) {
+func (s *topicService) CreateParentTopic(ctx context.Context, req request.CreateTopicRequest) (*model.Topic, error) {
 	currentUser, err := s.userGateway.GetCurrentUser(ctx)
 	if err != nil {
 		return nil, fmt.Errorf("get current user info failed")
@@ -59,7 +60,6 @@ func (s *topicService) CreateTopic(ctx context.Context, req request.UploadTopicR
 	topic := &model.Topic{
 		ID:             primitive.NewObjectID(),
 		OrganizationID: orgID,
-		ParentID:       req.ParentID,
 		IsPublished:    req.IsPublished,
 		LanguageConfig: []model.TopicLanguageConfig{},
 	}
@@ -100,7 +100,7 @@ func (s *topicService) CreateTopic(ctx context.Context, req request.UploadTopicR
 	}
 
 	// Upload async
-	go func(orgID, topicID string, req request.UploadTopicRequest) {
+	go func(orgID, topicID string, req request.CreateTopicRequest) {
 		ctxUpload, cancel := context.WithTimeout(context.Background(), 5*time.Minute)
 		defer cancel()
 		token, _ := ctx.Value(constants.Token).(string)
@@ -113,7 +113,7 @@ func (s *topicService) CreateTopic(ctx context.Context, req request.UploadTopicR
 }
 
 // ------------------- Upload Async -------------------
-func (s *topicService) uploadFilesAsync(ctx context.Context, orgID, topicID string, req request.UploadTopicRequest) {
+func (s *topicService) uploadFilesAsync(ctx context.Context, orgID, topicID string, req request.CreateTopicRequest) {
 	decrementTask := func() {
 		remaining, _ := s.redisService.DecrementUploadTask(ctx, orgID, topicID)
 		if remaining <= 0 {
@@ -133,7 +133,7 @@ func (s *topicService) uploadFilesAsync(ctx context.Context, orgID, topicID stri
 }
 
 // --- Upload audio ---
-func (s *topicService) uploadAndSaveAudio(ctx context.Context, orgID, topicID string, req request.UploadTopicRequest, decrementTask func()) {
+func (s *topicService) uploadAndSaveAudio(ctx context.Context, orgID, topicID string, req request.CreateTopicRequest, decrementTask func()) {
 	resp, err := s.fileGateway.UploadAudio(ctx, gw_request.UploadFileRequest{
 		File:     req.AudioFile,
 		Folder:   "topic_media",
@@ -154,7 +154,7 @@ func (s *topicService) uploadAndSaveAudio(ctx context.Context, orgID, topicID st
 }
 
 // --- Upload video ---
-func (s *topicService) uploadAndSaveVideo(ctx context.Context, orgID, topicID string, req request.UploadTopicRequest, decrementTask func()) {
+func (s *topicService) uploadAndSaveVideo(ctx context.Context, orgID, topicID string, req request.CreateTopicRequest, decrementTask func()) {
 	resp, err := s.fileGateway.UploadVideo(ctx, gw_request.UploadFileRequest{
 		File:     req.VideoFile,
 		Folder:   "topic_media",
@@ -175,7 +175,7 @@ func (s *topicService) uploadAndSaveVideo(ctx context.Context, orgID, topicID st
 }
 
 // --- Upload images ---
-func (s *topicService) uploadAndSaveImages(ctx context.Context, orgID, topicID string, req request.UploadTopicRequest, decrementTask func()) {
+func (s *topicService) uploadAndSaveImages(ctx context.Context, orgID, topicID string, req request.CreateTopicRequest, decrementTask func()) {
 	imageFiles := []struct {
 		file *multipart.FileHeader
 		link string
@@ -273,4 +273,33 @@ func (s *topicService) GetParentTopics4Web(ctx context.Context) ([]response.Topi
 	}
 	return mapper.ToTopicResponses(topics), nil
 
+}
+
+func (s *topicService) UpdateParentTopic(ctx context.Context, req request.UpdateTopicRequest) error {
+	// Lấy topic hiện tại
+	objID, err := primitive.ObjectIDFromHex(req.TopicID)
+	if err != nil {
+		return fmt.Errorf("invalid topic id: %w", err)
+	}
+
+	oldTopic, err := s.topicRepo.GetByID(ctx, objID)
+	if err != nil {
+		return fmt.Errorf("get topic failed: %w", err)
+	}
+
+	// Merge dữ liệu
+	for i, lc := range oldTopic.LanguageConfig {
+		if lc.LanguageID == req.LanguageID {
+			oldTopic.LanguageConfig[i].FileName = req.FileName
+			oldTopic.LanguageConfig[i].Title = req.Title
+			oldTopic.LanguageConfig[i].Note = req.Node
+			oldTopic.LanguageConfig[i].Description = req.Description
+		}
+	}
+
+	// Update published
+	oldTopic.IsPublished = req.IsPublished
+
+	// Call repo update
+	return s.topicRepo.UpdateTopic(ctx, oldTopic)
 }

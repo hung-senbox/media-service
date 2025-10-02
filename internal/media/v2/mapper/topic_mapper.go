@@ -3,7 +3,6 @@ package mapper
 import (
 	"media-service/internal/media/model"
 	"media-service/internal/media/v2/dto/response"
-	"strconv"
 	"strings"
 )
 
@@ -18,10 +17,9 @@ func ToTopicResponses(topics []model.Topic) []response.TopicResponse {
 
 		var langs []response.MessageLanguageEntry
 		for _, lc := range t.LanguageConfig {
-			langID, _ := strconv.Atoi(lc.LanguageID)
 
 			entry := response.MessageLanguageEntry{
-				LanguageID: langID,
+				LanguageID: int(lc.LanguageID),
 				Contents: response.LanguageContents{
 					FileName:    lc.FileName,
 					Title:       lc.Title,

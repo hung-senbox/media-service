@@ -21,13 +21,13 @@ type TopicVideoConfig struct {
 
 type TopicAudioConfig struct {
 	AudioKey  string `json:"audio_key" bson:"audio_key,omitempty"`
-	LinkUrl   string `json:"audio_url" bson:"audio_url,omitempty"`
+	LinkUrl   string `json:"link_url" bson:"link_url,omitempty"`
 	StartTime string `json:"start_time" bson:"start_time,omitempty"`
 	EndTime   string `json:"end_time" bson:"end_time,omitempty"`
 }
 
 type TopicLanguageConfig struct {
-	LanguageID  string             `json:"language_id" bson:"language_id"`
+	LanguageID  uint               `json:"language_id" bson:"language_id"`
 	FileName    string             `json:"file_name" bson:"file_name"`
 	Title       string             `json:"title" bson:"title"`
 	Note        string             `json:"note" bson:"note"`

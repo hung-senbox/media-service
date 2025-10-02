@@ -17,13 +17,13 @@ func NewTopicHandler(service service.TopicService) *TopicHandler {
 	return &TopicHandler{service: service}
 }
 
-func (h *TopicHandler) CreateTopic(c *gin.Context) {
-	var req request.UploadTopicRequest
+func (h *TopicHandler) CreateParentTopic(c *gin.Context) {
+	var req request.CreateTopicRequest
 	if err := c.ShouldBind(&req); err != nil {
 		helper.SendError(c, http.StatusBadRequest, err, helper.ErrInvalidRequest)
 		return
 	}
-	res, err := h.service.CreateTopic(c.Request.Context(), req)
+	res, err := h.service.CreateParentTopic(c.Request.Context(), req)
 	if err != nil {
 		helper.SendError(c, http.StatusInternalServerError, err, helper.ErrInvalidOperation)
 		return
