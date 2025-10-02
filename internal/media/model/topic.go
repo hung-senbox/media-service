@@ -33,8 +33,8 @@ type TopicLanguageConfig struct {
 	Note        string             `json:"note" bson:"note"`
 	Description string             `json:"description" bson:"description"`
 	Images      []TopicImageConfig `json:"images" bson:"images"`
-	Videos      []TopicVideoConfig `json:"videos" bson:"videos"`
-	Audios      []TopicAudioConfig `json:"audios" bson:"audios"`
+	Video       TopicVideoConfig   `json:"videos" bson:"video"`
+	Audio       TopicAudioConfig   `json:"audios" bson:"audio"`
 }
 
 type Topic struct {

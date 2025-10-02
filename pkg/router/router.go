@@ -2,10 +2,10 @@ package router
 
 import (
 	"media-service/internal/gateway"
-	"media-service/internal/media/handler"
-	"media-service/internal/media/repository"
 	"media-service/internal/media/route"
-	"media-service/internal/media/service"
+	"media-service/internal/media/v2/handler"
+	"media-service/internal/media/v2/repository"
+	"media-service/internal/media/v2/service"
 	"media-service/internal/redis"
 
 	"github.com/gin-gonic/gin"
@@ -22,11 +22,11 @@ func SetupRouter(consulClient *api.Client, topicCollection *mongo.Collection) *g
 	redisService := redis.NewRedisService()
 
 	// topic
-	topicRepo := repository.NewTopicRepository(topicCollection)
-	topicService := service.NewTopicService(topicRepo, fileGateway, redisService, userGateway)
-	topicHandler := handler.NewTopicHandler(topicService)
+	topicRepov2 := repository.NewTopicRepository(topicCollection)
+	topicServicev2 := service.NewTopicService(topicRepov2, fileGateway, redisService, userGateway)
+	topicHandlerv2 := handler.NewTopicHandler(topicServicev2)
 
 	// Register routes
-	route.RegisterTopicRoutes(r, topicHandler)
+	route.RegisterTopicRoutes(r, topicHandlerv2)
 	return r
 }
