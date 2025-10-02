@@ -5,7 +5,6 @@ go 1.24.4
 require (
 	github.com/EventStore/EventStore-Client-Go v1.0.2
 	github.com/gin-gonic/gin v1.10.1
-	github.com/gofrs/uuid v3.3.0+incompatible
 	github.com/golang-jwt/jwt/v5 v5.2.2
 	github.com/hashicorp/consul/api v1.32.1
 	github.com/natefinch/lumberjack v2.0.0+incompatible
@@ -38,6 +37,7 @@ require (
 	github.com/go-sql-driver/mysql v1.8.1 // indirect
 	github.com/go-viper/mapstructure/v2 v2.2.1 // indirect
 	github.com/goccy/go-json v0.10.2 // indirect
+	github.com/gofrs/uuid v3.3.0+incompatible // indirect
 	github.com/golang/mock v1.6.0 // indirect
 	github.com/golang/snappy v0.0.4 // indirect
 	github.com/hashicorp/errwrap v1.1.0 // indirect
