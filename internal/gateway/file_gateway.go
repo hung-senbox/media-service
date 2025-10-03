@@ -22,6 +22,9 @@ type FileGateway interface {
 	DeleteVideo(ctx context.Context, videoKey string) error
 	DeleteAudio(ctx context.Context, audioKey string) error
 	DeleteImage(ctx context.Context, imageKey string) error
+	GetImageUrl(ctx context.Context, req gw_request.GetFileUrlRequest) (*string, error)
+	GetVideoUrl(ctx context.Context, req gw_request.GetFileUrlRequest) (*string, error)
+	GetAudioUrl(ctx context.Context, req gw_request.GetFileUrlRequest) (*string, error)
 }
 
 type fileGateway struct {
@@ -256,4 +259,88 @@ func (g *fileGateway) DeleteImage(ctx context.Context, imageKey string) error {
 	}
 
 	return nil
+}
+
+func (g *fileGateway) GetImageUrl(ctx context.Context, req gw_request.GetFileUrlRequest) (*string, error) {
+	token, ok := ctx.Value(constants.Token).(string)
+	if !ok {
+		return nil, fmt.Errorf("token not found in context")
+	}
+
+	client, err := NewGatewayClient(g.serviceName, token, g.consul, nil)
+	if err != nil {
+		return nil, err
+	}
+
+	resp, err := client.Call("POST", "/v1/gateway/images/get-url", req)
+	if err != nil {
+		return nil, err
+	}
+
+	var gwResp dto.APIGateWayResponse[string]
+	if err := json.Unmarshal(resp, &gwResp); err != nil {
+		return nil, fmt.Errorf("unmarshal response fail: %w", err)
+	}
+
+	if gwResp.StatusCode != 200 {
+		return nil, fmt.Errorf("call gateway get image fail: %s", gwResp.Message)
+	}
+
+	return &gwResp.Data, nil
+}
+
+func (g *fileGateway) GetAudioUrl(ctx context.Context, req gw_request.GetFileUrlRequest) (*string, error) {
+	token, ok := ctx.Value(constants.Token).(string)
+	if !ok {
+		return nil, fmt.Errorf("token not found in context")
+	}
+
+	client, err := NewGatewayClient(g.serviceName, token, g.consul, nil)
+	if err != nil {
+		return nil, err
+	}
+
+	resp, err := client.Call("POST", "/v1/gateway/audios/get-url", req)
+	if err != nil {
+		return nil, err
+	}
+
+	var gwResp dto.APIGateWayResponse[string]
+	if err := json.Unmarshal(resp, &gwResp); err != nil {
+		return nil, fmt.Errorf("unmarshal response fail: %w", err)
+	}
+
+	if gwResp.StatusCode != 200 {
+		return nil, fmt.Errorf("call gateway get audio fail: %s", gwResp.Message)
+	}
+
+	return &gwResp.Data, nil
+}
+
+func (g *fileGateway) GetVideoUrl(ctx context.Context, req gw_request.GetFileUrlRequest) (*string, error) {
+	token, ok := ctx.Value(constants.Token).(string)
+	if !ok {
+		return nil, fmt.Errorf("token not found in context")
+	}
+
+	client, err := NewGatewayClient(g.serviceName, token, g.consul, nil)
+	if err != nil {
+		return nil, err
+	}
+
+	resp, err := client.Call("POST", "/v1/gateway/videos/get-url", req)
+	if err != nil {
+		return nil, err
+	}
+
+	var gwResp dto.APIGateWayResponse[string]
+	if err := json.Unmarshal(resp, &gwResp); err != nil {
+		return nil, fmt.Errorf("unmarshal response fail: %w", err)
+	}
+
+	if gwResp.StatusCode != 200 {
+		return nil, fmt.Errorf("call gateway get video fail: %s", gwResp.Message)
+	}
+
+	return &gwResp.Data, nil
 }

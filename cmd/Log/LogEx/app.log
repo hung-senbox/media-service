@@ -31,3 +31,36 @@
   "msg": "get topic failed: error decoding key language_config.0.language_id: cannot decode string into an integer type",
   "time": "2025-10-02T15:34:03+07:00"
 }
+{
+  "data": {
+    "error_code": "ERR_INVALID_OPERATION",
+    "method": "GET",
+    "path": "/api/v2/admin/topics/parents",
+    "status_code": 500
+  },
+  "level": "error",
+  "msg": "get topic failed: invalid topicID=parents: the provided hex string is not a valid ObjectID",
+  "time": "2025-10-03T15:33:23+07:00"
+}
+{
+  "data": {
+    "error_code": "ERR_INVALID_OPERATION",
+    "method": "GET",
+    "path": "/api/v2/admin/topics/parents",
+    "status_code": 500
+  },
+  "level": "error",
+  "msg": "get topic failed: invalid topicID=parents: the provided hex string is not a valid ObjectID",
+  "time": "2025-10-03T15:34:05+07:00"
+}
+{
+  "data": {
+    "method": "POST",
+    "service": "go-main-service",
+    "status_code": 400,
+    "url": "http://localhost:8001/v1/gateway/videos/get-url"
+  },
+  "level": "warning",
+  "msg": "http error",
+  "time": "2025-10-03T15:34:24+07:00"
+}

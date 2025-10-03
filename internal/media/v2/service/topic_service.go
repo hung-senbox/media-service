@@ -278,6 +278,49 @@ func (s *topicService) GetTopics4Web(ctx context.Context) ([]response.TopicRespo
 	if err != nil {
 		return nil, err
 	}
+
+	for ti := range topics {
+		// duyệt qua từng language config
+		for li := range topics[ti].LanguageConfig {
+			langCfg := &topics[ti].LanguageConfig[li]
+
+			// images
+			for ii := range langCfg.Images {
+				img := &langCfg.Images[ii]
+				if img.ImageKey != "" {
+					url, err := s.fileGateway.GetImageUrl(ctx, gw_request.GetFileUrlRequest{
+						Key:  img.ImageKey,
+						Mode: "private",
+					})
+					if err == nil && url != nil {
+						img.UploadedUrl = *url
+					}
+				}
+			}
+
+			// video
+			if langCfg.Video.VideoKey != "" {
+				url, err := s.fileGateway.GetVideoUrl(ctx, gw_request.GetFileUrlRequest{
+					Key: langCfg.Video.VideoKey,
+				})
+				if err == nil && url != nil {
+					langCfg.Video.UploadedUrl = *url
+				}
+			}
+
+			// audio
+			if langCfg.Audio.AudioKey != "" {
+				url, err := s.fileGateway.GetAudioUrl(ctx, gw_request.GetFileUrlRequest{
+					Key:  langCfg.Audio.AudioKey,
+					Mode: "private",
+				})
+				if err == nil && url != nil {
+					langCfg.Audio.UploadedUrl = *url
+				}
+			}
+		}
+	}
+
 	return mapper.ToTopicResponses4Web(topics), nil
 
 }
@@ -312,6 +355,47 @@ func (s *topicService) GetTopic4Web(ctx context.Context, topicID string) (*respo
 	if err != nil {
 		return nil, fmt.Errorf("get topic failed: %w", err)
 	}
+
+	for li := range topic.LanguageConfig {
+		langCfg := &topic.LanguageConfig[li]
+
+		// images
+		for ii := range langCfg.Images {
+			img := &langCfg.Images[ii]
+			if img.ImageKey != "" {
+				url, err := s.fileGateway.GetImageUrl(ctx, gw_request.GetFileUrlRequest{
+					Key:  img.ImageKey,
+					Mode: "private",
+				})
+				if err == nil && url != nil {
+					img.UploadedUrl = *url
+				}
+			}
+		}
+
+		// video
+		if langCfg.Video.VideoKey != "" {
+			url, err := s.fileGateway.GetVideoUrl(ctx, gw_request.GetFileUrlRequest{
+				Key:  langCfg.Video.VideoKey,
+				Mode: "private",
+			})
+			if err == nil && url != nil {
+				langCfg.Video.UploadedUrl = *url
+			}
+		}
+
+		// audio
+		if langCfg.Audio.AudioKey != "" {
+			url, err := s.fileGateway.GetAudioUrl(ctx, gw_request.GetFileUrlRequest{
+				Key:  langCfg.Audio.AudioKey,
+				Mode: "private",
+			})
+			if err == nil && url != nil {
+				langCfg.Audio.UploadedUrl = *url
+			}
+		}
+	}
+
 	return mapper.ToTopicResponse4Web(topic), nil
 }
 

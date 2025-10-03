@@ -7,23 +7,26 @@ import (
 )
 
 type TopicImageConfig struct {
-	ImageType string `json:"image_type" bson:"image_type,omitempty"`
-	ImageKey  string `json:"image_key" bson:"image_key,omitempty"`
-	LinkUrl   string `json:"link_url" bson:"link_url,omitempty"`
+	ImageType   string `json:"image_type" bson:"image_type"`
+	ImageKey    string `json:"image_key" bson:"image_key"`
+	LinkUrl     string `json:"link_url" bson:"link_url"`
+	UploadedUrl string `json:"uploaded_url" bson:"uploaded_url,omitempty"`
 }
 
 type TopicVideoConfig struct {
-	VideoKey  string `json:"video_key" bson:"video_key,omitempty"`
-	LinkUrl   string `json:"link_url" bson:"link_url,omitempty"`
-	StartTime string `json:"start_time" bson:"start_time,omitempty"`
-	EndTime   string `json:"end_time" bson:"end_time,omitempty"`
+	VideoKey    string `json:"video_key" bson:"video_key"`
+	LinkUrl     string `json:"link_url" bson:"link_url"`
+	StartTime   string `json:"start_time" bson:"start_time"`
+	EndTime     string `json:"end_time" bson:"end_time"`
+	UploadedUrl string `json:"uploaded_url" bson:"uploaded_url,omitempty"`
 }
 
 type TopicAudioConfig struct {
-	AudioKey  string `json:"audio_key" bson:"audio_key,omitempty"`
-	LinkUrl   string `json:"link_url" bson:"link_url,omitempty"`
-	StartTime string `json:"start_time" bson:"start_time,omitempty"`
-	EndTime   string `json:"end_time" bson:"end_time,omitempty"`
+	AudioKey    string `json:"audio_key" bson:"audio_key"`
+	LinkUrl     string `json:"link_url" bson:"link_url"`
+	StartTime   string `json:"start_time" bson:"start_time"`
+	EndTime     string `json:"end_time" bson:"end_time"`
+	UploadedUrl string `json:"uploaded_url" bson:"uploaded_url,omitempty"`
 }
 
 type TopicLanguageConfig struct {
@@ -38,11 +41,11 @@ type TopicLanguageConfig struct {
 }
 
 type Topic struct {
-	ID             primitive.ObjectID    `json:"id" bson:"_id,omitempty"`
-	ParentID       string                `json:"parent_id" bson:"parent_id,omitempty"`
-	OrganizationID string                `json:"organization_id" bson:"organization_id,omitempty"`
-	IsPublished    bool                  `json:"is_published" bson:"is_published,omitempty"`
-	LanguageConfig []TopicLanguageConfig `json:"language_config" bson:"language_config,omitempty"`
-	CreatedAt      time.Time             `json:"created_at" bson:"created_at,omitempty"`
-	UpdatedAt      time.Time             `json:"updated_at" bson:"updated_at,omitempty"`
+	ID             primitive.ObjectID    `json:"id" bson:"_id"`
+	ParentID       string                `json:"parent_id" bson:"parent_id"`
+	OrganizationID string                `json:"organization_id" bson:"organization_id"`
+	IsPublished    bool                  `json:"is_published" bson:"is_published"`
+	LanguageConfig []TopicLanguageConfig `json:"language_config" bson:"language_config"`
+	CreatedAt      time.Time             `json:"created_at" bson:"created_at"`
+	UpdatedAt      time.Time             `json:"updated_at" bson:"updated_at"`
 }
