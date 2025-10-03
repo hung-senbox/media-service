@@ -18,6 +18,7 @@ func RegisterTopicRoutes(r *gin.Engine, hv2 *handler.TopicHandler) {
 			topicsAdmin.GET("", hv2.GetTopics4Web)
 			topicsAdmin.GET("/:topic_id/progress", hv2.GetPregressUpload)
 			topicsAdmin.GET("/:topic_id", hv2.GetTopic4Web)
+			topicsAdmin.GET("/student/:student_id", hv2.GetTopics4Student4App)
 		}
 	}
 
@@ -27,7 +28,7 @@ func RegisterTopicRoutes(r *gin.Engine, hv2 *handler.TopicHandler) {
 	{
 		topicsUser := userGroup.Group("/topics")
 		{
-			topicsUser.GET("/student/:student_id", hv2.GetTopics4Student)
+			topicsUser.GET("/student/:student_id", hv2.GetTopics4Student4App)
 		}
 	}
 }

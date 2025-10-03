@@ -140,10 +140,14 @@ func ToTopicResponse4Web(t *model.Topic) *response.TopicResponse4Web {
 	return resp
 }
 
-func ToTopicResponses4App(topics []model.Topic, appLanguage uint) []*response.TopicResponse4App {
-	var res = make([]*response.TopicResponse4App, 0)
+func ToTopic4StudentResponses4App(topics []model.Topic, appLanguage uint) []*response.GetTopic4StudentResponse4App {
+	var res = make([]*response.GetTopic4StudentResponse4App, 0)
 
 	for _, t := range topics {
+		// is published = false
+		if !t.IsPublished {
+			continue
+		}
 		// chọn language config
 		var langConfig *model.TopicLanguageConfig
 		for _, lc := range t.LanguageConfig {
@@ -157,7 +161,37 @@ func ToTopicResponses4App(topics []model.Topic, appLanguage uint) []*response.To
 			continue
 		}
 
-		res = append(res, &response.TopicResponse4App{
+		res = append(res, &response.GetTopic4StudentResponse4App{
+			ID:          t.ID.Hex(),
+			IsPublished: t.IsPublished,
+			Title:       langConfig.Title,
+		})
+	}
+
+	return res
+}
+
+func ToTopic4StudentResponses4Web(topics []model.Topic, appLanguage uint) []*response.GetTopic4StudentResponse4Web {
+	var res = make([]*response.GetTopic4StudentResponse4Web, 0)
+
+	for _, t := range topics {
+		if !t.IsPublished {
+			continue
+		}
+		// chọn language config
+		var langConfig *model.TopicLanguageConfig
+		for _, lc := range t.LanguageConfig {
+			if lc.LanguageID == appLanguage {
+				langConfig = &lc
+				break
+			}
+		}
+
+		if langConfig == nil {
+			continue
+		}
+
+		res = append(res, &response.GetTopic4StudentResponse4Web{
 			ID:          t.ID.Hex(),
 			IsPublished: t.IsPublished,
 			Title:       langConfig.Title,

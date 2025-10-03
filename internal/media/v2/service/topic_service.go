@@ -25,7 +25,7 @@ type TopicService interface {
 	GetTopics4Web(ctx context.Context) ([]response.TopicResponse4Web, error)
 	GetTopic4Web(ctx context.Context, topicID string) (*response.TopicResponse4Web, error)
 	UpdateAudio(ctx context.Context, req request.UpdateAudioRequest) error
-	GetTopics4Student(ctx context.Context, studentID string) ([]*response.TopicResponse4App, error)
+	GetTopics4Student4App(ctx context.Context, studentID string) ([]*response.GetTopic4StudentResponse4App, error)
 }
 
 type topicService struct {
@@ -492,7 +492,7 @@ func (s *topicService) UpdateVideo(ctx context.Context, req request.UpdateVideoR
 
 }
 
-func (s *topicService) GetTopics4Student(ctx context.Context, studentID string) ([]*response.TopicResponse4App, error) {
+func (s *topicService) GetTopics4Student4App(ctx context.Context, studentID string) ([]*response.GetTopic4StudentResponse4App, error) {
 	// get org by student
 	student, err := s.userGateway.GetStudentInfo(ctx, studentID)
 	if err != nil {
@@ -507,5 +507,18 @@ func (s *topicService) GetTopics4Student(ctx context.Context, studentID string) 
 		fmt.Println("AppLanguage not found in context")
 	}
 
-	return mapper.ToTopicResponses4App(topics, appLanguage), nil
+	return mapper.ToTopic4StudentResponses4App(topics, appLanguage), nil
+}
+
+func (s *topicService) GetTopics4Student4Web(ctx context.Context, studentID string) ([]*response.GetTopic4StudentResponse4Web, error) {
+	// get org by student
+	student, err := s.userGateway.GetStudentInfo(ctx, studentID)
+	if err != nil {
+		return nil, err
+	}
+	topics, err := s.topicRepo.GetAllTopicByOrganizationID(ctx, student.OrganizationID)
+	if err != nil {
+		return nil, err
+	}
+	return mapper.ToTopic4StudentResponses4Web(topics, 1), nil
 }
