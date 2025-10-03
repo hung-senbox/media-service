@@ -14,10 +14,20 @@ func RegisterTopicRoutes(r *gin.Engine, hv2 *handler.TopicHandler) {
 	{
 		topicsAdmin := adminGroup.Group("/topics")
 		{
-			topicsAdmin.POST("/parents", hv2.CreateParentTopic)
-			topicsAdmin.GET("/parents", hv2.GetParentTopics4Web)
+			topicsAdmin.POST("", hv2.CreateTopic)
+			topicsAdmin.GET("", hv2.GetTopics4Web)
 			topicsAdmin.GET("/:topic_id/progress", hv2.GetPregressUpload)
-			topicsAdmin.GET("/parents/:topic_id", hv2.GetParentTopic4Web)
+			topicsAdmin.GET("/:topic_id", hv2.GetTopic4Web)
+		}
+	}
+
+	// User routes
+	userGroup := r.Group("/api/v1/user")
+	userGroup.Use(middleware.Secured())
+	{
+		topicsUser := userGroup.Group("/topics")
+		{
+			topicsUser.GET("/student/:student_id", hv2.GetTopics4Student)
 		}
 	}
 }

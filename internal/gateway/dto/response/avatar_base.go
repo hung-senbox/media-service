@@ -1,4 +1,4 @@
-package dto
+package response
 
 type Avatar struct {
 	ImageID  uint64 `json:"image_id"`

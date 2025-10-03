@@ -19,12 +19,13 @@ import (
 )
 
 type TopicService interface {
-	CreateParentTopic(ctx context.Context, req request.CreateTopicRequest) (*model.Topic, error)
-	UpdateParentTopic(ctx context.Context, req request.UpdateTopicRequest) error
+	CreateTopic(ctx context.Context, req request.CreateTopicRequest) (*model.Topic, error)
+	UpdateTopic(ctx context.Context, req request.UpdateTopicRequest) error
 	GetUploadProgress(ctx context.Context, topicID string) (*response.GetUploadProgressResponse, error)
-	GetParentTopics4Web(ctx context.Context) ([]response.TopicResponse, error)
-	GetParentTopic4Web(ctx context.Context, topicID string) (*response.TopicResponse, error)
+	GetTopics4Web(ctx context.Context) ([]response.TopicResponse4Web, error)
+	GetTopic4Web(ctx context.Context, topicID string) (*response.TopicResponse4Web, error)
 	UpdateAudio(ctx context.Context, req request.UpdateAudioRequest) error
+	GetTopics4Student(ctx context.Context, studentID string) ([]*response.TopicResponse4App, error)
 }
 
 type topicService struct {
@@ -44,7 +45,7 @@ func NewTopicService(topicRepo repository.TopicRepository, fileGw gateway.FileGa
 }
 
 // ------------------- Create Topic -------------------
-func (s *topicService) CreateParentTopic(ctx context.Context, req request.CreateTopicRequest) (*model.Topic, error) {
+func (s *topicService) CreateTopic(ctx context.Context, req request.CreateTopicRequest) (*model.Topic, error) {
 	currentUser, err := s.userGateway.GetCurrentUser(ctx)
 	if err != nil {
 		return nil, fmt.Errorf("get current user info failed")
@@ -264,7 +265,7 @@ func (s *topicService) GetUploadProgress(ctx context.Context, topicID string) (*
 	}, nil
 }
 
-func (s *topicService) GetParentTopics4Web(ctx context.Context) ([]response.TopicResponse, error) {
+func (s *topicService) GetTopics4Web(ctx context.Context) ([]response.TopicResponse4Web, error) {
 	currentUser, err := s.userGateway.GetCurrentUser(ctx)
 	if err != nil {
 		return nil, fmt.Errorf("get current user info failed")
@@ -273,15 +274,15 @@ func (s *topicService) GetParentTopics4Web(ctx context.Context) ([]response.Topi
 		return nil, fmt.Errorf("access denied")
 	}
 	orgID := currentUser.OrganizationAdmin.ID
-	topics, err := s.topicRepo.GetAllParentByOrganizationID(ctx, orgID)
+	topics, err := s.topicRepo.GetAllTopicByOrganizationID(ctx, orgID)
 	if err != nil {
 		return nil, err
 	}
-	return mapper.ToTopicResponses(topics), nil
+	return mapper.ToTopicResponses4Web(topics), nil
 
 }
 
-func (s *topicService) UpdateParentTopic(ctx context.Context, req request.UpdateTopicRequest) error {
+func (s *topicService) UpdateTopic(ctx context.Context, req request.UpdateTopicRequest) error {
 
 	oldTopic, err := s.topicRepo.GetByID(ctx, req.TopicID)
 	if err != nil {
@@ -305,13 +306,13 @@ func (s *topicService) UpdateParentTopic(ctx context.Context, req request.Update
 	return s.topicRepo.UpdateTopic(ctx, oldTopic)
 }
 
-func (s *topicService) GetParentTopic4Web(ctx context.Context, topicID string) (*response.TopicResponse, error) {
+func (s *topicService) GetTopic4Web(ctx context.Context, topicID string) (*response.TopicResponse4Web, error) {
 
 	topic, err := s.topicRepo.GetByID(ctx, topicID)
 	if err != nil {
 		return nil, fmt.Errorf("get topic failed: %w", err)
 	}
-	return mapper.ToTopicResponse(topic), nil
+	return mapper.ToTopicResponse4Web(topic), nil
 }
 
 func (s *topicService) UpdateAudio(ctx context.Context, req request.UpdateAudioRequest) error {
@@ -405,4 +406,22 @@ func (s *topicService) UpdateVideo(ctx context.Context, req request.UpdateVideoR
 		EndTime:   req.VideoEnd,
 	})
 
+}
+
+func (s *topicService) GetTopics4Student(ctx context.Context, studentID string) ([]*response.TopicResponse4App, error) {
+	// get org by student
+	student, err := s.userGateway.GetStudentInfo(ctx, studentID)
+	if err != nil {
+		return nil, err
+	}
+	topics, err := s.topicRepo.GetAllTopicByOrganizationID(ctx, student.OrganizationID)
+	if err != nil {
+		return nil, err
+	}
+	appLanguage, ok := ctx.Value(constants.AppLanguage).(uint)
+	if !ok {
+		fmt.Println("AppLanguage not found in context")
+	}
+
+	return mapper.ToTopicResponses4App(topics, appLanguage), nil
 }

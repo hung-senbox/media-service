@@ -6,11 +6,11 @@ import (
 	"strings"
 )
 
-func ToTopicResponses(topics []model.Topic) []response.TopicResponse {
-	var result = make([]response.TopicResponse, 0)
+func ToTopicResponses4Web(topics []model.Topic) []response.TopicResponse4Web {
+	var result = make([]response.TopicResponse4Web, 0)
 
 	for _, t := range topics {
-		resp := response.TopicResponse{
+		resp := response.TopicResponse4Web{
 			ID:          t.ID.Hex(),
 			IsPublished: t.IsPublished,
 		}
@@ -80,12 +80,12 @@ func strPtr(s string) *string {
 	return &s
 }
 
-func ToTopicResponse(t *model.Topic) *response.TopicResponse {
+func ToTopicResponse4Web(t *model.Topic) *response.TopicResponse4Web {
 	if t == nil {
 		return nil
 	}
 
-	resp := &response.TopicResponse{
+	resp := &response.TopicResponse4Web{
 		ID:          t.ID.Hex(),
 		IsPublished: t.IsPublished,
 	}
@@ -138,4 +138,31 @@ func ToTopicResponse(t *model.Topic) *response.TopicResponse {
 
 	resp.MessageLangs = langs
 	return resp
+}
+
+func ToTopicResponses4App(topics []model.Topic, appLanguage uint) []*response.TopicResponse4App {
+	var res = make([]*response.TopicResponse4App, 0)
+
+	for _, t := range topics {
+		// chọn language config
+		var langConfig *model.TopicLanguageConfig
+		for _, lc := range t.LanguageConfig {
+			if lc.LanguageID == appLanguage {
+				langConfig = &lc
+				break
+			}
+		}
+
+		if langConfig == nil {
+			continue
+		}
+
+		res = append(res, &response.TopicResponse4App{
+			ID:          t.ID.Hex(),
+			IsPublished: t.IsPublished,
+			Title:       langConfig.Title,
+		})
+	}
+
+	return res
 }

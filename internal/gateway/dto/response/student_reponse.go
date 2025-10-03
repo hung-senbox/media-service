@@ -1,4 +1,4 @@
-package dto
+package response
 
 type StudentResponse struct {
 	ID             string `json:"id"`

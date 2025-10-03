@@ -1,6 +1,6 @@
 package response
 
-type TopicResponse struct {
+type TopicResponse4Web struct {
 	ID           string                 `json:"id"`
 	IsPublished  bool                   `json:"is_published"`
 	MessageLangs []MessageLanguageEntry `json:"message_languages"`
@@ -31,4 +31,12 @@ type MediaContent struct {
 type ImgEntry struct {
 	UploadedURL *string `json:"uploaded_url"`
 	LinkURL     string  `json:"link_url"`
+}
+
+//// 4 App
+
+type TopicResponse4App struct {
+	ID          string `json:"id"`
+	IsPublished bool   `json:"is_published"`
+	Title       string `json:"title"`
 }
