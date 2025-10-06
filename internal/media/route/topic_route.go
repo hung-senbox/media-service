@@ -23,12 +23,22 @@ func RegisterTopicRoutes(r *gin.Engine, hv2 *handler.TopicHandler) {
 	}
 
 	// User routes
-	userGroup := r.Group("/api/v1/user")
+	userGroup := r.Group("/api/v2/user")
 	userGroup.Use(middleware.Secured())
 	{
 		topicsUser := userGroup.Group("/topics")
 		{
 			topicsUser.GET("/student/:student_id", hv2.GetTopics4Student4App)
+		}
+	}
+
+	// gateway
+	gatewayGroup := r.Group("/api/v2/gateway")
+	gatewayGroup.Use(middleware.Secured())
+	{
+		topicsGateway := gatewayGroup.Group("/topics")
+		{
+			topicsGateway.GET("/:topic_id", hv2.GetTopic4GW)
 		}
 	}
 }

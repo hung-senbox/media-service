@@ -202,15 +202,25 @@ func ToTopic4StudentResponses4Web(topics []model.Topic, appLanguage uint) []*res
 }
 
 func ToTopicResponses4GW(topic *model.Topic, appLanguage uint) *response.TopicResponse4GW {
-
 	if topic == nil {
 		return nil
 	}
 
-	res := &response.TopicResponse4GW{
-		ID:    topic.ID.Hex(),
-		Title: topic.LanguageConfig[appLanguage].Title,
+	// Tìm config ngôn ngữ tương ứng
+	var langConfig *model.TopicLanguageConfig
+	for _, lc := range topic.LanguageConfig {
+		if lc.LanguageID == appLanguage {
+			langConfig = &lc
+			break
+		}
 	}
 
-	return res
+	if langConfig == nil {
+		return nil
+	}
+
+	return &response.TopicResponse4GW{
+		ID:    topic.ID.Hex(),
+		Title: langConfig.Title,
+	}
 }

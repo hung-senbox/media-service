@@ -86,3 +86,18 @@ func (h TopicHandler) GetTopics4Student4App(c *gin.Context) {
 
 	helper.SendSuccess(c, http.StatusOK, "get topics success", res)
 }
+
+func (h TopicHandler) GetTopic4GW(c *gin.Context) {
+	topicID := c.Param("topic_id")
+	if topicID == "" {
+		helper.SendError(c, http.StatusBadRequest, nil, helper.ErrInvalidRequest)
+		return
+	}
+	res, err := h.service.GetTopic4GW(c.Request.Context(), topicID)
+	if err != nil {
+		helper.SendError(c, http.StatusInternalServerError, err, helper.ErrInvalidOperation)
+		return
+	}
+
+	helper.SendSuccess(c, http.StatusOK, "get topic success", res)
+}
