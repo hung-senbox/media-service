@@ -37,4 +37,4 @@ RUN chmod +x /wait-for-it.sh
 EXPOSE 8022
 
 # Set the entrypoint to wait for MariaDB to be ready before starting the application
-CMD ["/wait-for-it.sh", "media_db:27017", "--", "./api", "/configs/config.yaml"] 
+CMD ["/wait-for-it.sh", "mongo-main:27017", "--", "./api", "/configs/config.yaml"] 
