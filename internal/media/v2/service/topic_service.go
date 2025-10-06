@@ -530,6 +530,7 @@ func (s *topicService) GetTopic4GW(ctx context.Context, topicID string) (*respon
 	}
 
 	appLang := helper.GetAppLanguage(ctx, 1)
+	// to commmit
 
 	return mapper.ToTopicResponses4GW(topic, appLang), nil
 }
