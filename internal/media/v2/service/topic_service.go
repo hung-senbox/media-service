@@ -504,10 +504,7 @@ func (s *topicService) GetTopics4Student4App(ctx context.Context, studentID stri
 	if err != nil {
 		return nil, err
 	}
-	appLanguage, ok := ctx.Value(constants.AppLanguage).(uint)
-	if !ok {
-		fmt.Println("AppLanguage not found in context")
-	}
+	appLanguage := helper.GetAppLanguage(ctx, 1)
 
 	return mapper.ToTopic4StudentResponses4App(topics, appLanguage), nil
 }
