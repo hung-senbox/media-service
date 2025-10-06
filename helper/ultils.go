@@ -1,6 +1,8 @@
 package helper
 
 import (
+	"context"
+	"media-service/pkg/constants"
 	"strconv"
 	"strings"
 )
@@ -11,4 +13,14 @@ func ParseAppLanguage(header string, defaultVal uint) uint {
 		return uint(val)
 	}
 	return defaultVal
+}
+
+func GetHeaders(ctx context.Context) map[string]string {
+	headers := make(map[string]string)
+
+	if lang, ok := ctx.Value(constants.AppLanguage).(uint); ok {
+		headers["X-App-Language"] = strconv.Itoa(int(lang))
+	}
+
+	return headers
 }

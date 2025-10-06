@@ -4,6 +4,7 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"media-service/helper"
 	"media-service/internal/gateway/dto"
 	"media-service/pkg/constants"
 
@@ -37,7 +38,8 @@ func (g *classroomGateway) GetClassroomByID(ctx context.Context, locationID stri
 		return nil, fmt.Errorf("init GatewayClient fail: %w", err)
 	}
 
-	resp, err := client.Call("GET", "/api/v1/storage/"+locationID, nil)
+	headers := helper.GetHeaders(ctx)
+	resp, err := client.Call("GET", "/api/v1/storage/"+locationID, nil, headers)
 	if err != nil {
 		return nil, fmt.Errorf("call API get classroom by id fail: %w", err)
 	}

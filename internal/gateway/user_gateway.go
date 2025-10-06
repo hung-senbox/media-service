@@ -51,7 +51,7 @@ func (g *userGatewayImpl) GetCurrentUser(ctx context.Context) (*gw_response.Curr
 		return nil, fmt.Errorf("init GatewayClient fail: %w", err)
 	}
 
-	resp, err := client.Call("GET", "/v1/user/current-user", nil)
+	resp, err := client.Call("GET", "/v1/user/current-user", nil, nil)
 	if err != nil {
 		return nil, fmt.Errorf("call API user fail: %w", err)
 	}
@@ -82,7 +82,7 @@ func (g *userGatewayImpl) GetStudentInfo(ctx context.Context, studentID string) 
 		return nil, fmt.Errorf("init GatewayClient fail: %w", err)
 	}
 
-	resp, err := client.Call("GET", "/v1/gateway/students/"+studentID, nil)
+	resp, err := client.Call("GET", "/v1/gateway/students/"+studentID, nil, nil)
 	if err != nil {
 		return nil, fmt.Errorf("call API student fail: %w", err)
 	}
@@ -113,7 +113,7 @@ func (g *userGatewayImpl) GetUserInfo(ctx context.Context, userID string) (*gw_r
 		return nil, fmt.Errorf("init GatewayClient fail: %w", err)
 	}
 
-	resp, err := client.Call("GET", "/v1/gateway/users/"+userID, nil)
+	resp, err := client.Call("GET", "/v1/gateway/users/"+userID, nil, nil)
 	if err != nil {
 		return nil, fmt.Errorf("call API user fail: %w", err)
 	}
@@ -144,7 +144,7 @@ func (g *userGatewayImpl) GetTeachersByUser(ctx context.Context, userID string) 
 		return nil, fmt.Errorf("init GatewayClient fail: %w", err)
 	}
 
-	resp, err := client.Call("GET", "/v1/gateway/teachers/get-by-user/"+userID, nil)
+	resp, err := client.Call("GET", "/v1/gateway/teachers/get-by-user/"+userID, nil, nil)
 	if err != nil {
 		return nil, fmt.Errorf("call API get teacher by user fail: %w", err)
 	}
@@ -175,7 +175,7 @@ func (g *userGatewayImpl) GetStaffsByUser(ctx context.Context, userID string) ([
 		return nil, fmt.Errorf("init GatewayClient fail: %w", err)
 	}
 
-	resp, err := client.Call("GET", "/v1/gateway/staffs/get-by-user/"+userID, nil)
+	resp, err := client.Call("GET", "/v1/gateway/staffs/get-by-user/"+userID, nil, nil)
 	if err != nil {
 		return nil, fmt.Errorf("call API get staff by user fail: %w", err)
 	}
@@ -205,7 +205,7 @@ func (g *userGatewayImpl) GetTeacherInfo(ctx context.Context, teacherID string) 
 		return nil, fmt.Errorf("init GatewayClient fail: %w", err)
 	}
 
-	resp, err := client.Call("GET", "/v1/gateway/teachers/"+teacherID, nil)
+	resp, err := client.Call("GET", "/v1/gateway/teachers/"+teacherID, nil, nil)
 	if err != nil {
 		return nil, fmt.Errorf("call API get teacher by user fail: %w", err)
 	}
@@ -236,7 +236,7 @@ func (g *userGatewayImpl) GetStaffInfo(ctx context.Context, staffID string) (*gw
 		return nil, fmt.Errorf("init GatewayClient fail: %w", err)
 	}
 
-	resp, err := client.Call("GET", "/v1/gateway/staffs/"+staffID, nil)
+	resp, err := client.Call("GET", "/v1/gateway/staffs/"+staffID, nil, nil)
 	if err != nil {
 		return nil, fmt.Errorf("call API get teacher by user fail: %w", err)
 	}

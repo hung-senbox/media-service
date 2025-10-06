@@ -6,6 +6,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"io"
+	"media-service/helper"
 	"media-service/internal/gateway/dto"
 	gw_request "media-service/internal/gateway/dto/request"
 	gw_response "media-service/internal/gateway/dto/response"
@@ -188,7 +189,8 @@ func (g *fileGateway) DeleteAudio(ctx context.Context, audioKey string) error {
 		return err
 	}
 
-	resp, err := client.Call("DELETE", "/v1/gateway/audios/"+audioKey, nil)
+	headers := helper.GetHeaders(ctx)
+	resp, err := client.Call("DELETE", "/v1/gateway/audios/"+audioKey, nil, headers)
 	if err != nil {
 		return err
 	}
@@ -216,7 +218,8 @@ func (g *fileGateway) DeleteVideo(ctx context.Context, videoKey string) error {
 		return err
 	}
 
-	resp, err := client.Call("DELETE", "/v1/gateway/videos/"+videoKey, nil)
+	headers := helper.GetHeaders(ctx)
+	resp, err := client.Call("DELETE", "/v1/gateway/videos/"+videoKey, nil, headers)
 	if err != nil {
 		return err
 	}
@@ -244,7 +247,8 @@ func (g *fileGateway) DeleteImage(ctx context.Context, imageKey string) error {
 		return err
 	}
 
-	resp, err := client.Call("DELETE", "/v1/gateway/images/"+imageKey, nil)
+	headers := helper.GetHeaders(ctx)
+	resp, err := client.Call("DELETE", "/v1/gateway/images/"+imageKey, nil, headers)
 	if err != nil {
 		return err
 	}
@@ -272,7 +276,8 @@ func (g *fileGateway) GetImageUrl(ctx context.Context, req gw_request.GetFileUrl
 		return nil, err
 	}
 
-	resp, err := client.Call("POST", "/v1/gateway/images/get-url", req)
+	headers := helper.GetHeaders(ctx)
+	resp, err := client.Call("POST", "/v1/gateway/images/get-url", req, headers)
 	if err != nil {
 		return nil, err
 	}
@@ -300,7 +305,8 @@ func (g *fileGateway) GetAudioUrl(ctx context.Context, req gw_request.GetFileUrl
 		return nil, err
 	}
 
-	resp, err := client.Call("POST", "/v1/gateway/audios/get-url", req)
+	headers := helper.GetHeaders(ctx)
+	resp, err := client.Call("POST", "/v1/gateway/audios/get-url", req, headers)
 	if err != nil {
 		return nil, err
 	}
@@ -328,7 +334,8 @@ func (g *fileGateway) GetVideoUrl(ctx context.Context, req gw_request.GetFileUrl
 		return nil, err
 	}
 
-	resp, err := client.Call("POST", "/v1/gateway/videos/get-url", req)
+	headers := helper.GetHeaders(ctx)
+	resp, err := client.Call("POST", "/v1/gateway/videos/get-url", req, headers)
 	if err != nil {
 		return nil, err
 	}

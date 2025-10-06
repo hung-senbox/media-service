@@ -40,7 +40,7 @@ func (g *messageLanguageGateway) UploadMessage(ctx context.Context, req dto.Uplo
 		return err
 	}
 
-	_, err = client.Call("POST", "/v1/gateway/messages", req)
+	_, err = client.Call("POST", "/v1/gateway/messages", req, nil)
 	if err != nil {
 		return err
 	}
@@ -59,7 +59,7 @@ func (g *messageLanguageGateway) UploadMessages(ctx context.Context, req dto.Upl
 		return err
 	}
 
-	_, err = client.Call("POST", "/v1/gateway/messages", req)
+	_, err = client.Call("POST", "/v1/gateway/messages", req, nil)
 	if err != nil {
 		return err
 	}
@@ -82,7 +82,7 @@ func (g *messageLanguageGateway) GetMessageLanguages(ctx context.Context, typeID
 
 	// gọi API với query params
 	url := fmt.Sprintf("/v1/gateway/messages?type=%s&type_id=%s", "department", typeID)
-	resp, err := client.Call("GET", url, nil)
+	resp, err := client.Call("GET", url, nil, nil)
 	if err != nil {
 		return nil, err
 	}
@@ -121,7 +121,7 @@ func (g *messageLanguageGateway) GetMessageLanguage(ctx context.Context, typeID 
 
 	// gọi API với query params
 	url := fmt.Sprintf("/v1/gateway/messages/get-by-language?type=%s&type_id=%s&language_id=%d", "department", typeID, appLanguage)
-	resp, err := client.Call("GET", url, nil)
+	resp, err := client.Call("GET", url, nil, nil)
 	if err != nil {
 		return dto.MessageLanguageResponse{}, err
 	}
