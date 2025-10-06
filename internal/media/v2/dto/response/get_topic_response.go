@@ -46,3 +46,8 @@ type GetTopic4StudentResponse4Web struct {
 	IsPublished bool   `json:"is_published"`
 	Title       string `json:"title"`
 }
+
+type TopicResponse4GW struct {
+	ID    string `json:"id"`
+	Title string `json:"title"`
+}

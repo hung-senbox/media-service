@@ -24,3 +24,10 @@ func GetHeaders(ctx context.Context) map[string]string {
 
 	return headers
 }
+
+func GetAppLanguage(ctx context.Context, defaultVal uint) uint {
+	if lang, ok := ctx.Value(constants.AppLanguage).(uint); ok {
+		return lang
+	}
+	return defaultVal
+}

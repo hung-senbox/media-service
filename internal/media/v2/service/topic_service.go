@@ -3,6 +3,7 @@ package service
 import (
 	"context"
 	"fmt"
+	"media-service/helper"
 	"media-service/internal/gateway"
 	gw_request "media-service/internal/gateway/dto/request"
 	"media-service/internal/media/model"
@@ -521,4 +522,16 @@ func (s *topicService) GetTopics4Student4Web(ctx context.Context, studentID stri
 		return nil, err
 	}
 	return mapper.ToTopic4StudentResponses4Web(topics, 1), nil
+}
+
+func (s *topicService) GetTopic4GW(ctx context.Context, topicID string) (*response.TopicResponse4GW, error) {
+
+	topic, err := s.topicRepo.GetByID(ctx, topicID)
+	if err != nil {
+		return nil, err
+	}
+
+	appLang := helper.GetAppLanguage(ctx, 1)
+
+	return mapper.ToTopicResponses4GW(topic, appLang), nil
 }

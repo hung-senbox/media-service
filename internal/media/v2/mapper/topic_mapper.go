@@ -200,3 +200,17 @@ func ToTopic4StudentResponses4Web(topics []model.Topic, appLanguage uint) []*res
 
 	return res
 }
+
+func ToTopicResponses4GW(topic *model.Topic, appLanguage uint) *response.TopicResponse4GW {
+
+	if topic == nil {
+		return nil
+	}
+
+	res := &response.TopicResponse4GW{
+		ID:    topic.ID.Hex(),
+		Title: topic.LanguageConfig[appLanguage].Title,
+	}
+
+	return res
+}
