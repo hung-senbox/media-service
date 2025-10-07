@@ -27,6 +27,7 @@ type TopicService interface {
 	GetTopic4Web(ctx context.Context, topicID string) (*response.TopicResponse4Web, error)
 	UpdateAudio(ctx context.Context, req request.UpdateAudioRequest) error
 	GetTopics4Student4App(ctx context.Context, studentID string) ([]*response.GetTopic4StudentResponse4App, error)
+	GetTopics4Student4Web(ctx context.Context, studentID string) ([]*response.GetTopic4StudentResponse4Web, error)
 	GetTopic4GW(ctx context.Context, topicID string) (*response.TopicResponse4GW, error)
 }
 
