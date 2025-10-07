@@ -519,6 +519,23 @@ func (s *topicService) GetTopics4Student4Web(ctx context.Context, studentID stri
 	if err != nil {
 		return nil, err
 	}
+	for ti := range topics {
+		for li := range topics[ti].LanguageConfig {
+			langCfg := &topics[ti].LanguageConfig[li]
+			for ii := range langCfg.Images {
+				img := &langCfg.Images[ii]
+				if img.ImageKey != "" {
+					url, err := s.fileGateway.GetImageUrl(ctx, gw_request.GetFileUrlRequest{
+						Key:  img.ImageKey,
+						Mode: "private",
+					})
+					if err == nil && url != nil {
+						img.UploadedUrl = *url
+					}
+				}
+			}
+		}
+	}
 	return mapper.ToTopic4StudentResponses4Web(topics, 1), nil
 }
 
@@ -530,7 +547,6 @@ func (s *topicService) GetTopic4GW(ctx context.Context, topicID string) (*respon
 	}
 
 	appLang := helper.GetAppLanguage(ctx, 1)
-	// to commmit
 
 	return mapper.ToTopicResponses4GW(topic, appLang), nil
 }

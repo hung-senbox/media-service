@@ -191,10 +191,21 @@ func ToTopic4StudentResponses4Web(topics []model.Topic, appLanguage uint) []*res
 			continue
 		}
 
+		mainImageUrl := ""
+		if len(langConfig.Images) > 0 {
+			for _, img := range langConfig.Images {
+				if img.ImageType == "full_background" {
+					mainImageUrl = img.UploadedUrl
+					break
+				}
+			}
+		}
+
 		res = append(res, &response.GetTopic4StudentResponse4Web{
-			ID:          t.ID.Hex(),
-			IsPublished: t.IsPublished,
-			Title:       langConfig.Title,
+			ID:           t.ID.Hex(),
+			IsPublished:  t.IsPublished,
+			Title:        langConfig.Title,
+			MainImageUrl: mainImageUrl,
 		})
 	}
 

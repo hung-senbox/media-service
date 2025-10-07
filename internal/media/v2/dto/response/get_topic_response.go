@@ -42,9 +42,10 @@ type GetTopic4StudentResponse4App struct {
 }
 
 type GetTopic4StudentResponse4Web struct {
-	ID          string `json:"id"`
-	IsPublished bool   `json:"is_published"`
-	Title       string `json:"title"`
+	ID           string `json:"id"`
+	IsPublished  bool   `json:"is_published"`
+	Title        string `json:"title"`
+	MainImageUrl string `json:"main_image_url"`
 }
 
 type TopicResponse4GW struct {
