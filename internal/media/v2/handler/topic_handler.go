@@ -116,3 +116,24 @@ func (h TopicHandler) GetTopics4Student4Web(c *gin.Context) {
 
 	helper.SendSuccess(c, http.StatusOK, "get topics success", res)
 }
+
+func (h TopicHandler) UpdateTopic(c *gin.Context) {
+	topicID := c.Param("topic_id")
+	if topicID == "" {
+		helper.SendError(c, http.StatusBadRequest, nil, helper.ErrInvalidRequest)
+		return
+	}
+	var req request.UpdateTopicRequest
+	if err := c.ShouldBind(&req); err != nil {
+		helper.SendError(c, http.StatusBadRequest, err, helper.ErrInvalidRequest)
+		return
+	}
+	req.TopicID = topicID
+	err := h.service.UpdateTopic(c.Request.Context(), req)
+	if err != nil {
+		helper.SendError(c, http.StatusInternalServerError, err, helper.ErrInvalidOperation)
+		return
+	}
+
+	helper.SendSuccess(c, http.StatusOK, "update topic success", nil)
+}

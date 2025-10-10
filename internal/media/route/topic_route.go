@@ -19,6 +19,7 @@ func RegisterTopicRoutes(r *gin.Engine, hv2 *handler.TopicHandler) {
 			topicsAdmin.GET("/:topic_id/progress", hv2.GetPregressUpload)
 			topicsAdmin.GET("/:topic_id", hv2.GetTopic4Web)
 			topicsAdmin.GET("/student/:student_id", hv2.GetTopics4Student4Web)
+			topicsAdmin.PUT("/:topic_id", hv2.UpdateTopic)
 		}
 	}
 
