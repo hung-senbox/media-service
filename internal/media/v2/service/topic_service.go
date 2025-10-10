@@ -346,7 +346,7 @@ func (s *topicService) UpdateTopic(ctx context.Context, req request.UpdateTopicR
 	}
 
 	// Update published
-	oldTopic.IsPublished = req.IsPublished
+	oldTopic.IsPublished = *req.IsPublished
 
 	// Call repo update
 	return s.topicRepo.UpdateTopic(ctx, oldTopic)
