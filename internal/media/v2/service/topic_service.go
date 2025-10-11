@@ -329,20 +329,31 @@ func (s *topicService) GetTopics4Web(ctx context.Context) ([]response.TopicRespo
 }
 
 func (s *topicService) UpdateTopic(ctx context.Context, req request.UpdateTopicRequest) error {
-
 	oldTopic, err := s.topicRepo.GetByID(ctx, req.TopicID)
 	if err != nil {
 		return fmt.Errorf("get topic failed: %w", err)
 	}
 
-	// Merge dữ liệu
+	found := false
 	for i, lc := range oldTopic.LanguageConfig {
 		if lc.LanguageID == req.LanguageID {
 			oldTopic.LanguageConfig[i].FileName = req.FileName
 			oldTopic.LanguageConfig[i].Title = req.Title
 			oldTopic.LanguageConfig[i].Note = req.Node
 			oldTopic.LanguageConfig[i].Description = req.Description
+			found = true
+			break
 		}
+	}
+
+	if !found {
+		oldTopic.LanguageConfig = append(oldTopic.LanguageConfig, model.TopicLanguageConfig{
+			LanguageID:  req.LanguageID,
+			FileName:    req.FileName,
+			Title:       req.Title,
+			Note:        req.Node,
+			Description: req.Description,
+		})
 	}
 
 	// Update published
