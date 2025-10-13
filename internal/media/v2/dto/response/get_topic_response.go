@@ -52,3 +52,8 @@ type TopicResponse4GW struct {
 	ID    string `json:"id"`
 	Title string `json:"title"`
 }
+
+type TopicResponse2Assign4Web struct {
+	ID    string `json:"id"`
+	Title string `json:"title"`
+}

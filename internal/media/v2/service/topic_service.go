@@ -29,6 +29,7 @@ type TopicService interface {
 	GetTopics4Student4App(ctx context.Context, studentID string) ([]*response.GetTopic4StudentResponse4App, error)
 	GetTopics4Student4Web(ctx context.Context, studentID string) ([]*response.GetTopic4StudentResponse4Web, error)
 	GetTopic4GW(ctx context.Context, topicID string) (*response.TopicResponse4GW, error)
+	GetTopics2Assign4Web(ctx context.Context) ([]*response.TopicResponse2Assign4Web, error)
 }
 
 type topicService struct {
@@ -561,4 +562,21 @@ func (s *topicService) GetTopic4GW(ctx context.Context, topicID string) (*respon
 	appLang := helper.GetAppLanguage(ctx, 1)
 
 	return mapper.ToTopicResponses4GW(topic, appLang), nil
+}
+
+func (s *topicService) GetTopics2Assign4Web(ctx context.Context) ([]*response.TopicResponse2Assign4Web, error) {
+	currentUser, err := s.userGateway.GetCurrentUser(ctx)
+	if err != nil {
+		return nil, fmt.Errorf("get current user info failed")
+	}
+	if currentUser.IsSuperAdmin || currentUser.OrganizationAdmin.ID == "" {
+		return nil, fmt.Errorf("access denied")
+	}
+
+	topics, err := s.topicRepo.GetAllTopicByOrganizationID(ctx, currentUser.OrganizationAdmin.ID)
+	if err != nil {
+		return nil, err
+	}
+
+	return mapper.ToTopic2Assign4Web(topics, 1), nil
 }

@@ -137,3 +137,13 @@ func (h TopicHandler) UpdateTopic(c *gin.Context) {
 
 	helper.SendSuccess(c, http.StatusOK, "update topic success", nil)
 }
+
+func (h TopicHandler) GetTopics2Assign4Web(c *gin.Context) {
+	res, err := h.service.GetTopics2Assign4Web(c.Request.Context())
+	if err != nil {
+		helper.SendError(c, http.StatusInternalServerError, err, helper.ErrInvalidOperation)
+		return
+	}
+
+	helper.SendSuccess(c, http.StatusOK, "get topics success", res)
+}

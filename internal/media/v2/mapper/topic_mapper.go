@@ -235,3 +235,32 @@ func ToTopicResponses4GW(topic *model.Topic, appLanguage uint) *response.TopicRe
 		Title: langConfig.Title,
 	}
 }
+
+func ToTopic2Assign4Web(topics []model.Topic, appLanguage uint) []*response.TopicResponse2Assign4Web {
+	var res = make([]*response.TopicResponse2Assign4Web, 0)
+
+	for _, t := range topics {
+		if !t.IsPublished {
+			continue
+		}
+		// chọn language config
+		var langConfig *model.TopicLanguageConfig
+		for _, lc := range t.LanguageConfig {
+			if lc.LanguageID == appLanguage {
+				langConfig = &lc
+				break
+			}
+		}
+
+		if langConfig == nil {
+			continue
+		}
+
+		res = append(res, &response.TopicResponse2Assign4Web{
+			ID:    t.ID.Hex(),
+			Title: langConfig.Title,
+		})
+	}
+
+	return res
+}
