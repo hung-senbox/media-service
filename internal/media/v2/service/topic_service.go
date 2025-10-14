@@ -578,5 +578,23 @@ func (s *topicService) GetTopics2Assign4Web(ctx context.Context) ([]*response.To
 		return nil, err
 	}
 
+	for ti := range topics {
+		for li := range topics[ti].LanguageConfig {
+			langCfg := &topics[ti].LanguageConfig[li]
+			for ii := range langCfg.Images {
+				img := &langCfg.Images[ii]
+				if img.ImageKey != "" {
+					url, err := s.fileGateway.GetImageUrl(ctx, gw_request.GetFileUrlRequest{
+						Key:  img.ImageKey,
+						Mode: "private",
+					})
+					if err == nil && url != nil {
+						img.UploadedUrl = *url
+					}
+				}
+			}
+		}
+	}
+
 	return mapper.ToTopic2Assign4Web(topics, 1), nil
 }
