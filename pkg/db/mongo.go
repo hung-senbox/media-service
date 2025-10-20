@@ -19,9 +19,15 @@ func ConnectMongoDB() {
 
 	var uri string
 	if d.User != "" && d.Password != "" {
-		uri = fmt.Sprintf("mongodb://%s:%s@%s:%s", d.User, d.Password, d.Host, d.Port)
+		uri = fmt.Sprintf(
+			"mongodb://%s:%s@%s:%s/?directConnection=true",
+			d.User, d.Password, d.Host, d.Port,
+		)
 	} else {
-		uri = fmt.Sprintf("mongodb://%s:%s", d.Host, d.Port)
+		uri = fmt.Sprintf(
+			"mongodb://%s:%s/?directConnection=true",
+			d.Host, d.Port,
+		)
 	}
 
 	clientOptions := options.Client().ApplyURI(uri)
