@@ -230,9 +230,24 @@ func ToTopicResponses4GW(topic *model.Topic, appLanguage uint) *response.TopicRe
 		return nil
 	}
 
+	if !topic.IsPublished {
+		return nil
+	}
+
+	mainImageUrl := ""
+	if len(langConfig.Images) > 0 {
+		for _, img := range langConfig.Images {
+			if img.ImageType == "full_background" {
+				mainImageUrl = img.UploadedUrl
+				break
+			}
+		}
+	}
+
 	return &response.TopicResponse4GW{
-		ID:    topic.ID.Hex(),
-		Title: langConfig.Title,
+		ID:           topic.ID.Hex(),
+		Title:        langConfig.Title,
+		MainImageUrl: mainImageUrl,
 	}
 }
 

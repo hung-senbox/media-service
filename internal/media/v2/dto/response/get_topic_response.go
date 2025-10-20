@@ -49,8 +49,9 @@ type GetTopic4StudentResponse4Web struct {
 }
 
 type TopicResponse4GW struct {
-	ID    string `json:"id"`
-	Title string `json:"title"`
+	ID           string `json:"id"`
+	Title        string `json:"title"`
+	MainImageUrl string `json:"main_image_url"`
 }
 
 type TopicResponse2Assign4Web struct {

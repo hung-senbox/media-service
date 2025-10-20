@@ -561,6 +561,20 @@ func (s *topicService) GetTopic4GW(ctx context.Context, topicID string) (*respon
 
 	appLang := helper.GetAppLanguage(ctx, 1)
 
+	// images
+	for ii := range topic.LanguageConfig[0].Images {
+		img := &topic.LanguageConfig[0].Images[ii]
+		if img.ImageKey != "" {
+			url, err := s.fileGateway.GetImageUrl(ctx, gw_request.GetFileUrlRequest{
+				Key:  img.ImageKey,
+				Mode: "private",
+			})
+			if err == nil && url != nil {
+				img.UploadedUrl = *url
+			}
+		}
+	}
+
 	return mapper.ToTopicResponses4GW(topic, appLang), nil
 }
 
