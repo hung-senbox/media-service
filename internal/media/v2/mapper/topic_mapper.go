@@ -216,7 +216,7 @@ func ToTopicResponses4GW(topic *model.Topic, appLanguage uint) *response.TopicRe
 	if topic == nil {
 		return nil
 	}
-
+	// test
 	// Tìm config ngôn ngữ tương ứng
 	var langConfig *model.TopicLanguageConfig
 	for _, lc := range topic.LanguageConfig {
