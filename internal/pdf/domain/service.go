@@ -4,11 +4,11 @@ import (
 	"context"
 	"fmt"
 	"log"
+	"media-service/helper"
 	"media-service/internal/gateway"
 	gw_request "media-service/internal/gateway/dto/request"
 	"media-service/internal/pdf/domain/dto"
 	"media-service/internal/pdf/model"
-	"media-service/pkg/constants"
 	"time"
 
 	"go.mongodb.org/mongo-driver/bson/primitive"
@@ -56,18 +56,13 @@ func (s *pdfService) CreatePDF(ctx context.Context, req dto.CreatePDFRequest) (s
 		return "", err
 	}
 
-	userID := ctx.Value(constants.UserID).(string)
-	if userID == "" {
-		return "", fmt.Errorf("user ID cannot be empty")
-	}
-
 	err = s.PDFRepository.CreatePDF(ctx, &model.StudentReportPDF{
 		ID:        primitive.NewObjectID(),
 		StudentID: req.StudentID,
 		PDFName:   req.FileName + "_pdf",
 		Folder:    "pdf_media",
 		PDFKey:    resp.Key,
-		CreatedBy: userID,
+		CreatedBy: helper.GetUserID(ctx),
 		CreatedAt: time.Now(),
 		UpdatedAt: time.Now(),
 	})
@@ -91,7 +86,7 @@ func (s *pdfService) GetPDFsByStudent(ctx context.Context, studentID string) ([]
 	for _, studentPdf := range studentPdfs {
 		var pdfUrl *string
 		pdfUrl, err = s.fileGateway.GetPDFUrl(ctx, gw_request.GetFileUrlRequest{
-			Key: studentPdf.PDFKey,
+			Key:  studentPdf.PDFKey,
 			Mode: "private",
 		})
 
