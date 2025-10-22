@@ -31,3 +31,10 @@ func GetAppLanguage(ctx context.Context, defaultVal uint) uint {
 	}
 	return defaultVal
 }
+
+func GetUserID(ctx context.Context) string {
+	if userID, ok := ctx.Value(constants.UserID).(string); ok {
+		return userID
+	}
+	return ""
+}
