@@ -13,6 +13,7 @@ import (
 
 var MongoClient *mongo.Client
 var TopicCollection *mongo.Collection
+var PDFCollection *mongo.Collection
 
 func ConnectMongoDB() {
 	d := config.AppConfig.Database.Mongo
@@ -46,5 +47,6 @@ func ConnectMongoDB() {
 	}
 
 	TopicCollection = MongoClient.Database(d.Name).Collection("topics")
+	PDFCollection = MongoClient.Database(d.Name).Collection("student_pdfs")
 	log.Println("Connected to MongoDB and loaded 'topics' collection")
 }

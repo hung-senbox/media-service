@@ -52,7 +52,8 @@ func main() {
 	db.ConnectRedis()
 	defer db.Client.Close()
 
-	r := router.SetupRouter(consulClient, db.TopicCollection)
+	r := router.SetupRouter(consulClient, db.TopicCollection, db.PDFCollection)
+
 	port := cfg.Server.Port
 	if err := r.Run(":" + port); err != nil {
 		log.Fatal("Failed to run server:", err)

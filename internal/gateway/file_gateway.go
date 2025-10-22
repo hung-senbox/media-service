@@ -20,12 +20,14 @@ type FileGateway interface {
 	UploadImage(ctx context.Context, req gw_request.UploadFileRequest) (*gw_response.UploadImageResponse, error)
 	UploadVideo(ctx context.Context, req gw_request.UploadFileRequest) (*gw_response.UploadVideoResponse, error)
 	UploadAudio(ctx context.Context, req gw_request.UploadFileRequest) (*gw_response.UploadAudioResponse, error)
+	UploadPDF(ctx context.Context, req gw_request.UploadFileRequest) (*gw_response.UploadPDFResponse, error)
 	DeleteVideo(ctx context.Context, videoKey string) error
 	DeleteAudio(ctx context.Context, audioKey string) error
 	DeleteImage(ctx context.Context, imageKey string) error
 	GetImageUrl(ctx context.Context, req gw_request.GetFileUrlRequest) (*string, error)
 	GetVideoUrl(ctx context.Context, req gw_request.GetFileUrlRequest) (*string, error)
 	GetAudioUrl(ctx context.Context, req gw_request.GetFileUrlRequest) (*string, error)
+	GetPDFUrl(ctx context.Context, req gw_request.GetFileUrlRequest) (*string, error)
 }
 
 type fileGateway struct {
@@ -173,6 +175,40 @@ func (g *fileGateway) UploadAudio(ctx context.Context, req gw_request.UploadFile
 
 	if gwResp.StatusCode != 200 {
 		return nil, fmt.Errorf("call gateway upload audio fail: %s", gwResp.Message)
+	}
+
+	return &gwResp.Data, nil
+}
+
+func (g *fileGateway) UploadPDF(ctx context.Context, req gw_request.UploadFileRequest) (*gw_response.UploadPDFResponse, error) {
+
+	token, ok := ctx.Value(constants.Token).(string)
+	if !ok {
+		return nil, fmt.Errorf("token not found in context")
+	}
+
+	client, err := NewGatewayClient(g.serviceName, token, g.consul, nil)
+	if err != nil {
+		return nil, err
+	}
+
+	body, contentType, err := buildMultipartBody(req)
+	if err != nil {
+		return nil, err
+	}
+
+	resp, err := client.CallWithMultipart("POST", "/v1/gateway/pdfs/upload", body, contentType)
+	if err != nil {
+		return nil, err
+	}
+
+	var gwResp dto.APIGateWayResponse[gw_response.UploadPDFResponse]
+	if err := json.Unmarshal(resp, &gwResp); err != nil {
+		return nil, fmt.Errorf("unmarshal response fail: %w", err)
+	}
+
+	if gwResp.StatusCode != 200 {
+		return nil, fmt.Errorf("call gateway upload pdf fail: %s", gwResp.Message)
 	}
 
 	return &gwResp.Data, nil
@@ -350,4 +386,35 @@ func (g *fileGateway) GetVideoUrl(ctx context.Context, req gw_request.GetFileUrl
 	}
 
 	return &gwResp.Data, nil
+}
+
+func (g *fileGateway) GetPDFUrl(ctx context.Context, req gw_request.GetFileUrlRequest) (*string, error) {
+
+	token, ok := ctx.Value(constants.Token).(string)
+	if !ok {
+		return nil, fmt.Errorf("token not found in context")
+	}
+
+	client, err := NewGatewayClient(g.serviceName, token, g.consul, nil)
+	if err != nil {
+		return nil, err
+	}
+
+	headers := helper.GetHeaders(ctx)
+	resp, err := client.Call("POST", "/v1/gateway/pdfs/get-url", req, headers)
+	if err != nil {
+		return nil, err
+	}
+
+	var gwResp dto.APIGateWayResponse[string]
+	if err := json.Unmarshal(resp, &gwResp); err != nil {
+		return nil, fmt.Errorf("unmarshal response fail: %w", err)
+	}
+
+	if gwResp.StatusCode != 200 {
+		return nil, fmt.Errorf("call gateway get video fail: %s", gwResp.Message)
+	}
+
+	return &gwResp.Data, nil
+
 }

@@ -3,9 +3,11 @@ package router
 import (
 	"media-service/internal/gateway"
 	"media-service/internal/media/route"
+	route2 "media-service/internal/pdf/route"
 	"media-service/internal/media/v2/handler"
 	"media-service/internal/media/v2/repository"
 	"media-service/internal/media/v2/service"
+	"media-service/internal/pdf/domain"
 	"media-service/internal/redis"
 
 	"github.com/gin-gonic/gin"
@@ -13,7 +15,7 @@ import (
 	"go.mongodb.org/mongo-driver/mongo"
 )
 
-func SetupRouter(consulClient *api.Client, topicCollection *mongo.Collection) *gin.Engine {
+func SetupRouter(consulClient *api.Client, topicCollection, pdfCollection *mongo.Collection) *gin.Engine {
 	r := gin.Default()
 
 	// gateway
@@ -26,7 +28,12 @@ func SetupRouter(consulClient *api.Client, topicCollection *mongo.Collection) *g
 	topicServicev2 := service.NewTopicService(topicRepov2, fileGateway, redisService, userGateway)
 	topicHandlerv2 := handler.NewTopicHandler(topicServicev2)
 
+	//pdf
+	pdfRepov2 := domain.NewPDFRepository(pdfCollection)
+	pdfServicev2 := domain.NewPDFService(pdfRepov2, fileGateway)
+	pdfHandlerv2 := domain.NewPDFHandler(pdfServicev2)
 	// Register routes
 	route.RegisterTopicRoutes(r, topicHandlerv2)
+	route2.RegisterRoutes(r, pdfHandlerv2)
 	return r
 }
