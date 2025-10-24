@@ -1,6 +1,7 @@
 package router
 
 import (
+	"media-service/internal/cache"
 	"media-service/internal/gateway"
 	"media-service/internal/media/route"
 	"media-service/internal/media/v2/handler"
@@ -9,6 +10,9 @@ import (
 	"media-service/internal/pdf/domain"
 	route2 "media-service/internal/pdf/route"
 	"media-service/internal/redis"
+	"media-service/pkg/config"
+
+	cached_service "media-service/internal/cache/service"
 
 	"github.com/gin-gonic/gin"
 	"github.com/hashicorp/consul/api"
@@ -24,9 +28,13 @@ func SetupRouter(consulClient *api.Client, cacheClientRedis *goredis.Client, top
 	fileGateway := gateway.NewFileGateway("go-main-service", consulClient)
 	redisService := redis.NewRedisService()
 
+	// cache setup
+	systemCache := cache.NewRedisCache(cacheClientRedis)
+	cachedUserGateway := cached_service.NewCachedUserGateway(userGateway, systemCache, config.AppConfig.Database.RedisCache.TTLSeconds)
+
 	// topic
 	topicRepov2 := repository.NewTopicRepository(topicCollection)
-	topicServicev2 := service.NewTopicService(topicRepov2, fileGateway, redisService, userGateway)
+	topicServicev2 := service.NewTopicService(topicRepov2, fileGateway, redisService, cachedUserGateway)
 	topicHandlerv2 := handler.NewTopicHandler(topicServicev2)
 
 	//pdf
@@ -34,7 +42,7 @@ func SetupRouter(consulClient *api.Client, cacheClientRedis *goredis.Client, top
 	pdfServicev2 := domain.NewPDFService(pdfRepov2, fileGateway)
 	pdfHandlerv2 := domain.NewPDFHandler(pdfServicev2)
 	// Register routes
-	route.RegisterTopicRoutes(r, topicHandlerv2, userGateway)
-	route2.RegisterRoutes(r, pdfHandlerv2, userGateway)
+	route.RegisterTopicRoutes(r, topicHandlerv2, cachedUserGateway)
+	route2.RegisterRoutes(r, pdfHandlerv2, cachedUserGateway)
 	return r
 }

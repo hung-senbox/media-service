@@ -35,18 +35,18 @@ type TopicService interface {
 }
 
 type topicService struct {
-	userGateway  gateway.UserGateway
+	cachedUserGw gateway.UserGateway
 	fileGateway  gateway.FileGateway
 	redisService *redis.RedisService
 	topicRepo    repository.TopicRepository
 }
 
-func NewTopicService(topicRepo repository.TopicRepository, fileGw gateway.FileGateway, redisService *redis.RedisService, userGw gateway.UserGateway) TopicService {
+func NewTopicService(topicRepo repository.TopicRepository, fileGw gateway.FileGateway, redisService *redis.RedisService, cachedUserGw gateway.UserGateway) TopicService {
 	return &topicService{
 		topicRepo:    topicRepo,
 		redisService: redisService,
 		fileGateway:  fileGw,
-		userGateway:  userGw,
+		cachedUserGw: cachedUserGw,
 	}
 }
 
@@ -501,7 +501,7 @@ func (s *topicService) UpdateVideo(ctx context.Context, req request.UpdateVideoR
 
 func (s *topicService) GetTopics4Student4App(ctx context.Context, studentID string) ([]*response.GetTopic4StudentResponse4App, error) {
 	// get org by student
-	student, err := s.userGateway.GetStudentInfo(ctx, studentID)
+	student, err := s.cachedUserGw.GetStudentInfo(ctx, studentID)
 	if err != nil {
 		return nil, err
 	}
@@ -516,7 +516,7 @@ func (s *topicService) GetTopics4Student4App(ctx context.Context, studentID stri
 
 func (s *topicService) GetTopics4Student4Web(ctx context.Context, studentID string) ([]*response.GetTopic4StudentResponse4Web, error) {
 	// get org by student
-	student, err := s.userGateway.GetStudentInfo(ctx, studentID)
+	student, err := s.cachedUserGw.GetStudentInfo(ctx, studentID)
 	if err != nil {
 		return nil, err
 	}
@@ -546,7 +546,7 @@ func (s *topicService) GetTopics4Student4Web(ctx context.Context, studentID stri
 
 func (s *topicService) GetTopics4Student4Gw(ctx context.Context, studentID string) ([]*response.GetTopic4StudentResponse4Gw, error) {
 	// get org by student
-	student, err := s.userGateway.GetStudentInfo(ctx, studentID)
+	student, err := s.cachedUserGw.GetStudentInfo(ctx, studentID)
 	if err != nil {
 		return nil, err
 	}
