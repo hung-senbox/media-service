@@ -1,16 +1,17 @@
 package route
 
 import (
+	"media-service/internal/gateway"
 	"media-service/internal/media/v2/handler"
 	"media-service/internal/middleware"
 
 	"github.com/gin-gonic/gin"
 )
 
-func RegisterTopicRoutes(r *gin.Engine, hv2 *handler.TopicHandler) {
+func RegisterTopicRoutes(r *gin.Engine, hv2 *handler.TopicHandler, userGw gateway.UserGateway) {
 	// Admin routes
 	adminGroup := r.Group("/api/v2/admin")
-	adminGroup.Use(middleware.Secured())
+	adminGroup.Use(middleware.Secured(userGw))
 	{
 		topicsAdmin := adminGroup.Group("/topics")
 		{
@@ -26,7 +27,7 @@ func RegisterTopicRoutes(r *gin.Engine, hv2 *handler.TopicHandler) {
 
 	// User routes
 	userGroup := r.Group("/api/v2/user")
-	userGroup.Use(middleware.Secured())
+	userGroup.Use(middleware.Secured(userGw))
 	{
 		topicsUser := userGroup.Group("/topics")
 		{
@@ -36,7 +37,7 @@ func RegisterTopicRoutes(r *gin.Engine, hv2 *handler.TopicHandler) {
 
 	// gateway
 	gatewayGroup := r.Group("/api/v2/gateway")
-	gatewayGroup.Use(middleware.Secured())
+	gatewayGroup.Use(middleware.Secured(userGw))
 	{
 		topicsGateway := gatewayGroup.Group("/topics")
 		{

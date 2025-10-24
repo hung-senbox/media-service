@@ -3,6 +3,7 @@ package middleware
 import (
 	"context"
 	"media-service/helper"
+	"media-service/internal/gateway"
 	"media-service/pkg/constants"
 	"net/http"
 	"strconv"
@@ -12,7 +13,7 @@ import (
 	"github.com/golang-jwt/jwt/v5"
 )
 
-func Secured() gin.HandlerFunc {
+func Secured(userGw gateway.UserGateway) gin.HandlerFunc {
 	return func(c *gin.Context) {
 		authorizationHeader := c.GetHeader("Authorization")
 
@@ -64,6 +65,22 @@ func Secured() gin.HandlerFunc {
 		// --- Token ---
 		c.Set(constants.Token.String(), tokenString)
 		ctx = context.WithValue(c.Request.Context(), constants.Token, tokenString)
+		c.Request = c.Request.WithContext(ctx)
+
+		// --- Call user-service to get current user ---
+		currentUser, err := userGw.GetCurrentUser(
+			context.WithValue(ctx, constants.CurrentUserKey, tokenString),
+		)
+		if err != nil {
+			c.AbortWithStatusJSON(http.StatusUnauthorized, gin.H{
+				"error": "unauthorized",
+			})
+			return
+		}
+
+		// --- Set currentUser vào context ---
+		c.Set(string(constants.CurrentUserKey), currentUser)
+		ctx = context.WithValue(ctx, constants.CurrentUserKey, currentUser)
 		c.Request = c.Request.WithContext(ctx)
 
 		c.Next()

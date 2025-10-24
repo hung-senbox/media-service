@@ -6,6 +6,7 @@ import (
 	"media-service/helper"
 	"media-service/internal/gateway"
 	gw_request "media-service/internal/gateway/dto/request"
+	gw_response "media-service/internal/gateway/dto/response"
 	"media-service/internal/media/model"
 	"media-service/internal/media/v2/dto/request"
 	"media-service/internal/media/v2/dto/response"
@@ -51,10 +52,8 @@ func NewTopicService(topicRepo repository.TopicRepository, fileGw gateway.FileGa
 
 // ------------------- Create Topic -------------------
 func (s *topicService) CreateTopic(ctx context.Context, req request.CreateTopicRequest) (*model.Topic, error) {
-	currentUser, err := s.userGateway.GetCurrentUser(ctx)
-	if err != nil {
-		return nil, fmt.Errorf("get current user info failed")
-	}
+	currentUser, _ := ctx.Value(constants.CurrentUserKey).(*gw_response.CurrentUser)
+
 	if currentUser.IsSuperAdmin || currentUser.OrganizationAdmin.ID == "" {
 		return nil, fmt.Errorf("access denied")
 	}
@@ -225,10 +224,8 @@ func (s *topicService) uploadAndSaveImages(ctx context.Context, orgID, topicID s
 // ------------------- Get upload progress -------------------
 func (s *topicService) GetUploadProgress(ctx context.Context, topicID string) (*response.GetUploadProgressResponse, error) {
 
-	currentUser, err := s.userGateway.GetCurrentUser(ctx)
-	if err != nil {
-		return nil, fmt.Errorf("get current user info failed")
-	}
+	currentUser, _ := ctx.Value(constants.CurrentUserKey).(*gw_response.CurrentUser)
+
 	if currentUser.IsSuperAdmin || currentUser.OrganizationAdmin.ID == "" {
 		return nil, fmt.Errorf("access denied")
 	}
@@ -271,10 +268,8 @@ func (s *topicService) GetUploadProgress(ctx context.Context, topicID string) (*
 }
 
 func (s *topicService) GetTopics4Web(ctx context.Context) ([]response.TopicResponse4Web, error) {
-	currentUser, err := s.userGateway.GetCurrentUser(ctx)
-	if err != nil {
-		return nil, fmt.Errorf("get current user info failed")
-	}
+	currentUser, _ := ctx.Value(constants.CurrentUserKey).(*gw_response.CurrentUser)
+
 	if currentUser.IsSuperAdmin || currentUser.OrganizationAdmin.ID == "" {
 		return nil, fmt.Errorf("access denied")
 	}
@@ -417,10 +412,8 @@ func (s *topicService) GetTopic4Web(ctx context.Context, topicID string) (*respo
 
 func (s *topicService) UpdateAudio(ctx context.Context, req request.UpdateAudioRequest) error {
 
-	currentUser, err := s.userGateway.GetCurrentUser(ctx)
-	if err != nil {
-		return fmt.Errorf("get current user info failed")
-	}
+	currentUser, _ := ctx.Value(constants.CurrentUserKey).(*gw_response.CurrentUser)
+
 	if currentUser.IsSuperAdmin || currentUser.OrganizationAdmin.ID == "" {
 		return fmt.Errorf("access denied")
 	}
@@ -463,10 +456,8 @@ func (s *topicService) UpdateAudio(ctx context.Context, req request.UpdateAudioR
 
 func (s *topicService) UpdateVideo(ctx context.Context, req request.UpdateVideoRequest) error {
 
-	currentUser, err := s.userGateway.GetCurrentUser(ctx)
-	if err != nil {
-		return fmt.Errorf("get current user info failed")
-	}
+	currentUser, _ := ctx.Value(constants.CurrentUserKey).(*gw_response.CurrentUser)
+
 	if currentUser.IsSuperAdmin || currentUser.OrganizationAdmin.ID == "" {
 		return fmt.Errorf("access denied")
 	}
@@ -610,10 +601,8 @@ func (s *topicService) GetTopic4GW(ctx context.Context, topicID string) (*respon
 }
 
 func (s *topicService) GetTopics2Assign4Web(ctx context.Context) ([]*response.TopicResponse2Assign4Web, error) {
-	currentUser, err := s.userGateway.GetCurrentUser(ctx)
-	if err != nil {
-		return nil, fmt.Errorf("get current user info failed")
-	}
+	currentUser, _ := ctx.Value(constants.CurrentUserKey).(*gw_response.CurrentUser)
+
 	if currentUser.IsSuperAdmin || currentUser.OrganizationAdmin.ID == "" {
 		return nil, fmt.Errorf("access denied")
 	}
