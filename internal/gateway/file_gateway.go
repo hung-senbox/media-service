@@ -24,6 +24,7 @@ type FileGateway interface {
 	DeleteVideo(ctx context.Context, videoKey string) error
 	DeleteAudio(ctx context.Context, audioKey string) error
 	DeleteImage(ctx context.Context, imageKey string) error
+	DeletePDF(ctx context.Context, pdfKey string) error
 	GetImageUrl(ctx context.Context, req gw_request.GetFileUrlRequest) (*string, error)
 	GetVideoUrl(ctx context.Context, req gw_request.GetFileUrlRequest) (*string, error)
 	GetAudioUrl(ctx context.Context, req gw_request.GetFileUrlRequest) (*string, error)
@@ -290,6 +291,35 @@ func (g *fileGateway) DeleteImage(ctx context.Context, imageKey string) error {
 	}
 
 	var gwResp dto.APIGateWayResponse[string]
+	if err := json.Unmarshal(resp, &gwResp); err != nil {
+		return fmt.Errorf("unmarshal response fail: %w", err)
+	}
+
+	if gwResp.StatusCode != 200 {
+		return fmt.Errorf("call gateway delete image fail: %s", gwResp.Message)
+	}
+
+	return nil
+}
+
+func (g *fileGateway) DeletePDF(ctx context.Context, pdfKey string) error {
+token, ok := ctx.Value(constants.Token).(string)
+	if !ok {
+		return fmt.Errorf("token not found in context")
+	}
+
+	client, err := NewGatewayClient(g.serviceName, token, g.consul, nil)
+	if err != nil {
+		return err
+	}
+
+	headers := helper.GetHeaders(ctx)
+	resp, err := client.Call("DELETE", "/v1/gateway/pdfs/"+pdfKey, nil, headers)
+	if err != nil {
+		return err
+	}
+
+	var gwResp dto.APIGateWayResponse[string]	
 	if err := json.Unmarshal(resp, &gwResp); err != nil {
 		return fmt.Errorf("unmarshal response fail: %w", err)
 	}

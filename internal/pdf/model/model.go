@@ -9,6 +9,7 @@ import (
 type StudentReportPDF struct {
 	ID        primitive.ObjectID `json:"id" bson:"_id"`
 	StudentID string             `json:"student_id" bson:"student_id"`
+	Color     string             `json:"color" bson:"color"`
 	PDFName   string             `json:"pdf_name" bson:"pdf_name"`
 	Folder    string             `json:"folder" bson:"folder"`
 	PDFKey    string             `json:"pdf_key" bson:"pdf_key"`

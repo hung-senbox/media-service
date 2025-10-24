@@ -17,6 +17,8 @@ import (
 type PDFService interface {
 	CreatePDF(ctx context.Context, req dto.CreatePDFRequest) (string, error)
 	GetPDFsByStudent(ctx context.Context, studentID string) ([]*dto.StudentReportPDFResponse, error)
+	UpdatePDFsBy(ctx context.Context, id string, req dto.UpdatePDFRequest) error
+	DeletePDFsBy(ctx context.Context, id string) error
 }
 
 type pdfService struct {
@@ -34,10 +36,6 @@ func NewPDFService(pdfRepository PDFRepository,
 
 func (s *pdfService) CreatePDF(ctx context.Context, req dto.CreatePDFRequest) (string, error) {
 
-	if req.File == nil {
-		return "", fmt.Errorf("file cannot be empty")
-	}
-
 	if req.StudentID == "" {
 		return "", fmt.Errorf("student ID cannot be empty")
 	}
@@ -46,22 +44,15 @@ func (s *pdfService) CreatePDF(ctx context.Context, req dto.CreatePDFRequest) (s
 		return "", fmt.Errorf("file name cannot be empty")
 	}
 
-	resp, err := s.fileGateway.UploadPDF(ctx, gw_request.UploadFileRequest{
-		File:     req.File,
-		Folder:   "pdf_media",
-		FileName: req.FileName + "_pdf",
-		Mode:     "private",
-	})
-	if err != nil {
-		return "", err
-	}
+	ID := primitive.NewObjectID()
 
-	err = s.PDFRepository.CreatePDF(ctx, &model.StudentReportPDF{
-		ID:        primitive.NewObjectID(),
+	err := s.PDFRepository.CreatePDF(ctx, &model.StudentReportPDF{
+		ID:        ID,
 		StudentID: req.StudentID,
-		PDFName:   req.FileName + "_pdf",
+		Color:     req.Color,
+		PDFName:   req.FileName,
 		Folder:    "pdf_media",
-		PDFKey:    resp.Key,
+		PDFKey:    "",
 		CreatedBy: helper.GetUserID(ctx),
 		CreatedAt: time.Now(),
 		UpdatedAt: time.Now(),
@@ -70,7 +61,7 @@ func (s *pdfService) CreatePDF(ctx context.Context, req dto.CreatePDFRequest) (s
 		return "", err
 	}
 
-	return resp.Key, nil
+	return ID.Hex(), nil
 
 }
 
@@ -108,4 +99,74 @@ func (s *pdfService) GetPDFsByStudent(ctx context.Context, studentID string) ([]
 	}
 
 	return result, nil
+}
+
+func (s *pdfService) UpdatePDFsBy(ctx context.Context, id string, req dto.UpdatePDFRequest) error {
+
+	objectID, err := primitive.ObjectIDFromHex(id)
+	if err != nil {
+		return err
+	}
+
+	pdfData, err := s.PDFRepository.GetPDFByID(ctx, objectID)
+	if err != nil {
+		return err
+	}
+
+	if pdfData == nil {
+		return fmt.Errorf("pdf not found")
+	}
+
+	if req.FileName != "" {
+		pdfData.PDFName = req.FileName
+	}
+
+	if req.Color != "" {
+		pdfData.Color = req.Color
+	}
+
+	if req.File == nil {
+		return fmt.Errorf("file is required")
+	}
+
+	resp, err := s.fileGateway.UploadPDF(ctx, gw_request.UploadFileRequest{
+		File:     req.File,
+		Folder:   "pdf_media",
+		FileName: pdfData.PDFName,
+		Mode:     "private",
+	})
+	if err != nil {
+		return err
+	}
+
+	pdfData.PDFKey = resp.Key
+	pdfData.UpdatedAt = time.Now()
+
+	return s.PDFRepository.UpdatePDFByID(ctx, objectID, pdfData)
+	
+}
+
+func (s *pdfService) DeletePDFsBy(ctx context.Context, id string) error {
+
+	objectID, err := primitive.ObjectIDFromHex(id)
+	if err != nil {
+		return err
+	}
+
+	pdf, err := s.PDFRepository.GetPDFByID(ctx, objectID)
+	if err != nil {
+		return err
+	}
+
+	if pdf == nil {
+		return fmt.Errorf("pdf not found")
+	}
+
+	err = s.fileGateway.DeletePDF(ctx, pdf.PDFKey)
+	if err != nil {
+		return err
+	}
+
+	return s.PDFRepository.DeletePDFByID(ctx, objectID)
+
 }

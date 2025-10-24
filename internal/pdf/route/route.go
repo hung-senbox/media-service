@@ -12,5 +12,7 @@ func RegisterRoutes(route *gin.Engine, pdfHandler *domain.PDFHandler) {
 	{
 		pdfGroup.POST("/student", pdfHandler.CreatePDF)
 		pdfGroup.GET("/student", pdfHandler.GetPDFsByStudent)
+		pdfGroup.DELETE("/:id", pdfHandler.DeletePDFsBy)
+		pdfGroup.PUT("/:id", pdfHandler.UpdatePDFsBy)
 	}
 }
