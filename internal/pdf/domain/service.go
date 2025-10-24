@@ -114,6 +114,13 @@ func (s *pdfService) UpdatePDFsBy(ctx context.Context, id string, req dto.Update
 		return err
 	}
 
+	if pdfData.PDFKey != "" {
+		err = s.fileGateway.DeletePDF(ctx, pdfData.PDFKey)
+		if err != nil {
+			return err
+		}
+	}
+
 	if pdfData == nil {
 		return fmt.Errorf("pdf not found")
 	}
