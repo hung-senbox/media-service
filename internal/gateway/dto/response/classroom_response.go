@@ -1,4 +1,4 @@
-package dto
+package response
 
 type ClassroomResponse struct {
 	ID   string `json:"id"`

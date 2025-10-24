@@ -1,4 +1,4 @@
-package dto
+package request
 
 type UploadMessageRequest struct {
 	TypeID     string `json:"type_id" binding:"required"`

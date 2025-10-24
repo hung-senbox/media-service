@@ -3,19 +3,20 @@ package router
 import (
 	"media-service/internal/gateway"
 	"media-service/internal/media/route"
-	route2 "media-service/internal/pdf/route"
 	"media-service/internal/media/v2/handler"
 	"media-service/internal/media/v2/repository"
 	"media-service/internal/media/v2/service"
 	"media-service/internal/pdf/domain"
+	route2 "media-service/internal/pdf/route"
 	"media-service/internal/redis"
 
 	"github.com/gin-gonic/gin"
 	"github.com/hashicorp/consul/api"
+	goredis "github.com/redis/go-redis/v9"
 	"go.mongodb.org/mongo-driver/mongo"
 )
 
-func SetupRouter(consulClient *api.Client, topicCollection, pdfCollection *mongo.Collection) *gin.Engine {
+func SetupRouter(consulClient *api.Client, cacheClientRedis *goredis.Client, topicCollection, pdfCollection *mongo.Collection) *gin.Engine {
 	r := gin.Default()
 
 	// gateway

@@ -7,7 +7,6 @@ import (
 	"fmt"
 	"io"
 	"media-service/helper"
-	"media-service/internal/gateway/dto"
 	gw_request "media-service/internal/gateway/dto/request"
 	gw_response "media-service/internal/gateway/dto/response"
 	"media-service/pkg/constants"
@@ -101,7 +100,7 @@ func (g *fileGateway) UploadImage(ctx context.Context, req gw_request.UploadFile
 		return nil, err
 	}
 
-	var gwResp dto.APIGateWayResponse[gw_response.UploadImageResponse]
+	var gwResp gw_response.APIGateWayResponse[gw_response.UploadImageResponse]
 	if err := json.Unmarshal(resp, &gwResp); err != nil {
 		return nil, fmt.Errorf("unmarshal response fail: %w", err)
 	}
@@ -135,7 +134,7 @@ func (g *fileGateway) UploadVideo(ctx context.Context, req gw_request.UploadFile
 		return nil, err
 	}
 
-	var gwResp dto.APIGateWayResponse[gw_response.UploadVideoResponse]
+	var gwResp gw_response.APIGateWayResponse[gw_response.UploadVideoResponse]
 	if err := json.Unmarshal(resp, &gwResp); err != nil {
 		return nil, fmt.Errorf("unmarshal response fail: %w", err)
 	}
@@ -169,7 +168,7 @@ func (g *fileGateway) UploadAudio(ctx context.Context, req gw_request.UploadFile
 		return nil, err
 	}
 
-	var gwResp dto.APIGateWayResponse[gw_response.UploadAudioResponse]
+	var gwResp gw_response.APIGateWayResponse[gw_response.UploadAudioResponse]
 	if err := json.Unmarshal(resp, &gwResp); err != nil {
 		return nil, fmt.Errorf("unmarshal response fail: %w", err)
 	}
@@ -203,7 +202,7 @@ func (g *fileGateway) UploadPDF(ctx context.Context, req gw_request.UploadFileRe
 		return nil, err
 	}
 
-	var gwResp dto.APIGateWayResponse[gw_response.UploadPDFResponse]
+	var gwResp gw_response.APIGateWayResponse[gw_response.UploadPDFResponse]
 	if err := json.Unmarshal(resp, &gwResp); err != nil {
 		return nil, fmt.Errorf("unmarshal response fail: %w", err)
 	}
@@ -232,7 +231,7 @@ func (g *fileGateway) DeleteAudio(ctx context.Context, audioKey string) error {
 		return err
 	}
 
-	var gwResp dto.APIGateWayResponse[string]
+	var gwResp gw_response.APIGateWayResponse[string]
 	if err := json.Unmarshal(resp, &gwResp); err != nil {
 		return fmt.Errorf("unmarshal response fail: %w", err)
 	}
@@ -261,7 +260,7 @@ func (g *fileGateway) DeleteVideo(ctx context.Context, videoKey string) error {
 		return err
 	}
 
-	var gwResp dto.APIGateWayResponse[string]
+	var gwResp gw_response.APIGateWayResponse[string]
 	if err := json.Unmarshal(resp, &gwResp); err != nil {
 		return fmt.Errorf("unmarshal response fail: %w", err)
 	}
@@ -290,7 +289,7 @@ func (g *fileGateway) DeleteImage(ctx context.Context, imageKey string) error {
 		return err
 	}
 
-	var gwResp dto.APIGateWayResponse[string]
+	var gwResp gw_response.APIGateWayResponse[string]
 	if err := json.Unmarshal(resp, &gwResp); err != nil {
 		return fmt.Errorf("unmarshal response fail: %w", err)
 	}
@@ -303,7 +302,7 @@ func (g *fileGateway) DeleteImage(ctx context.Context, imageKey string) error {
 }
 
 func (g *fileGateway) DeletePDF(ctx context.Context, pdfKey string) error {
-token, ok := ctx.Value(constants.Token).(string)
+	token, ok := ctx.Value(constants.Token).(string)
 	if !ok {
 		return fmt.Errorf("token not found in context")
 	}
@@ -319,7 +318,7 @@ token, ok := ctx.Value(constants.Token).(string)
 		return err
 	}
 
-	var gwResp dto.APIGateWayResponse[string]	
+	var gwResp gw_response.APIGateWayResponse[string]
 	if err := json.Unmarshal(resp, &gwResp); err != nil {
 		return fmt.Errorf("unmarshal response fail: %w", err)
 	}
@@ -348,7 +347,7 @@ func (g *fileGateway) GetImageUrl(ctx context.Context, req gw_request.GetFileUrl
 		return nil, err
 	}
 
-	var gwResp dto.APIGateWayResponse[string]
+	var gwResp gw_response.APIGateWayResponse[string]
 	if err := json.Unmarshal(resp, &gwResp); err != nil {
 		return nil, fmt.Errorf("unmarshal response fail: %w", err)
 	}
@@ -377,7 +376,7 @@ func (g *fileGateway) GetAudioUrl(ctx context.Context, req gw_request.GetFileUrl
 		return nil, err
 	}
 
-	var gwResp dto.APIGateWayResponse[string]
+	var gwResp gw_response.APIGateWayResponse[string]
 	if err := json.Unmarshal(resp, &gwResp); err != nil {
 		return nil, fmt.Errorf("unmarshal response fail: %w", err)
 	}
@@ -406,7 +405,7 @@ func (g *fileGateway) GetVideoUrl(ctx context.Context, req gw_request.GetFileUrl
 		return nil, err
 	}
 
-	var gwResp dto.APIGateWayResponse[string]
+	var gwResp gw_response.APIGateWayResponse[string]
 	if err := json.Unmarshal(resp, &gwResp); err != nil {
 		return nil, fmt.Errorf("unmarshal response fail: %w", err)
 	}
@@ -436,7 +435,7 @@ func (g *fileGateway) GetPDFUrl(ctx context.Context, req gw_request.GetFileUrlRe
 		return nil, err
 	}
 
-	var gwResp dto.APIGateWayResponse[string]
+	var gwResp gw_response.APIGateWayResponse[string]
 	if err := json.Unmarshal(resp, &gwResp); err != nil {
 		return nil, fmt.Errorf("unmarshal response fail: %w", err)
 	}

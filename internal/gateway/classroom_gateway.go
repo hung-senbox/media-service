@@ -5,14 +5,14 @@ import (
 	"encoding/json"
 	"fmt"
 	"media-service/helper"
-	"media-service/internal/gateway/dto"
+	"media-service/internal/gateway/dto/response"
 	"media-service/pkg/constants"
 
 	"github.com/hashicorp/consul/api"
 )
 
 type ClassroomGateway interface {
-	GetClassroomByID(ctx context.Context, locationID string) (*dto.ClassroomResponse, error)
+	GetClassroomByID(ctx context.Context, locationID string) (*response.ClassroomResponse, error)
 }
 
 type classroomGateway struct {
@@ -27,7 +27,7 @@ func NewClassroomGateway(serviceName string, consulClient *api.Client) Classroom
 	}
 }
 
-func (g *classroomGateway) GetClassroomByID(ctx context.Context, locationID string) (*dto.ClassroomResponse, error) {
+func (g *classroomGateway) GetClassroomByID(ctx context.Context, locationID string) (*response.ClassroomResponse, error) {
 	token, ok := ctx.Value(constants.Token).(string)
 	if !ok {
 		return nil, fmt.Errorf("token not found in context")
@@ -44,7 +44,7 @@ func (g *classroomGateway) GetClassroomByID(ctx context.Context, locationID stri
 		return nil, fmt.Errorf("call API get classroom by id fail: %w", err)
 	}
 
-	var gwResp dto.APIGateWayResponse[dto.ClassroomResponse]
+	var gwResp response.APIGateWayResponse[response.ClassroomResponse]
 	if err := json.Unmarshal(resp, &gwResp); err != nil {
 		return nil, fmt.Errorf("unmarshal response fail: %w", err)
 	}

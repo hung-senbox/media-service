@@ -1,4 +1,4 @@
-package dto
+package response
 
 type MessageLanguageResponse struct {
 	LangID   uint              `json:"language_id"`

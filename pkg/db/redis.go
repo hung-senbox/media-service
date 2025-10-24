@@ -29,3 +29,22 @@ func ConnectRedis() {
 
 	log.Println("Connected to Redis successfully")
 }
+
+func InitRedisCache() *goredis.Client {
+	cfg := config.AppConfig.Database.RedisCache
+
+	addr := fmt.Sprintf("%s:%s", cfg.Host, cfg.Port)
+	client := goredis.NewClient(&goredis.Options{
+		Addr:     addr,
+		Password: cfg.Password,
+		DB:       cfg.DB,
+	})
+
+	// test connection
+	if err := client.Ping(Ctx).Err(); err != nil {
+		log.Fatalf("❌ Failed to connect to Redis Cache: %v", err)
+	}
+
+	log.Println("✅ Connected to Redis Cache successfully")
+	return client
+}

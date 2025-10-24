@@ -1,4 +1,4 @@
-package dto
+package response
 
 type APIGateWayResponse[T any] struct {
 	StatusCode int    `json:"status_code"`
