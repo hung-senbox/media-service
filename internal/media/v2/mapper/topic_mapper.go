@@ -212,6 +212,47 @@ func ToTopic4StudentResponses4Web(topics []model.Topic, appLanguage uint) []*res
 	return res
 }
 
+func ToTopic4StudentResponses4Gw(topics []model.Topic, appLanguage uint) []*response.GetTopic4StudentResponse4Gw {
+	var res = make([]*response.GetTopic4StudentResponse4Gw, 0)
+
+	for _, t := range topics {
+		if !t.IsPublished {
+			continue
+		}
+		// chọn language config
+		var langConfig *model.TopicLanguageConfig
+		for _, lc := range t.LanguageConfig {
+			if lc.LanguageID == appLanguage {
+				langConfig = &lc
+				break
+			}
+		}
+
+		if langConfig == nil {
+			continue
+		}
+
+		mainImageUrl := ""
+		if len(langConfig.Images) > 0 {
+			for _, img := range langConfig.Images {
+				if img.ImageType == "full_background" {
+					mainImageUrl = img.UploadedUrl
+					break
+				}
+			}
+		}
+
+		res = append(res, &response.GetTopic4StudentResponse4Gw{
+			ID:           t.ID.Hex(),
+			IsPublished:  t.IsPublished,
+			Title:        langConfig.Title,
+			MainImageUrl: mainImageUrl,
+		})
+	}
+
+	return res
+}
+
 func ToTopicResponses4GW(topic *model.Topic, appLanguage uint) *response.TopicResponse4GW {
 	if topic == nil {
 		return nil

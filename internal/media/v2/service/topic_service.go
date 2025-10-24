@@ -28,6 +28,7 @@ type TopicService interface {
 	UpdateAudio(ctx context.Context, req request.UpdateAudioRequest) error
 	GetTopics4Student4App(ctx context.Context, studentID string) ([]*response.GetTopic4StudentResponse4App, error)
 	GetTopics4Student4Web(ctx context.Context, studentID string) ([]*response.GetTopic4StudentResponse4Web, error)
+	GetTopics4Student4Gw(ctx context.Context, studentID string) ([]*response.GetTopic4StudentResponse4Gw, error)
 	GetTopic4GW(ctx context.Context, topicID string) (*response.TopicResponse4GW, error)
 	GetTopics2Assign4Web(ctx context.Context) ([]*response.TopicResponse2Assign4Web, error)
 }
@@ -550,6 +551,36 @@ func (s *topicService) GetTopics4Student4Web(ctx context.Context, studentID stri
 		}
 	}
 	return mapper.ToTopic4StudentResponses4Web(topics, 1), nil
+}
+
+func (s *topicService) GetTopics4Student4Gw(ctx context.Context, studentID string) ([]*response.GetTopic4StudentResponse4Gw, error) {
+	// get org by student
+	student, err := s.userGateway.GetStudentInfo(ctx, studentID)
+	if err != nil {
+		return nil, err
+	}
+	topics, err := s.topicRepo.GetAllTopicByOrganizationID(ctx, student.OrganizationID)
+	if err != nil {
+		return nil, err
+	}
+	for ti := range topics {
+		for li := range topics[ti].LanguageConfig {
+			langCfg := &topics[ti].LanguageConfig[li]
+			for ii := range langCfg.Images {
+				img := &langCfg.Images[ii]
+				if img.ImageKey != "" {
+					url, err := s.fileGateway.GetImageUrl(ctx, gw_request.GetFileUrlRequest{
+						Key:  img.ImageKey,
+						Mode: "private",
+					})
+					if err == nil && url != nil {
+						img.UploadedUrl = *url
+					}
+				}
+			}
+		}
+	}
+	return mapper.ToTopic4StudentResponses4Gw(topics, 1), nil
 }
 
 func (s *topicService) GetTopic4GW(ctx context.Context, topicID string) (*response.TopicResponse4GW, error) {

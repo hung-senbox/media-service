@@ -48,6 +48,13 @@ type GetTopic4StudentResponse4Web struct {
 	MainImageUrl string `json:"main_image_url"`
 }
 
+type GetTopic4StudentResponse4Gw struct {
+	ID           string `json:"id"`
+	IsPublished  bool   `json:"is_published"`
+	Title        string `json:"title"`
+	MainImageUrl string `json:"main_image_url"`
+}
+
 type TopicResponse4GW struct {
 	ID           string `json:"id"`
 	Title        string `json:"title"`
