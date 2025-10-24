@@ -10,6 +10,7 @@ type StudentReportPDFResponse struct {
 	PDFName   string    `json:"pdf_name" bson:"pdf_name"`
 	Folder    string    `json:"folder" bson:"folder"`
 	PDFUrl    *string   `json:"pdf_url" bson:"pdf_url"`
+	Color     string    `json:"color" bson:"color"`
 	CreatedBy string    `json:"created_by" bson:"created_by"`
 	CreatedAt time.Time `json:"created_at" bson:"created_at"`
 	UpdatedAt time.Time `json:"updated_at" bson:"updated_at"`

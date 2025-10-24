@@ -92,6 +92,7 @@ func (s *pdfService) GetPDFsByStudent(ctx context.Context, studentID string) ([]
 			PDFName:   studentPdf.PDFName,
 			Folder:    studentPdf.Folder,
 			PDFUrl:    pdfUrl,
+			Color:     studentPdf.Color,
 			CreatedBy: studentPdf.CreatedBy,
 			CreatedAt: studentPdf.CreatedAt,
 			UpdatedAt: studentPdf.UpdatedAt,
