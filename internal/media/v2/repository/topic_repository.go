@@ -20,6 +20,7 @@ type TopicRepository interface {
 	SetVideo(ctx context.Context, topicID string, languageID uint, vid model.TopicVideoConfig) error
 	GetAllTopicByOrganizationID(ctx context.Context, orgID string) ([]model.Topic, error)
 	GetByID(ctx context.Context, id string) (*model.Topic, error)
+	GetAllTopicByOrganizationIDAndIsPublished(ctx context.Context, orgID string) ([]model.Topic, error)
 }
 
 type topicRepository struct {
@@ -246,4 +247,26 @@ func (r *topicRepository) GetByID(ctx context.Context, topicID string) (*model.T
 		return nil, err
 	}
 	return &topic, nil
+}
+
+func (r *topicRepository) GetAllTopicByOrganizationIDAndIsPublished(ctx context.Context, orgID string) ([]model.Topic, error) {
+	var topics []model.Topic
+	filter := bson.M{
+		"organization_id": orgID,
+		"is_published":    true,
+		"$or": []bson.M{
+			{"parent_id": ""},
+			{"parent_id": bson.M{"$exists": false}},
+			{"parent_id": nil},
+		},
+	}
+
+	cursor, err := r.topicCollection.Find(ctx, filter)
+	if err != nil {
+		return nil, err
+	}
+	if err := cursor.All(ctx, &topics); err != nil {
+		return nil, err
+	}
+	return topics, nil
 }

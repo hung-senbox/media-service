@@ -31,6 +31,7 @@ type TopicService interface {
 	GetTopics4Student4Web(ctx context.Context, studentID string) ([]*response.GetTopic4StudentResponse4Web, error)
 	GetTopics4Student4Gw(ctx context.Context, studentID string) ([]*response.GetTopic4StudentResponse4Gw, error)
 	GetTopic4GW(ctx context.Context, topicID string) (*response.TopicResponse4GW, error)
+	GetAllTopicsByOrganization4GW(ctx context.Context, organizationID string) ([]*response.TopicResponse4GW, error)
 	GetTopics2Assign4Web(ctx context.Context) ([]*response.TopicResponse2Assign4Web, error)
 }
 
@@ -505,7 +506,7 @@ func (s *topicService) GetTopics4Student4App(ctx context.Context, studentID stri
 	if err != nil {
 		return nil, err
 	}
-	topics, err := s.topicRepo.GetAllTopicByOrganizationID(ctx, student.OrganizationID)
+	topics, err := s.topicRepo.GetAllTopicByOrganizationIDAndIsPublished(ctx, student.OrganizationID)
 	if err != nil {
 		return nil, err
 	}
@@ -520,7 +521,7 @@ func (s *topicService) GetTopics4Student4Web(ctx context.Context, studentID stri
 	if err != nil {
 		return nil, err
 	}
-	topics, err := s.topicRepo.GetAllTopicByOrganizationID(ctx, student.OrganizationID)
+	topics, err := s.topicRepo.GetAllTopicByOrganizationIDAndIsPublished(ctx, student.OrganizationID)
 	if err != nil {
 		return nil, err
 	}
@@ -550,7 +551,7 @@ func (s *topicService) GetTopics4Student4Gw(ctx context.Context, studentID strin
 	if err != nil {
 		return nil, err
 	}
-	topics, err := s.topicRepo.GetAllTopicByOrganizationID(ctx, student.OrganizationID)
+	topics, err := s.topicRepo.GetAllTopicByOrganizationIDAndIsPublished(ctx, student.OrganizationID)
 	if err != nil {
 		return nil, err
 	}
@@ -607,7 +608,7 @@ func (s *topicService) GetTopics2Assign4Web(ctx context.Context) ([]*response.To
 		return nil, fmt.Errorf("access denied")
 	}
 
-	topics, err := s.topicRepo.GetAllTopicByOrganizationID(ctx, currentUser.OrganizationAdmin.ID)
+	topics, err := s.topicRepo.GetAllTopicByOrganizationIDAndIsPublished(ctx, currentUser.OrganizationAdmin.ID)
 	if err != nil {
 		return nil, err
 	}
@@ -631,4 +632,39 @@ func (s *topicService) GetTopics2Assign4Web(ctx context.Context) ([]*response.To
 	}
 
 	return mapper.ToTopic2Assign4Web(topics, 1), nil
+}
+
+func (s *topicService) GetAllTopicsByOrganization4GW(ctx context.Context, organizationID string) ([]*response.TopicResponse4GW, error) {
+
+	topics, err := s.topicRepo.GetAllTopicByOrganizationIDAndIsPublished(ctx, organizationID)
+	if err != nil {
+		return nil, err
+	}
+
+	appLang := helper.GetAppLanguage(ctx, 1)
+
+	var result []*response.TopicResponse4GW
+
+	for _, topic := range topics {
+		// xử lý ảnh từng topic
+		for ii := range topic.LanguageConfig[0].Images {
+			img := &topic.LanguageConfig[0].Images[ii]
+			if img.ImageKey != "" {
+				url, err := s.fileGateway.GetImageUrl(ctx, gw_request.GetFileUrlRequest{
+					Key:  img.ImageKey,
+					Mode: "private",
+				})
+				if err == nil && url != nil {
+					img.UploadedUrl = *url
+				}
+			}
+		}
+
+		topicRes := mapper.ToTopicResponses4GW(&topic, appLang)
+		if topicRes != nil {
+			result = append(result, topicRes)
+		}
+	}
+
+	return result, nil
 }

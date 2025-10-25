@@ -102,6 +102,22 @@ func (h TopicHandler) GetTopic4GW(c *gin.Context) {
 	helper.SendSuccess(c, http.StatusOK, "get topic success", res)
 }
 
+func (h TopicHandler) GetAllTopicsByOrganization4GW(c *gin.Context) {
+	organizationID := c.Param("organization_id")
+	if organizationID == "" {
+		helper.SendError(c, http.StatusBadRequest, nil, helper.ErrInvalidRequest)
+		return
+	}
+
+	res, err := h.service.GetAllTopicsByOrganization4GW(c.Request.Context(), organizationID)
+	if err != nil {
+		helper.SendError(c, http.StatusInternalServerError, err, helper.ErrInvalidOperation)
+		return
+	}
+
+	helper.SendSuccess(c, http.StatusOK, "get all topics success", res)
+}
+
 func (h TopicHandler) GetTopics4Student4Web(c *gin.Context) {
 	studentID := c.Param("student_id")
 	if studentID == "" {
