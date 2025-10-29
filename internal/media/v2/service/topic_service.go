@@ -234,10 +234,22 @@ func (s *topicService) GetUploadProgress(ctx context.Context, topicID string) (*
 	}
 
 	orgID := currentUser.OrganizationAdmin.ID
-	total, _ := s.redisService.GetTotalUploadTask(ctx, orgID, topicID)
-	remaining, _ := s.redisService.GetUploadProgress(ctx, orgID, topicID)
-	rawErrors, _ := s.redisService.GetUploadErrors(ctx, orgID, topicID)
-	topic, _ := s.topicRepo.GetByID(ctx, topicID)
+	total, err := s.redisService.GetTotalUploadTask(ctx, orgID, topicID)
+	if err != nil {
+		return nil, err
+	}
+	remaining, err := s.redisService.GetUploadProgress(ctx, orgID, topicID)
+	if err != nil {
+		return nil, err
+	}
+	rawErrors, err := s.redisService.GetUploadErrors(ctx, orgID, topicID)
+	if err != nil {
+		return nil, err
+	}
+	topic, err := s.topicRepo.GetByID(ctx, topicID)
+	if err != nil {
+		return nil, err
+	}
 
 	// Nếu chưa từng tạo task upload nào => chưa upload gì cả (hoac case da dat 100 progress thi da xoa het cache)
 	if total == 0 {
