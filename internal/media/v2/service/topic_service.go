@@ -92,13 +92,15 @@ func (s *topicService) CreateTopic(ctx context.Context, req request.CreateTopicR
 	}
 
 	// Tính total task
-	totalTasks := 0
-	files := []interface{}{
-		req.AudioFile, req.VideoFile, req.FullBackgroundFile, req.ClearBackgroundFile,
-		req.ClipPartFile, req.DrawingFile, req.IconFile, req.BMFile,
+	files := []*multipart.FileHeader{
+		req.AudioFile, req.VideoFile, req.FullBackgroundFile,
+		req.ClearBackgroundFile, req.ClipPartFile,
+		req.DrawingFile, req.IconFile, req.BMFile,
 	}
+
+	totalTasks := 0
 	for _, f := range files {
-		if f != nil {
+		if helper.IsValidFile(f) {
 			totalTasks++
 		}
 	}
@@ -108,14 +110,16 @@ func (s *topicService) CreateTopic(ctx context.Context, req request.CreateTopicR
 	}
 
 	// Upload async
-	go func(orgID, topicID string, req request.CreateTopicRequest) {
-		ctxUpload, cancel := context.WithTimeout(context.Background(), 5*time.Minute)
-		defer cancel()
-		token, _ := ctx.Value(constants.Token).(string)
-		ctxUpload = context.WithValue(ctxUpload, constants.Token, token)
+	if totalTasks > 0 {
+		go func(orgID, topicID string, req request.CreateTopicRequest) {
+			ctxUpload, cancel := context.WithTimeout(context.Background(), 5*time.Minute)
+			defer cancel()
+			token, _ := ctx.Value(constants.Token).(string)
+			ctxUpload = context.WithValue(ctxUpload, constants.Token, token)
 
-		s.uploadFilesAsync(ctxUpload, orgID, topicID, req)
-	}(orgID, topic.ID.Hex(), req)
+			s.uploadFilesAsync(ctxUpload, orgID, topicID, req)
+		}(orgID, topic.ID.Hex(), req)
+	}
 
 	return topic, nil
 }
@@ -125,16 +129,15 @@ func (s *topicService) uploadFilesAsync(ctx context.Context, orgID, topicID stri
 	decrementTask := func() {
 		remaining, _ := s.redisService.DecrementUploadTask(ctx, orgID, topicID)
 		if remaining <= 0 {
-			_ = s.redisService.SetUploadProgress(ctx, orgID, topicID, 0) // progress = 100%
+			_ = s.redisService.SetUploadProgress(ctx, orgID, topicID, 0)
 		}
 	}
 
-	if req.AudioFile != nil {
-		time.Sleep(4 * time.Second)
+	if helper.IsValidFile(req.AudioFile) {
 		s.uploadAndSaveAudio(ctx, orgID, topicID, req, decrementTask)
 	}
-	if req.VideoFile != nil {
-		time.Sleep(4 * time.Second)
+
+	if helper.IsValidFile(req.VideoFile) {
 		s.uploadAndSaveVideo(ctx, orgID, topicID, req, decrementTask)
 	}
 	s.uploadAndSaveImages(ctx, orgID, topicID, req, decrementTask)
@@ -198,10 +201,10 @@ func (s *topicService) uploadAndSaveImages(ctx context.Context, orgID, topicID s
 	}
 
 	for _, img := range imageFiles {
-		time.Sleep(2 * time.Second)
-		if img.file == nil {
+		if helper.IsValidFile(img.file) {
 			continue
 		}
+
 		resp, err := s.fileGateway.UploadImage(ctx, gw_request.UploadFileRequest{
 			File:      img.file,
 			Folder:    "topic_media",

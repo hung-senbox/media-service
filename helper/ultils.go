@@ -3,6 +3,7 @@ package helper
 import (
 	"context"
 	"media-service/pkg/constants"
+	"mime/multipart"
 	"strconv"
 	"strings"
 )
@@ -37,4 +38,8 @@ func GetUserID(ctx context.Context) string {
 		return userID
 	}
 	return ""
+}
+
+func IsValidFile(f *multipart.FileHeader) bool {
+	return f != nil && f.Filename != ""
 }

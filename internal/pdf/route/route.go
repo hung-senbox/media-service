@@ -8,12 +8,12 @@ import (
 	"github.com/gin-gonic/gin"
 )
 
-func RegisterRoutes(route *gin.Engine, pdfHandler *domain.PDFHandler, userGw gateway.UserGateway) {
+func RegisterRoutes(route *gin.Engine, userResource *domain.UserResourceHandler, userGw gateway.UserGateway) {
 	pdfGroup := route.Group("/api/v1/pdf", middleware.Secured(userGw))
 	{
-		pdfGroup.POST("/student", pdfHandler.CreatePDF)
-		pdfGroup.GET("/student", pdfHandler.GetPDFsByStudent)
-		pdfGroup.DELETE("/:id", pdfHandler.DeletePDFsBy)
-		pdfGroup.PUT("/:id", pdfHandler.UpdatePDFsBy)
+		pdfGroup.POST("/resource", userResource.CreateResource)
+		// pdfGroup.GET("/student", pdfHandler.GetPDFsByStudent)
+		// pdfGroup.DELETE("/:id", pdfHandler.DeletePDFsBy)
+		// pdfGroup.PUT("/:id", pdfHandler.UpdatePDFsBy)
 	}
 }
