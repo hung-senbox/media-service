@@ -79,11 +79,12 @@ func (s *RedisService) DeleteUploadProgress(ctx context.Context, organizationID,
 	totalKey := buildKey(organizationID, topicID, "total")
 	remainKey := buildKey(organizationID, topicID, "remaining")
 	errorKey := buildKey(organizationID, topicID, "errors")
-
+	progressKey := buildKey(organizationID, topicID, "progress")
 	pipe := db.Client.TxPipeline()
 	pipe.Del(ctx, totalKey)
 	pipe.Del(ctx, remainKey)
 	pipe.Del(ctx, errorKey)
+	pipe.Del(ctx, progressKey)
 	_, err := pipe.Exec(ctx)
 	return err
 }

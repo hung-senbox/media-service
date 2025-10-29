@@ -75,3 +75,167 @@
   "msg": "please wait until the previous upload is completed",
   "time": "2025-10-29T10:29:06+07:00"
 }
+{
+  "data": {
+    "error": "http call failed: Get \"http://localhost:8001/v1/user/current-user\": dial tcp [::1]:8001: connect: connection refused"
+  },
+  "level": "error",
+  "msg": "call API user fail",
+  "time": "2025-10-29T11:33:36+07:00"
+}
+{
+  "data": {
+    "method": "POST",
+    "response": "{\"error\":\"Key: 'UploadImageRequest.File' Error:Field validation for 'File' failed on the 'required' tag\"}",
+    "service": "go-main-service",
+    "status_code": 400,
+    "url": "http://localhost:8001/v1/gateway/images/upload"
+  },
+  "level": "warning",
+  "msg": "http multipart error",
+  "time": "2025-10-29T14:33:23+07:00"
+}
+{
+  "data": {
+    "method": "POST",
+    "response": "{\"error\":\"Key: 'UploadImageRequest.File' Error:Field validation for 'File' failed on the 'required' tag\"}",
+    "service": "go-main-service",
+    "status_code": 400,
+    "url": "http://localhost:8001/v1/gateway/images/upload"
+  },
+  "level": "warning",
+  "msg": "http multipart error",
+  "time": "2025-10-29T14:38:23+07:00"
+}
+{
+  "data": {
+    "method": "POST",
+    "response": "{\"error\":\"Key: 'UploadImageRequest.File' Error:Field validation for 'File' failed on the 'required' tag\"}",
+    "service": "go-main-service",
+    "status_code": 400,
+    "url": "http://localhost:8001/v1/gateway/images/upload"
+  },
+  "level": "warning",
+  "msg": "http multipart error",
+  "time": "2025-10-29T14:43:23+07:00"
+}
+{
+  "data": {
+    "method": "POST",
+    "response": "{\"error\":\"Key: 'UploadImageRequest.File' Error:Field validation for 'File' failed on the 'required' tag\"}",
+    "service": "go-main-service",
+    "status_code": 400,
+    "url": "http://localhost:8001/v1/gateway/images/upload"
+  },
+  "level": "warning",
+  "msg": "http multipart error",
+  "time": "2025-10-29T14:48:23+07:00"
+}
+{
+  "data": {
+    "method": "POST",
+    "response": "{\"error\":\"Key: 'UploadImageRequest.File' Error:Field validation for 'File' failed on the 'required' tag\"}",
+    "service": "go-main-service",
+    "status_code": 400,
+    "url": "http://localhost:8001/v1/gateway/images/upload"
+  },
+  "level": "warning",
+  "msg": "http multipart error",
+  "time": "2025-10-29T14:53:23+07:00"
+}
+{
+  "data": {
+    "method": "POST",
+    "response": "{\"error\":\"Key: 'UploadImageRequest.File' Error:Field validation for 'File' failed on the 'required' tag\"}",
+    "service": "go-main-service",
+    "status_code": 400,
+    "url": "http://localhost:8001/v1/gateway/images/upload"
+  },
+  "level": "warning",
+  "msg": "http multipart error",
+  "time": "2025-10-29T15:54:04+07:00"
+}
+{
+  "data": {
+    "method": "POST",
+    "response": "{\"error\":\"Key: 'UploadImageRequest.File' Error:Field validation for 'File' failed on the 'required' tag\"}",
+    "service": "go-main-service",
+    "status_code": 400,
+    "url": "http://localhost:8001/v1/gateway/images/upload"
+  },
+  "level": "warning",
+  "msg": "http multipart error",
+  "time": "2025-10-29T16:32:30+07:00"
+}
+{
+  "data": {
+    "method": "POST",
+    "response": "{\"error\":\"Key: 'UploadImageRequest.File' Error:Field validation for 'File' failed on the 'required' tag\"}",
+    "service": "go-main-service",
+    "status_code": 400,
+    "url": "http://localhost:8001/v1/gateway/images/upload"
+  },
+  "level": "warning",
+  "msg": "http multipart error",
+  "time": "2025-10-29T16:32:30+07:00"
+}
+{
+  "data": {
+    "method": "POST",
+    "response": "{\"error\":\"Key: 'UploadImageRequest.File' Error:Field validation for 'File' failed on the 'required' tag\"}",
+    "service": "go-main-service",
+    "status_code": 400,
+    "url": "http://localhost:8001/v1/gateway/images/upload"
+  },
+  "level": "warning",
+  "msg": "http multipart error",
+  "time": "2025-10-29T16:32:30+07:00"
+}
+{
+  "data": {
+    "method": "POST",
+    "response": "{\"error\":\"Key: 'UploadImageRequest.File' Error:Field validation for 'File' failed on the 'required' tag\"}",
+    "service": "go-main-service",
+    "status_code": 400,
+    "url": "http://localhost:8001/v1/gateway/images/upload"
+  },
+  "level": "warning",
+  "msg": "http multipart error",
+  "time": "2025-10-29T16:32:30+07:00"
+}
+{
+  "data": {
+    "method": "POST",
+    "response": "{\"error\":\"Key: 'UploadImageRequest.File' Error:Field validation for 'File' failed on the 'required' tag\"}",
+    "service": "go-main-service",
+    "status_code": 400,
+    "url": "http://localhost:8001/v1/gateway/images/upload"
+  },
+  "level": "warning",
+  "msg": "http multipart error",
+  "time": "2025-10-29T16:32:30+07:00"
+}
+{
+  "data": {
+    "method": "POST",
+    "response": "{\"status_code\":400,\"message\":\"\",\"error\":\"Key: 'UploadAudioRequest.File' Error:Field validation for 'File' failed on the 'required' tag\",\"data\":null}",
+    "service": "go-main-service",
+    "status_code": 400,
+    "url": "http://localhost:8001/v1/gateway/audios/upload"
+  },
+  "level": "warning",
+  "msg": "http multipart error",
+  "time": "2025-10-29T16:38:36+07:00"
+}
+{
+  "data": {
+    "method": "POST",
+    "response": "{\"error\":\"Key: 'UploadVideoRequest.File' Error:Field validation for 'File' failed on the 'required' tag\"}",
+    "service": "go-main-service",
+    "status_code": 400,
+    "url": "http://localhost:8001/v1/gateway/videos/upload"
+  },
+  "level": "warning",
+  "msg": "http multipart error",
+  "time": "2025-10-29T16:38:37+07:00"
+}

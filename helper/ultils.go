@@ -41,5 +41,5 @@ func GetUserID(ctx context.Context) string {
 }
 
 func IsValidFile(f *multipart.FileHeader) bool {
-	return f != nil && f.Filename != ""
+	return f != nil && f.Size > 0
 }

@@ -3,6 +3,7 @@ package service
 import (
 	"context"
 	"fmt"
+	"math"
 	"media-service/helper"
 	"media-service/internal/gateway"
 	gw_request "media-service/internal/gateway/dto/request"
@@ -201,7 +202,7 @@ func (s *topicService) uploadAndSaveImages(ctx context.Context, orgID, topicID s
 	}
 
 	for _, img := range imageFiles {
-		if helper.IsValidFile(img.file) {
+		if !helper.IsValidFile(img.file) {
 			continue
 		}
 
@@ -227,26 +228,43 @@ func (s *topicService) uploadAndSaveImages(ctx context.Context, orgID, topicID s
 
 // ------------------- Get upload progress -------------------
 func (s *topicService) GetUploadProgress(ctx context.Context, topicID string) (*response.GetUploadProgressResponse, error) {
-
 	currentUser, _ := ctx.Value(constants.CurrentUserKey).(*gw_response.CurrentUser)
-
 	if currentUser.IsSuperAdmin || currentUser.OrganizationAdmin.ID == "" {
 		return nil, fmt.Errorf("access denied")
 	}
 
-	organizationID := currentUser.OrganizationAdmin.ID
-	total, _ := s.redisService.GetTotalUploadTask(ctx, organizationID, topicID)
-	remaining, _ := s.redisService.GetUploadProgress(ctx, organizationID, topicID)
+	orgID := currentUser.OrganizationAdmin.ID
+	total, _ := s.redisService.GetTotalUploadTask(ctx, orgID, topicID)
+	remaining, _ := s.redisService.GetUploadProgress(ctx, orgID, topicID)
+	rawErrors, _ := s.redisService.GetUploadErrors(ctx, orgID, topicID)
+	topic, _ := s.topicRepo.GetByID(ctx, topicID)
 
-	progress := 0
-	if total > 0 {
-		progress = int((total - remaining) * 100 / total)
-		if progress > 100 {
-			progress = 100
-		}
+	// Nếu chưa từng tạo task upload nào => chưa upload gì cả (hoac case da dat 100 progress thi da xoa het cache)
+	if total == 0 {
+		// goi delete cache
+		_ = s.redisService.DeleteUploadProgress(ctx, orgID, topicID)
+
+		return &response.GetUploadProgressResponse{
+			Progress: -1,
+			FileName: topic.LanguageConfig[0].FileName,
+			UploadErrors: map[string]any{
+				"audio_error": "",
+				"video_error": "",
+				"image_error": map[string]string{
+					"full_background":  "",
+					"clear_background": "",
+					"clip_part":        "",
+					"drawing":          "",
+					"icon":             "",
+					"bm":               "",
+				},
+			},
+		}, nil
 	}
 
-	rawErrors, _ := s.redisService.GetUploadErrors(ctx, organizationID, topicID)
+	// Nếu có task upload
+	progress := int((total - remaining) * 100 / total)
+	progress = int(math.Min(float64(progress), 100.0))
 
 	imageErr := map[string]string{
 		"full_background":  rawErrors["image_full_background"],
@@ -257,8 +275,8 @@ func (s *topicService) GetUploadProgress(ctx context.Context, topicID string) (*
 		"bm":               rawErrors["image_bm"],
 	}
 
-	// get file_name
-	topic, _ := s.topicRepo.GetByID(ctx, topicID)
+	// goi delete cache
+	_ = s.redisService.DeleteUploadProgress(ctx, orgID, topicID)
 
 	return &response.GetUploadProgressResponse{
 		Progress: progress,
@@ -329,41 +347,6 @@ func (s *topicService) GetTopics4Web(ctx context.Context) ([]response.TopicRespo
 
 }
 
-func (s *topicService) UpdateTopic(ctx context.Context, req request.UpdateTopicRequest) error {
-	oldTopic, err := s.topicRepo.GetByID(ctx, req.TopicID)
-	if err != nil {
-		return fmt.Errorf("get topic failed: %w", err)
-	}
-
-	found := false
-	for i, lc := range oldTopic.LanguageConfig {
-		if lc.LanguageID == req.LanguageID {
-			oldTopic.LanguageConfig[i].FileName = req.FileName
-			oldTopic.LanguageConfig[i].Title = req.Title
-			oldTopic.LanguageConfig[i].Note = req.Node
-			oldTopic.LanguageConfig[i].Description = req.Description
-			found = true
-			break
-		}
-	}
-
-	if !found {
-		oldTopic.LanguageConfig = append(oldTopic.LanguageConfig, model.TopicLanguageConfig{
-			LanguageID:  req.LanguageID,
-			FileName:    req.FileName,
-			Title:       req.Title,
-			Note:        req.Node,
-			Description: req.Description,
-		})
-	}
-
-	// Update published
-	oldTopic.IsPublished = *req.IsPublished
-
-	// Call repo update
-	return s.topicRepo.UpdateTopic(ctx, oldTopic)
-}
-
 func (s *topicService) GetTopic4Web(ctx context.Context, topicID string) (*response.TopicResponse4Web, error) {
 
 	topic, err := s.topicRepo.GetByID(ctx, topicID)
@@ -412,6 +395,41 @@ func (s *topicService) GetTopic4Web(ctx context.Context, topicID string) (*respo
 	}
 
 	return mapper.ToTopicResponse4Web(topic), nil
+}
+
+func (s *topicService) UpdateTopic(ctx context.Context, req request.UpdateTopicRequest) error {
+	oldTopic, err := s.topicRepo.GetByID(ctx, req.TopicID)
+	if err != nil {
+		return fmt.Errorf("get topic failed: %w", err)
+	}
+
+	found := false
+	for i, lc := range oldTopic.LanguageConfig {
+		if lc.LanguageID == req.LanguageID {
+			oldTopic.LanguageConfig[i].FileName = req.FileName
+			oldTopic.LanguageConfig[i].Title = req.Title
+			oldTopic.LanguageConfig[i].Note = req.Node
+			oldTopic.LanguageConfig[i].Description = req.Description
+			found = true
+			break
+		}
+	}
+
+	if !found {
+		oldTopic.LanguageConfig = append(oldTopic.LanguageConfig, model.TopicLanguageConfig{
+			LanguageID:  req.LanguageID,
+			FileName:    req.FileName,
+			Title:       req.Title,
+			Note:        req.Node,
+			Description: req.Description,
+		})
+	}
+
+	// Update published
+	oldTopic.IsPublished = *req.IsPublished
+
+	// Call repo update
+	return s.topicRepo.UpdateTopic(ctx, oldTopic)
 }
 
 func (s *topicService) UpdateAudio(ctx context.Context, req request.UpdateAudioRequest) error {
