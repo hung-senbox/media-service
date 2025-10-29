@@ -169,6 +169,48 @@ func (h TopicHandler) UpdateTopic(c *gin.Context) {
 	helper.SendSuccess(c, http.StatusOK, "update topic success", nil)
 }
 
+func (h TopicHandler) UploadAudio(c *gin.Context) {
+	topicID := c.Param("topic_id")
+	if topicID == "" {
+		helper.SendError(c, http.StatusBadRequest, nil, helper.ErrInvalidRequest)
+		return
+	}
+	var req request.UploadAudioRequest
+	if err := c.ShouldBind(&req); err != nil {
+		helper.SendError(c, http.StatusBadRequest, err, helper.ErrInvalidRequest)
+		return
+	}
+	req.TopicID = topicID
+	err := h.service.UploadAudio(c.Request.Context(), req)
+	if err != nil {
+		helper.SendError(c, http.StatusInternalServerError, err, helper.ErrInvalidOperation)
+		return
+	}
+
+	helper.SendSuccess(c, http.StatusOK, "upload audio success", nil)
+}
+
+func (h TopicHandler) UploadVideo(c *gin.Context) {
+	topicID := c.Param("topic_id")
+	if topicID == "" {
+		helper.SendError(c, http.StatusBadRequest, nil, helper.ErrInvalidRequest)
+		return
+	}
+	var req request.UploadVideoRequest
+	if err := c.ShouldBind(&req); err != nil {
+		helper.SendError(c, http.StatusBadRequest, err, helper.ErrInvalidRequest)
+		return
+	}
+	req.TopicID = topicID
+	err := h.service.UploadVideo(c.Request.Context(), req)
+	if err != nil {
+		helper.SendError(c, http.StatusInternalServerError, err, helper.ErrInvalidOperation)
+		return
+	}
+
+	helper.SendSuccess(c, http.StatusOK, "upload audio success", nil)
+}
+
 func (h TopicHandler) GetTopics2Assign4Web(c *gin.Context) {
 	res, err := h.service.GetTopics2Assign4Web(c.Request.Context())
 	if err != nil {

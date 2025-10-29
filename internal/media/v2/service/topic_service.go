@@ -27,7 +27,8 @@ type TopicService interface {
 	GetUploadProgress(ctx context.Context, topicID string) (*response.GetUploadProgressResponse, error)
 	GetTopics4Web(ctx context.Context) ([]response.TopicResponse4Web, error)
 	GetTopic4Web(ctx context.Context, topicID string) (*response.TopicResponse4Web, error)
-	UpdateAudio(ctx context.Context, req request.UpdateAudioRequest) error
+	UploadAudio(ctx context.Context, req request.UploadAudioRequest) error
+	UploadVideo(ctx context.Context, req request.UploadVideoRequest) error
 	GetTopics4Student4App(ctx context.Context, studentID string) ([]*response.GetTopic4StudentResponse4App, error)
 	GetTopics4Student4Web(ctx context.Context, studentID string) ([]*response.GetTopic4StudentResponse4Web, error)
 	GetTopics4Student4Gw(ctx context.Context, studentID string) ([]*response.GetTopic4StudentResponse4Gw, error)
@@ -444,7 +445,7 @@ func (s *topicService) UpdateTopic(ctx context.Context, req request.UpdateTopicR
 	return s.topicRepo.UpdateTopic(ctx, oldTopic)
 }
 
-func (s *topicService) UpdateAudio(ctx context.Context, req request.UpdateAudioRequest) error {
+func (s *topicService) UploadAudio(ctx context.Context, req request.UploadAudioRequest) error {
 
 	currentUser, _ := ctx.Value(constants.CurrentUserKey).(*gw_response.CurrentUser)
 
@@ -458,15 +459,18 @@ func (s *topicService) UpdateAudio(ctx context.Context, req request.UpdateAudioR
 		return err
 	}
 
-	if req.AudioFile != nil {
+	// case 1 : update co file
+	oldAudioKey := s.getAudioKeyByLanguage(topic, req.LanguageID)
+
+	if helper.IsValidFile(req.AudioFile) {
 		inProgress, err := s.redisService.HasAnyUploadInProgress(ctx, orgID)
 		if err == nil && inProgress {
 			return fmt.Errorf("please wait until the previous upload is completed")
 		}
 
-		// neu co old key thi xoa
-		if req.AudioOldKey != "" {
-			if err := s.fileGateway.DeleteAudio(ctx, req.AudioOldKey); err != nil {
+		// xoa file cu
+		if oldAudioKey != "" {
+			if err := s.fileGateway.DeleteAudio(ctx, oldAudioKey); err != nil {
 				return err
 			}
 		}
@@ -480,15 +484,16 @@ func (s *topicService) UpdateAudio(ctx context.Context, req request.UpdateAudioR
 		s.uploadFilesAsync(ctx, orgID, topic.ID.Hex(), createTopicReq)
 	}
 
+	// case 2 : update khong co file
 	return s.topicRepo.SetAudio(ctx, topic.ID.Hex(), req.LanguageID, model.TopicAudioConfig{
-		AudioKey:  req.AudioOldKey,
+		AudioKey:  oldAudioKey,
 		LinkUrl:   req.AudioLinkUrl,
 		StartTime: req.AudioStart,
 		EndTime:   req.AudioEnd,
 	})
 }
 
-func (s *topicService) UpdateVideo(ctx context.Context, req request.UpdateVideoRequest) error {
+func (s *topicService) UploadVideo(ctx context.Context, req request.UploadVideoRequest) error {
 
 	currentUser, _ := ctx.Value(constants.CurrentUserKey).(*gw_response.CurrentUser)
 
@@ -502,15 +507,18 @@ func (s *topicService) UpdateVideo(ctx context.Context, req request.UpdateVideoR
 		return err
 	}
 
-	if req.VideoFile != nil {
+	// case 1 : update co file
+	oldAudioKey := s.getAudioKeyByLanguage(topic, req.LanguageID)
+
+	if helper.IsValidFile(req.VideoFile) {
 		inProgress, err := s.redisService.HasAnyUploadInProgress(ctx, orgID)
 		if err == nil && inProgress {
 			return fmt.Errorf("please wait until the previous upload is completed")
 		}
 
 		// neu co old key thi xoa
-		if req.VideoOldKey != "" {
-			if err := s.fileGateway.DeleteVideo(ctx, req.VideoOldKey); err != nil {
+		if oldAudioKey != "" {
+			if err := s.fileGateway.DeleteVideo(ctx, oldAudioKey); err != nil {
 				return err
 			}
 		}
@@ -525,12 +533,24 @@ func (s *topicService) UpdateVideo(ctx context.Context, req request.UpdateVideoR
 	}
 
 	return s.topicRepo.SetVideo(ctx, topic.ID.Hex(), req.LanguageID, model.TopicVideoConfig{
-		VideoKey:  req.VideoOldKey,
+		VideoKey:  oldAudioKey,
 		LinkUrl:   req.VideoLinkUrl,
 		StartTime: req.VideoStart,
 		EndTime:   req.VideoEnd,
 	})
 
+}
+
+func (s *topicService) getAudioKeyByLanguage(topic *model.Topic, languageID uint) string {
+	for _, lc := range topic.LanguageConfig {
+		if lc.LanguageID == languageID {
+			if lc.Audio.AudioKey != "" {
+				return lc.Audio.AudioKey
+			}
+			break
+		}
+	}
+	return ""
 }
 
 func (s *topicService) GetTopics4Student4App(ctx context.Context, studentID string) ([]*response.GetTopic4StudentResponse4App, error) {

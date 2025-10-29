@@ -22,6 +22,8 @@ func RegisterTopicRoutes(r *gin.Engine, hv2 *handler.TopicHandler, userGw gatewa
 			topicsAdmin.GET("/student/:student_id", hv2.GetTopics4Student4Web)
 			topicsAdmin.PUT("/:topic_id", hv2.UpdateTopic)
 			topicsAdmin.GET("/assign", hv2.GetTopics2Assign4Web)
+			topicsAdmin.PUT("/:topic_id/audio", hv2.UploadAudio)
+			topicsAdmin.PUT("/:topic_id/video", hv2.UploadVideo)
 		}
 	}
 
