@@ -101,6 +101,23 @@ func (g *CachedUserGateway) GetUserByTeacher(ctx context.Context, teacherID stri
 	return user, nil
 }
 
+func (g *CachedUserGateway) GetParentByUser(ctx context.Context, userID string) (*gw_response.ParentResponse, error) {
+	cacheKey := cache.ParentByUserCacheKey(userID)
+
+	var cached gw_response.ParentResponse
+	if err := g.cache.Get(ctx, cacheKey, &cached); err == nil && cached.ID != "" {
+		return &cached, nil
+	}
+
+	parent, err := g.inner.GetParentByUser(ctx, userID)
+	if err != nil {
+		return nil, err
+	}
+
+	_ = g.cache.Set(ctx, cacheKey, parent, int(g.ttl.Seconds()))
+	return parent, nil
+}
+
 // ==============================
 // === GetCurrentUser ===
 // ==============================

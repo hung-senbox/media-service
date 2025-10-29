@@ -64,3 +64,14 @@
   "msg": "http error",
   "time": "2025-10-03T15:34:24+07:00"
 }
+{
+  "data": {
+    "error_code": "ERR_INVALID_OPERATION",
+    "method": "POST",
+    "path": "/api/v2/admin/topics",
+    "status_code": 500
+  },
+  "level": "error",
+  "msg": "please wait until the previous upload is completed",
+  "time": "2025-10-29T10:29:06+07:00"
+}

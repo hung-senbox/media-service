@@ -27,9 +27,13 @@ func ChildCacheKey(childID string) string {
 }
 
 func TeacherByUserAndOrgCacheKey(userID, orgID string) string {
-	return constants.MainCachePrefix + "teacher-by:" + userID + ":" + orgID
+	return constants.MainCachePrefix + "teacher-by-user-org:" + userID + ":" + orgID
 }
 
 func UserByTeacherCacheKey(teacherID string) string {
-	return constants.MainCachePrefix + "user-by:" + teacherID
+	return constants.MainCachePrefix + "user-by-teacher-org:" + teacherID
+}
+
+func ParentByUserCacheKey(userID string) string {
+	return constants.MainCachePrefix + "parent-by-user:" + userID
 }
