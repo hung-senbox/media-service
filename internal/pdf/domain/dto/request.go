@@ -1,13 +1,18 @@
 package dto
 
-import "mime/multipart"
+import (
+	"media-service/internal/pdf/model"
+	"mime/multipart"
+)
 
-type CreatePDFRequest struct {
-	FileName  string `json:"file_name" binding:"required"`
-	StudentID string `json:"student_id" binding:"required"`
-	Color     string `json:"color" binding:"required"`
+type CreateResource struct {
+	UploaderID   *model.Owner `json:"uploader_id" bson:"uploader_id"`
+	TargetID     *model.Owner `json:"target_id" bson:"target_id"`
+	ResourceType string       `json:"resource_type" bson:"resource_type"`
+	Color        string       `json:"color" bson:"color"`
+	Folder       string       `json:"folder" bson:"folder"`
+	SignatureKey string       `json:"signature_key" bson:"signature_key"`
 }
-
 type UpdatePDFRequest struct {
 	FileName string                `form:"file_name"`
 	File     *multipart.FileHeader `form:"file" binding:"required"`

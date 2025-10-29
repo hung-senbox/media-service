@@ -38,9 +38,9 @@ func SetupRouter(consulClient *api.Client, cacheClientRedis *goredis.Client, top
 	topicHandlerv2 := handler.NewTopicHandler(topicServicev2)
 
 	//pdf
-	pdfRepov2 := domain.NewPDFRepository(pdfCollection)
-	pdfServicev2 := domain.NewPDFService(pdfRepov2, fileGateway)
-	pdfHandlerv2 := domain.NewPDFHandler(pdfServicev2)
+	pdfRepov2 := domain.NewUserResourceRepository(pdfCollection)
+	pdfServicev2 := domain.NewUserResourceService(pdfRepov2, fileGateway)
+	pdfHandlerv2 := domain.NewUserResourceHandler(pdfServicev2)
 	// Register routes
 	route.RegisterTopicRoutes(r, topicHandlerv2, cachedUserGateway)
 	route2.RegisterRoutes(r, pdfHandlerv2, cachedUserGateway)
