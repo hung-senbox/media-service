@@ -66,7 +66,7 @@ func (g *CachedUserGateway) GetTeacherInfo(ctx context.Context, teacherID string
 // === GetTeacherByUserAndOrganization ===
 // ==============================
 func (g *CachedUserGateway) GetTeacherByUserAndOrganization(ctx context.Context, userID, organizationID string) (*gw_response.TeacherResponse, error) {
-	cacheKey := cache.UserCacheKey(userID + ":" + organizationID)
+	cacheKey := cache.TeacherByUserAndOrgCacheKey(userID, organizationID)
 
 	var cached gw_response.TeacherResponse
 	if err := g.cache.Get(ctx, cacheKey, &cached); err == nil && cached.ID != "" {
@@ -86,8 +86,7 @@ func (g *CachedUserGateway) GetTeacherByUserAndOrganization(ctx context.Context,
 // === GetUserByTeacher ===
 // ==============================
 func (g *CachedUserGateway) GetUserByTeacher(ctx context.Context, teacherID string) (*gw_response.CurrentUser, error) {
-	cacheKey := cache.TeacherCacheKey(teacherID)
-
+	cacheKey := cache.UserByTeacherCacheKey(teacherID)
 	var cached gw_response.CurrentUser
 	if err := g.cache.Get(ctx, cacheKey, &cached); err == nil && cached.ID != "" {
 		return &cached, nil
@@ -102,6 +101,9 @@ func (g *CachedUserGateway) GetUserByTeacher(ctx context.Context, teacherID stri
 	return user, nil
 }
 
+// ==============================
+// === GetCurrentUser ===
+// ==============================
 func (g *CachedUserGateway) GetCurrentUser(ctx context.Context) (*gw_response.CurrentUser, error) {
 	return g.inner.GetCurrentUser(ctx)
 }

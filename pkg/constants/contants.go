@@ -162,3 +162,5 @@ const (
 	DepartmentNoteKey    MessageLangKey = "note"
 	DepartmentMessageKey MessageLangKey = "message"
 )
+
+const ProfileCachePrefix = "profile-service:"
