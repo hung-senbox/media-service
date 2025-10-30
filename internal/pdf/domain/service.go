@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"media-service/helper"
 	"media-service/internal/gateway"
+	gw_request "media-service/internal/gateway/dto/request"
 	"media-service/internal/pdf/domain/dto"
 	"media-service/internal/pdf/model"
 	"time"
@@ -13,50 +14,105 @@ import (
 )
 
 type UserResourceService interface {
-	CreateResource(ctx context.Context, req dto.CreateResource) (string, error)
-	// GetPDFsByStudent(ctx context.Context, studentID string) ([]*dto.StudentReportPDFResponse, error)
-	// UpdatePDFsBy(ctx context.Context, id string, req dto.UpdatePDFRequest) error
-	// DeletePDFsBy(ctx context.Context, id string) error
+	CreateResource(ctx context.Context, req dto.CreateResourceRequest) (string, error)
+	GetResources(ctx context.Context, role, organizationID string) (*dto.GroupedResourceResponse, error)
+	UploadDocumentToResource(ctx context.Context, id string, req dto.UpdateResourceRequest) (string, error)
+	UploadSignatureToResource(ctx context.Context, id string, req dto.UploadSignatureRequest) (string, error)
+	DeleteResource(ctx context.Context, id string) error
 }
 
 type userResourceService struct {
 	UserResourceRepository UserResourceRepository
 	fileGateway            gateway.FileGateway
+	userGateway            gateway.UserGateway
 }
 
 func NewUserResourceService(userResourceRepository UserResourceRepository,
-	fileGateway gateway.FileGateway) UserResourceService {
+	fileGateway gateway.FileGateway,
+	userGateway gateway.UserGateway) UserResourceService {
 	return &userResourceService{
 		UserResourceRepository: userResourceRepository,
 		fileGateway:            fileGateway,
+		userGateway:            userGateway,
 	}
 }
 
-func (s *userResourceService) CreateResource(ctx context.Context, req dto.CreateResource) (string, error) {
-
-	if req.UploaderID == nil {
-		return "", fmt.Errorf("uploader id cannot be empty")
-	}
-
-	if req.TargetID == nil {
-		return "", fmt.Errorf("target id cannot be empty")
-	}
+func (s *userResourceService) CreateResource(ctx context.Context, req dto.CreateResourceRequest) (string, error) {
 
 	if req.Folder == "" {
 		return "", fmt.Errorf("folder cannot be empty")
+	}
+
+	if req.Role == "" {
+		return "", fmt.Errorf("role cannot be empty")
+	}
+
+	if req.Type == "" {
+		return "", fmt.Errorf("type cannot be empty")
+	}
+
+	var uploaderData *model.Owner
+	var targetData *model.Owner
+
+	switch req.Role {
+	case "teacher":
+		data, err := s.userGateway.GetTeacherByUserAndOrganization(ctx, helper.GetUserID(ctx), req.OrganizationID)
+		if err != nil {
+			return "", err
+		}
+		req.UploaderID = &model.Owner{OwnerID: data.ID, OwnerRole: "teacher"}
+		uploaderData = req.UploaderID
+
+		if req.TargetID != nil {
+			targetData = req.TargetID
+		} else {
+			targetData = nil
+		}
+
+	case "staff":
+		data, err := s.userGateway.GetStaffByUserAndOrganization(ctx, helper.GetUserID(ctx), req.OrganizationID)
+		if err != nil {
+			return "", err
+		}
+		req.UploaderID = &model.Owner{OwnerID: data.ID, OwnerRole: "staff"}
+		uploaderData = req.UploaderID
+
+		if req.TargetID != nil {
+			targetData = req.TargetID
+		} else {
+			targetData = nil
+		}
+
+	case "parent":
+		data, err := s.userGateway.GetParentByUser(ctx, helper.GetUserID(ctx))
+		if err != nil {
+			return "", err
+		}
+		req.UploaderID = &model.Owner{OwnerID: data.ID, OwnerRole: "parent"}
+		uploaderData = req.UploaderID
+
+		if req.TargetID != nil {
+			targetData = req.TargetID
+		} else {
+			targetData = nil
+		}
+
+	default:
+		return "", fmt.Errorf("unsupported role: %s", req.Role)
 	}
 
 	ID := primitive.NewObjectID()
 
 	err := s.UserResourceRepository.CreateResource(ctx, &model.UserResource{
 		ID:           ID,
-		UploaderID:   req.UploaderID,
-		TargetID:     req.TargetID,
+		UploaderID:   uploaderData,
+		TargetID:     targetData,
+		Type:         req.Type,
 		ResourceType: "",
-		FileName:     "",
+		FileName:     nil,
 		Folder:       req.Folder,
 		Color:        req.Color,
-		SignatureKey: "",
+		SignatureKey: nil,
 		URL:          nil,
 		PDFKey:       nil,
 		CreatedBy:    helper.GetUserID(ctx),
@@ -72,116 +128,206 @@ func (s *userResourceService) CreateResource(ctx context.Context, req dto.Create
 
 }
 
-// func (s *pdfService) GetPDFsByStudent(ctx context.Context, studentID string) ([]*dto.StudentReportPDFResponse, error) {
+func (s *userResourceService) GetResources(ctx context.Context, role, organizationID string) (*dto.GroupedResourceResponse, error) {
 
-// 	studentPdfs, err := s.PDFRepository.GetPDFsByStudent(ctx, studentID)
-// 	if err != nil {
-// 		return nil, err
-// 	}
+	if role == "" {
+		return nil, fmt.Errorf("role cannot be empty")
+	}
 
-// 	var result []*dto.StudentReportPDFResponse
+	var (
+		selfResources    []*model.UserResource
+		relatedResources []*model.UserResource
+	)
 
-// 	for _, studentPdf := range studentPdfs {
-// 		var pdfUrl *string
-// 		pdfUrl, err = s.fileGateway.GetPDFUrl(ctx, gw_request.GetFileUrlRequest{
-// 			Key:  studentPdf.PDFKey,
-// 			Mode: "private",
-// 		})
+	switch role {
+	case "teacher":
+		teacher, err := s.userGateway.GetTeacherByUserAndOrganization(ctx, helper.GetUserID(ctx), organizationID)
+		if err != nil {
+			return nil, err
+		}
+		selfResources, _ = s.UserResourceRepository.GetSelfResources(ctx, teacher.ID)
+		relatedResources, _ = s.UserResourceRepository.GetRelatedResources(ctx, teacher.ID)
+	case "staff":
+		staff, err := s.userGateway.GetStaffByUserAndOrganization(ctx, helper.GetUserID(ctx), organizationID)
+		if err != nil {
+			return nil, err
+		}
+		selfResources, _ = s.UserResourceRepository.GetSelfResources(ctx, staff.ID)
+		relatedResources, _ = s.UserResourceRepository.GetRelatedResources(ctx, staff.ID)
+	case "parent":
+		parent, err := s.userGateway.GetParentByUser(ctx, helper.GetUserID(ctx))
+		if err != nil {
+			return nil, err
+		}
+		selfResources, _ = s.UserResourceRepository.GetSelfResources(ctx, parent.ID)
+		relatedResources, _ = s.UserResourceRepository.GetRelatedResources(ctx, parent.ID)
+	default:
+		return nil, fmt.Errorf("unsupported role: %s", role)
+	}
+	
 
-// 		if err != nil {
-// 			log.Printf("error get pdf url: %s", err.Error())
-// 			pdfUrl = nil
-// 		}
+	return &dto.GroupedResourceResponse{
+		SelfResources:    dto.ToResourceResponses(ctx, organizationID, selfResources, s.userGateway, s.fileGateway),
+		RelatedResources: dto.ToResourceResponses(ctx, organizationID, relatedResources, s.userGateway, s.fileGateway),
+	}, nil
 
-// 		result = append(result, &dto.StudentReportPDFResponse{
-// 			ID:        studentPdf.ID.Hex(),
-// 			StudentID: studentPdf.StudentID,
-// 			PDFName:   studentPdf.PDFName,
-// 			Folder:    studentPdf.Folder,
-// 			PDFUrl:    pdfUrl,
-// 			Color:     studentPdf.Color,
-// 			CreatedBy: studentPdf.CreatedBy,
-// 			CreatedAt: studentPdf.CreatedAt,
-// 			UpdatedAt: studentPdf.UpdatedAt,
-// 		})
-// 	}
+}
 
-// 	return result, nil
-// }
+func (s *userResourceService) UploadDocumentToResource(ctx context.Context, id string, req dto.UpdateResourceRequest) (string, error) {
 
-// func (s *pdfService) UpdatePDFsBy(ctx context.Context, id string, req dto.UpdatePDFRequest) error {
+	if req.ResourceType == "" {
+		return "", fmt.Errorf("resource type cannot be empty")
+	}
 
-// 	objectID, err := primitive.ObjectIDFromHex(id)
-// 	if err != nil {
-// 		return err
-// 	}
+	objectID, err := primitive.ObjectIDFromHex(id)
+	if err != nil {
+		return "", err
+	}
 
-// 	pdfData, err := s.PDFRepository.GetPDFByID(ctx, objectID)
-// 	if err != nil {
-// 		return err
-// 	}
+	pdfData, err := s.UserResourceRepository.GetResourceByID(ctx, objectID)
+	if err != nil {
+		return "", err
+	}
 
-// 	if pdfData.PDFKey != "" {
-// 		err = s.fileGateway.DeletePDF(ctx, pdfData.PDFKey)
-// 		if err != nil {
-// 			return err
-// 		}
-// 	}
+	if pdfData.PDFKey != nil {
+		err = s.fileGateway.DeletePDF(ctx, *pdfData.PDFKey)
+		if err != nil {
+			return "", err
+		}
+	}
 
-// 	if pdfData == nil {
-// 		return fmt.Errorf("pdf not found")
-// 	}
+	if pdfData == nil {
+		return "", fmt.Errorf("pdf not found")
+	}
 
-// 	if req.FileName != "" {
-// 		pdfData.PDFName = req.FileName
-// 	}
+	if req.ResourceType == "pdf" && req.File != nil {
+		resource, err := s.UserResourceRepository.GetResourceByID(ctx, objectID)
+		if err != nil {
+			return "", err
+		}
+		if resource == nil {
+			return "", fmt.Errorf("resource not found")
+		}
 
-// 	if req.Color != "" {
-// 		pdfData.Color = req.Color
-// 	}
+		resp, err := s.fileGateway.UploadPDF(ctx, gw_request.UploadFileRequest{
+			File:     req.File,
+			Folder:   "pdf_media",
+			FileName: *req.FileName,
+			Mode:     "private",
+		})
+		if err != nil {
+			return "", err
+		}
 
-// 	if req.File == nil {
-// 		return fmt.Errorf("file is required")
-// 	}
+		resource.FileName = req.FileName
+		resource.ResourceType = req.ResourceType
+		resource.PDFKey = &resp.Key
+		resource.URL = nil
+		resource.UpdatedAt = time.Now()
 
-// 	resp, err := s.fileGateway.UploadPDF(ctx, gw_request.UploadFileRequest{
-// 		File:     req.File,
-// 		Folder:   "pdf_media",
-// 		FileName: pdfData.PDFName,
-// 		Mode:     "private",
-// 	})
-// 	if err != nil {
-// 		return err
-// 	}
+		err = s.UserResourceRepository.UpdateResourceByID(ctx, objectID, resource)
+		if err != nil {
+			return "", err
+		}
 
-// 	pdfData.PDFKey = resp.Key
-// 	pdfData.UpdatedAt = time.Now()
+		return resp.Key, nil
 
-// 	return s.PDFRepository.UpdatePDFByID(ctx, objectID, pdfData)
+	} else if req.ResourceType == "url" && req.Url != nil {
+		resource, err := s.UserResourceRepository.GetResourceByID(ctx, objectID)
+		if err != nil {
+			return "", err
+		}
+		if resource == nil {
+			return "", fmt.Errorf("resource not found")
+		}
 
-// }
+		resource.ResourceType = req.ResourceType
+		resource.URL = req.Url
+		resource.PDFKey = nil
+		resource.FileName = nil
+		resource.UpdatedAt = time.Now()
 
-// func (s *pdfService) DeletePDFsBy(ctx context.Context, id string) error {
+		err = s.UserResourceRepository.UpdateResourceByID(ctx, objectID, resource)
+		if err != nil {
+			return "", err
+		}
 
-// 	objectID, err := primitive.ObjectIDFromHex(id)
-// 	if err != nil {
-// 		return err
-// 	}
+		return *req.Url, nil
+	} else {
+		return "", fmt.Errorf("resource type not supported")
+	}
+}
 
-// 	pdf, err := s.PDFRepository.GetPDFByID(ctx, objectID)
-// 	if err != nil {
-// 		return err
-// 	}
+func (s *userResourceService) UploadSignatureToResource(ctx context.Context, id string, req dto.UploadSignatureRequest) (string, error) {
 
-// 	if pdf == nil {
-// 		return fmt.Errorf("pdf not found")
-// 	}
+	objectID, err := primitive.ObjectIDFromHex(id)
+	if err != nil {
+		return "", err
+	}
 
-// 	err = s.fileGateway.DeletePDF(ctx, pdf.PDFKey)
-// 	if err != nil {
-// 		return err
-// 	}
+	pdfData, err := s.UserResourceRepository.GetResourceByID(ctx, objectID)
+	if err != nil {
+		return "", err
+	}
 
-// 	return s.PDFRepository.DeletePDFByID(ctx, objectID)
+	if pdfData == nil {
+		return "", fmt.Errorf("pdf not found")
+	}
 
-// }
+	if pdfData.SignatureKey != nil {
+		err = s.fileGateway.DeleteImage(ctx, *pdfData.SignatureKey)
+		if err != nil {
+			return "", err
+		}
+	}
+
+	pdfData.SignatureKey = &req.SignatureKey
+	pdfData.UpdatedAt = time.Now()
+
+	err = s.UserResourceRepository.UpdateResourceByID(ctx, objectID, pdfData)
+	if err != nil {
+		return "", err
+	}
+
+	return req.SignatureKey, nil
+
+}
+
+func (s *userResourceService) DeleteResource(ctx context.Context, id string) error {
+
+	objectID, err := primitive.ObjectIDFromHex(id)
+	if err != nil {
+		return err
+	}
+
+	resource, err := s.UserResourceRepository.GetResourceByID(ctx, objectID)
+	if err != nil {
+		return err
+	}
+
+	if resource == nil {
+		return fmt.Errorf("resource not found")
+	}
+
+	if resource.PDFKey != nil {
+		err = s.fileGateway.DeletePDF(ctx, *resource.PDFKey)
+		if err != nil {
+			return err
+		}
+	}
+
+	if resource.SignatureKey != nil {
+		err = s.fileGateway.DeleteImage(ctx, *resource.SignatureKey)
+		if err != nil {
+			return err
+		}
+	}
+
+	err = s.UserResourceRepository.DeleteResourceByID(ctx, objectID)
+	if err != nil {
+		return err
+	}
+
+	return nil
+
+}

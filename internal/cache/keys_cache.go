@@ -30,6 +30,10 @@ func TeacherByUserAndOrgCacheKey(userID, orgID string) string {
 	return constants.MainCachePrefix + "teacher-by-user-org:" + userID + ":" + orgID
 }
 
+func StaffByUserAndOrgCacheKey(userID, orgID string) string {
+	return constants.MainCachePrefix + "staff-by-user-org:" + userID + ":" + orgID
+}
+
 func UserByTeacherCacheKey(teacherID string) string {
 	return constants.MainCachePrefix + "user-by-teacher-org:" + teacherID
 }
