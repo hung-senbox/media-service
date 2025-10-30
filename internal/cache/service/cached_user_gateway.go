@@ -82,6 +82,23 @@ func (g *CachedUserGateway) GetTeacherByUserAndOrganization(ctx context.Context,
 	return teacher, nil
 }
 
+func (g *CachedUserGateway) GetStaffByUserAndOrganization(ctx context.Context, userID, organizationID string) (*gw_response.StaffResponse, error) {
+	cacheKey := cache.StaffByUserAndOrgCacheKey(userID, organizationID)
+
+	var cached gw_response.StaffResponse
+	if err := g.cache.Get(ctx, cacheKey, &cached); err == nil && cached.ID != "" {
+		return &cached, nil
+	}
+
+	staff, err := g.inner.GetStaffByUserAndOrganization(ctx, userID, organizationID)
+	if err != nil {
+		return nil, err
+	}
+
+	_ = g.cache.Set(ctx, cacheKey, staff, int(g.ttl.Seconds()))
+	return staff, nil
+}
+
 // ==============================
 // === GetUserByTeacher ===
 // ==============================

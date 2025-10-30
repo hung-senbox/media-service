@@ -53,7 +53,7 @@ func SetupRouter(consulClient *api.Client, cacheClientRedis *goredis.Client, top
 
 	// ========================  PDF ======================== //
 	pdfRepov2 := domain.NewUserResourceRepository(pdfCollection)
-	pdfServicev2 := domain.NewUserResourceService(pdfRepov2, fileGateway)
+	pdfServicev2 := domain.NewUserResourceService(pdfRepov2, fileGateway, cachedUserGateway)
 	pdfHandlerv2 := domain.NewUserResourceHandler(pdfServicev2)
 	// ========================  PDF ======================== //
 

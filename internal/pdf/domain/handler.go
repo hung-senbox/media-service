@@ -1,6 +1,7 @@
 package domain
 
 import (
+	"fmt"
 	"media-service/helper"
 	"media-service/internal/pdf/domain/dto"
 	"net/http"
@@ -20,7 +21,7 @@ func NewUserResourceHandler(userResourceService UserResourceService) *UserResour
 
 func (h *UserResourceHandler) CreateResource(c *gin.Context) {
 
-	var req dto.CreateResource
+	var req dto.CreateResourceRequest
 
 	if err := c.ShouldBindJSON(&req); err != nil {
 		helper.SendError(c, http.StatusBadRequest, err, helper.ErrInvalidRequest)
@@ -37,50 +38,94 @@ func (h *UserResourceHandler) CreateResource(c *gin.Context) {
 
 }
 
-// func (h *PDFHandler) GetPDFsByStudent(c *gin.Context) {
+func (h *UserResourceHandler) GetResources(c *gin.Context) {
 
-// 	studentID := c.Query("student_id")
+	role := c.Query("role")
+	if role == "" {
+		helper.SendError(c, http.StatusBadRequest, fmt.Errorf("role is required"), helper.ErrInvalidRequest)
+		return
+	}
 
-// 	res, err := h.PDFService.GetPDFsByStudent(c.Request.Context(), studentID)
-// 	if err != nil {
-// 		helper.SendError(c, http.StatusInternalServerError, err, helper.ErrInvalidOperation)
-// 		return
-// 	}
+	orgID := c.Query("organization_id")
+	if orgID == "" {
+		helper.SendError(c, http.StatusBadRequest, fmt.Errorf("organization_id is required"), helper.ErrInvalidRequest)
+		return
+	}
 
-// 	helper.SendSuccess(c, http.StatusOK, "get pdfs success", res)
+	res, err := h.userResourceService.GetResources(c.Request.Context(), role, orgID)
+	if err != nil {
+		helper.SendError(c, http.StatusInternalServerError, err, helper.ErrInvalidOperation)
+		return
+	}
 
-// }
+	helper.SendSuccess(c, http.StatusOK, "get pdf success", res)
 
-// func (h *PDFHandler) DeletePDFsBy(c *gin.Context) {
+}
 
-// 	id := c.Param("id")
+func (h *UserResourceHandler) UploadDocumentToResource(c *gin.Context) {
 
-// 	err := h.PDFService.DeletePDFsBy(c.Request.Context(), id)
-// 	if err != nil {
-// 		helper.SendError(c, http.StatusInternalServerError, err, helper.ErrInvalidOperation)
-// 		return
-// 	}
+	var req dto.UpdateResourceRequest
 
-// 	helper.SendSuccess(c, http.StatusOK, "delete pdfs success", nil)
+	if err := c.ShouldBind(&req); err != nil {
+		helper.SendError(c, http.StatusBadRequest, err, helper.ErrInvalidRequest)
+		return
+	}
 
-// }
+	id := c.Param("id")
+	if id == "" {
+		helper.SendError(c, http.StatusBadRequest, fmt.Errorf("id is required"), helper.ErrInvalidRequest)
+		return
+	}
 
-// func (h *PDFHandler) UpdatePDFsBy(c *gin.Context) {
+	res, err := h.userResourceService.UploadDocumentToResource(c.Request.Context(), id, req)
+	if err != nil {
+		helper.SendError(c, http.StatusInternalServerError, err, helper.ErrInvalidOperation)
+		return
+	}
 
-// 	id := c.Param("id")
+	helper.SendSuccess(c, http.StatusOK, "create pdf success", res)
 
-// 	var req dto.UpdatePDFRequest
+}
 
-// 	if err := c.ShouldBind(&req); err != nil {
-// 		helper.SendError(c, http.StatusBadRequest, err, helper.ErrInvalidRequest)
-// 		return
-// 	}
+func (h *UserResourceHandler) UploadSignatureToResource(c *gin.Context) {
+	
+	var req dto.UploadSignatureRequest
 
-// 	err := h.PDFService.UpdatePDFsBy(c.Request.Context(), id, req)
-// 	if err != nil {
-// 		helper.SendError(c, http.StatusInternalServerError, err, helper.ErrInvalidOperation)
-// 		return
-// 	}
+	if err := c.ShouldBind(&req); err != nil {
+		helper.SendError(c, http.StatusBadRequest, err, helper.ErrInvalidRequest)
+		return
+	}
 
-// 	helper.SendSuccess(c, http.StatusOK, "update pdfs success", nil)
-// } 
+	id := c.Param("id")
+	if id == "" {
+		helper.SendError(c, http.StatusBadRequest, fmt.Errorf("id is required"), helper.ErrInvalidRequest)
+		return
+	}
+
+	res, err := h.userResourceService.UploadSignatureToResource(c.Request.Context(), id, req)
+	if err != nil {
+		helper.SendError(c, http.StatusInternalServerError, err, helper.ErrInvalidOperation)
+		return
+	}
+
+	helper.SendSuccess(c, http.StatusOK, "create pdf success", res)
+
+}
+
+func (h *UserResourceHandler) DeleteResource(c *gin.Context) {
+
+	id := c.Param("id")
+	if id == "" {
+		helper.SendError(c, http.StatusBadRequest, fmt.Errorf("id is required"), helper.ErrInvalidRequest)
+		return
+	}
+
+	err := h.userResourceService.DeleteResource(c.Request.Context(), id)
+	if err != nil {
+		helper.SendError(c, http.StatusInternalServerError, err, helper.ErrInvalidOperation)
+		return
+	}
+
+	helper.SendSuccess(c, http.StatusOK, "delete pdf success", nil)
+
+}
