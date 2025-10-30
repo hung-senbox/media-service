@@ -38,7 +38,6 @@ func (g *CachedUserGateway) GetStudentInfo(ctx context.Context, studentID string
 		return nil, err
 	}
 
-	_ = g.cache.Set(ctx, cacheKey, student, int(g.ttl.Seconds()))
 	return student, nil
 }
 
@@ -58,7 +57,6 @@ func (g *CachedUserGateway) GetTeacherInfo(ctx context.Context, teacherID string
 		return nil, err
 	}
 
-	_ = g.cache.Set(ctx, cacheKey, teacher, int(g.ttl.Seconds()))
 	return teacher, nil
 }
 
@@ -78,7 +76,6 @@ func (g *CachedUserGateway) GetTeacherByUserAndOrganization(ctx context.Context,
 		return nil, err
 	}
 
-	_ = g.cache.Set(ctx, cacheKey, teacher, int(g.ttl.Seconds()))
 	return teacher, nil
 }
 
@@ -95,7 +92,6 @@ func (g *CachedUserGateway) GetStaffByUserAndOrganization(ctx context.Context, u
 		return nil, err
 	}
 
-	_ = g.cache.Set(ctx, cacheKey, staff, int(g.ttl.Seconds()))
 	return staff, nil
 }
 
@@ -114,7 +110,6 @@ func (g *CachedUserGateway) GetUserByTeacher(ctx context.Context, teacherID stri
 		return nil, err
 	}
 
-	_ = g.cache.Set(ctx, cacheKey, user, int(g.ttl.Seconds()))
 	return user, nil
 }
 
@@ -134,7 +129,6 @@ func (g *CachedUserGateway) GetParentByUser(ctx context.Context, userID string) 
 		return nil, err
 	}
 
-	_ = g.cache.Set(ctx, cacheKey, parent, int(g.ttl.Seconds()))
 	return parent, nil
 }
 
