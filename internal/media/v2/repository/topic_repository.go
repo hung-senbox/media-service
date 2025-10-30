@@ -2,6 +2,7 @@ package repository
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"media-service/internal/media/model"
 	"time"
@@ -9,11 +10,12 @@ import (
 	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/bson/primitive"
 	"go.mongodb.org/mongo-driver/mongo"
+	"go.mongodb.org/mongo-driver/mongo/options"
 )
 
 type TopicRepository interface {
-	CreateTopic(ctx context.Context, topic *model.Topic) error
-	UpdateTopic(ctx context.Context, topic *model.Topic) error
+	CreateTopic(ctx context.Context, topic *model.Topic) (*model.Topic, error)
+	UpdateTopic(ctx context.Context, topic *model.Topic) (*model.Topic, error)
 	SetLanguageConfig(ctx context.Context, topicID string, lang model.TopicLanguageConfig) error
 	SetImage(ctx context.Context, topicID string, languageID uint, img model.TopicImageConfig) error
 	SetAudio(ctx context.Context, topicID string, languageID uint, aud model.TopicAudioConfig) error
@@ -31,13 +33,18 @@ func NewTopicRepository(topicCollection *mongo.Collection) TopicRepository {
 	return &topicRepository{topicCollection: topicCollection}
 }
 
-func (r *topicRepository) CreateTopic(ctx context.Context, topic *model.Topic) error {
-	_, err := r.topicCollection.InsertOne(ctx, topic)
+func (r *topicRepository) CreateTopic(ctx context.Context, topic *model.Topic) (*model.Topic, error) {
+	result, err := r.topicCollection.InsertOne(ctx, topic)
 	if err != nil {
 		fmt.Printf("[CreateTopic] Insert failed: %v\n", err)
-		return err
+		return nil, fmt.Errorf("insert topic failed: %w", err)
 	}
-	return nil
+
+	if oid, ok := result.InsertedID.(primitive.ObjectID); ok {
+		topic.ID = oid
+	}
+
+	return topic, nil
 }
 
 func (r *topicRepository) SetImage(ctx context.Context, topicID string, languageID uint, img model.TopicImageConfig) error {
@@ -195,10 +202,9 @@ func (r *topicRepository) GetAllTopicByOrganizationID(ctx context.Context, orgID
 	return topics, nil
 }
 
-func (r *topicRepository) UpdateTopic(ctx context.Context, topic *model.Topic) error {
+func (r *topicRepository) UpdateTopic(ctx context.Context, topic *model.Topic) (*model.Topic, error) {
 	filter := bson.M{"_id": topic.ID}
 
-	// update fields động
 	updateFields := bson.M{
 		"is_published": topic.IsPublished,
 		"updated_at":   time.Now(),
@@ -214,24 +220,29 @@ func (r *topicRepository) UpdateTopic(ctx context.Context, topic *model.Topic) e
 				"title":       lc.Title,
 				"note":        lc.Note,
 				"description": lc.Description,
+				"audio":       lc.Audio,
+				"video":       lc.Video,
+				"images":      lc.Images,
 			}
-
-			langUpdate["audio"] = lc.Audio
-
-			langUpdate["video"] = lc.Video
-
-			langUpdate["images"] = lc.Images
-
 			langs = append(langs, langUpdate)
 		}
-
 		updateFields["language_config"] = langs
 	}
 
 	update := bson.M{"$set": updateFields}
 
-	_, err := r.topicCollection.UpdateOne(ctx, filter, update)
-	return err
+	opts := options.FindOneAndUpdate().SetReturnDocument(options.After)
+
+	var updatedTopic model.Topic
+	err := r.topicCollection.FindOneAndUpdate(ctx, filter, update, opts).Decode(&updatedTopic)
+	if err != nil {
+		if errors.Is(err, mongo.ErrNoDocuments) {
+			return nil, fmt.Errorf("topic not found")
+		}
+		return nil, fmt.Errorf("update topic failed: %w", err)
+	}
+
+	return &updatedTopic, nil
 }
 
 func (r *topicRepository) GetByID(ctx context.Context, topicID string) (*model.Topic, error) {

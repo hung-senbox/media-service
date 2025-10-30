@@ -6,6 +6,6 @@ type UpdateTopicRequest struct {
 	IsPublished *bool  `json:"is_published" binding:"required"`
 	FileName    string `json:"file_name"`
 	Title       string `json:"title"`
-	Node        string `json:"note"`
+	Note        string `json:"note"`
 	Description string `json:"description"`
 }

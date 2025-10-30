@@ -13,12 +13,10 @@ import (
 	"media-service/internal/media/v2/dto/response"
 	"media-service/internal/media/v2/mapper"
 	"media-service/internal/media/v2/repository"
+	"media-service/internal/media/v2/usecase"
 	"media-service/internal/redis"
 	"media-service/pkg/constants"
 	"mime/multipart"
-	"time"
-
-	"go.mongodb.org/mongo-driver/bson/primitive"
 )
 
 type TopicService interface {
@@ -29,6 +27,7 @@ type TopicService interface {
 	GetTopic4Web(ctx context.Context, topicID string) (*response.TopicResponse4Web, error)
 	UploadAudio(ctx context.Context, req request.UploadAudioRequest) error
 	UploadVideo(ctx context.Context, req request.UploadVideoRequest) error
+	UploadImage(ctx context.Context, req request.UploadImageRequest) error
 	GetTopics4Student4App(ctx context.Context, studentID string) ([]*response.GetTopic4StudentResponse4App, error)
 	GetTopics4Student4Web(ctx context.Context, studentID string) ([]*response.GetTopic4StudentResponse4Web, error)
 	GetTopics4Student4Gw(ctx context.Context, studentID string) ([]*response.GetTopic4StudentResponse4Gw, error)
@@ -38,92 +37,26 @@ type TopicService interface {
 }
 
 type topicService struct {
-	cachedUserGw gateway.UserGateway
-	fileGateway  gateway.FileGateway
-	redisService *redis.RedisService
-	topicRepo    repository.TopicRepository
+	cachedUserGw       gateway.UserGateway
+	fileGateway        gateway.FileGateway
+	redisService       *redis.RedisService
+	topicRepo          repository.TopicRepository
+	uploadTopicUseCase usecase.UploadTopicUseCase
 }
 
-func NewTopicService(topicRepo repository.TopicRepository, fileGw gateway.FileGateway, redisService *redis.RedisService, cachedUserGw gateway.UserGateway) TopicService {
+func NewTopicService(topicRepo repository.TopicRepository, fileGw gateway.FileGateway, redisService *redis.RedisService, cachedUserGw gateway.UserGateway, uploadTopicUseCase usecase.UploadTopicUseCase) TopicService {
 	return &topicService{
-		topicRepo:    topicRepo,
-		redisService: redisService,
-		fileGateway:  fileGw,
-		cachedUserGw: cachedUserGw,
+		topicRepo:          topicRepo,
+		redisService:       redisService,
+		fileGateway:        fileGw,
+		cachedUserGw:       cachedUserGw,
+		uploadTopicUseCase: uploadTopicUseCase,
 	}
 }
 
 // ------------------- Create Topic -------------------
 func (s *topicService) CreateTopic(ctx context.Context, req request.CreateTopicRequest) (*model.Topic, error) {
-	currentUser, _ := ctx.Value(constants.CurrentUserKey).(*gw_response.CurrentUser)
-
-	if currentUser.IsSuperAdmin || currentUser.OrganizationAdmin.ID == "" {
-		return nil, fmt.Errorf("access denied")
-	}
-	orgID := currentUser.OrganizationAdmin.ID
-
-	inProgress, err := s.redisService.HasAnyUploadInProgress(ctx, orgID)
-	if err == nil && inProgress {
-		return nil, fmt.Errorf("please wait until the previous upload is completed")
-	}
-
-	topic := &model.Topic{
-		ID:             primitive.NewObjectID(),
-		OrganizationID: orgID,
-		IsPublished:    req.IsPublished,
-		LanguageConfig: []model.TopicLanguageConfig{},
-	}
-
-	// upsert LanguageConfig
-	langConfig := model.TopicLanguageConfig{
-		LanguageID:  req.LanguageID,
-		FileName:    req.FileName,
-		Title:       req.Title,
-		Note:        req.Note,
-		Description: req.Description,
-		Images:      []model.TopicImageConfig{},
-		Video:       model.TopicVideoConfig{},
-		Audio:       model.TopicAudioConfig{},
-	}
-
-	if err := s.topicRepo.CreateTopic(ctx, topic); err != nil {
-		return nil, fmt.Errorf("create topic fail: %w", err)
-	}
-	if err := s.topicRepo.SetLanguageConfig(ctx, topic.ID.Hex(), langConfig); err != nil {
-		return nil, fmt.Errorf("upsert language config fail: %w", err)
-	}
-
-	// Tính total task
-	files := []*multipart.FileHeader{
-		req.AudioFile, req.VideoFile, req.FullBackgroundFile,
-		req.ClearBackgroundFile, req.ClipPartFile,
-		req.DrawingFile, req.IconFile, req.BMFile,
-	}
-
-	totalTasks := 0
-	for _, f := range files {
-		if helper.IsValidFile(f) {
-			totalTasks++
-		}
-	}
-
-	if totalTasks > 0 {
-		_ = s.redisService.InitUploadProgress(ctx, orgID, topic.ID.Hex(), totalTasks)
-	}
-
-	// Upload async
-	if totalTasks > 0 {
-		go func(orgID, topicID string, req request.CreateTopicRequest) {
-			ctxUpload, cancel := context.WithTimeout(context.Background(), 5*time.Minute)
-			defer cancel()
-			token, _ := ctx.Value(constants.Token).(string)
-			ctxUpload = context.WithValue(ctxUpload, constants.Token, token)
-
-			s.uploadFilesAsync(ctxUpload, orgID, topicID, req)
-		}(orgID, topic.ID.Hex(), req)
-	}
-
-	return topic, nil
+	return s.uploadTopicUseCase.CreateTopic(ctx, req)
 }
 
 // ------------------- Upload Async -------------------
@@ -539,6 +472,10 @@ func (s *topicService) UploadVideo(ctx context.Context, req request.UploadVideoR
 		EndTime:   req.VideoEnd,
 	})
 
+}
+
+func (s *topicService) UploadImage(ctx context.Context, req request.UploadImageRequest) error {
+	return nil
 }
 
 func (s *topicService) getAudioKeyByLanguage(topic *model.Topic, languageID uint) string {
