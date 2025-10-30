@@ -337,9 +337,7 @@ func (g *fileGateway) GetImageUrl(ctx context.Context, req gw_request.GetFileUrl
 	}
 
 	client, err := NewGatewayClient(g.serviceName, token, g.consul, nil)
-	fmt.Printf("client: %v\n", client)
 	if err != nil {
-		fmt.Printf("err: %v\n", err)
 		return nil, err
 	}
 
@@ -347,7 +345,7 @@ func (g *fileGateway) GetImageUrl(ctx context.Context, req gw_request.GetFileUrl
 	resp, err := client.Call("POST", "/v1/gateway/images/get-url", req, headers)
 	if err != nil {
 		return nil, err
-	}	
+	}
 
 	var gwResp gw_response.APIGateWayResponse[string]
 	if err := json.Unmarshal(resp, &gwResp); err != nil {

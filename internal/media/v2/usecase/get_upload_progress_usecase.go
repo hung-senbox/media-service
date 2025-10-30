@@ -20,8 +20,9 @@ type getUploadProgressUseCase struct {
 	redisService *redis.RedisService
 }
 
-func NewGetUploadProgressUseCase(redisService *redis.RedisService) GetUploadProgressUseCase {
+func NewGetUploadProgressUseCase(topicRepo repository.TopicRepository, redisService *redis.RedisService) GetUploadProgressUseCase {
 	return &getUploadProgressUseCase{
+		topicRepo:    topicRepo,
 		redisService: redisService,
 	}
 }
@@ -33,22 +34,11 @@ func (uc *getUploadProgressUseCase) GetUploadProgress(ctx context.Context, topic
 	}
 
 	orgID := currentUser.OrganizationAdmin.ID
-	total, err := uc.redisService.GetTotalUploadTask(ctx, orgID, topicID)
-	if err != nil {
-		return nil, err
-	}
-	remaining, err := uc.redisService.GetUploadProgress(ctx, orgID, topicID)
-	if err != nil {
-		return nil, err
-	}
-	rawErrors, err := uc.redisService.GetUploadErrors(ctx, orgID, topicID)
-	if err != nil {
-		return nil, err
-	}
-	topic, err := uc.topicRepo.GetByID(ctx, topicID)
-	if err != nil {
-		return nil, err
-	}
+	topic, _ := uc.topicRepo.GetByID(ctx, topicID)
+
+	total, _ := uc.redisService.GetTotalUploadTask(ctx, orgID, topicID)
+	remaining, _ := uc.redisService.GetUploadProgress(ctx, orgID, topicID)
+	rawErrors, _ := uc.redisService.GetUploadErrors(ctx, orgID, topicID)
 
 	// Nếu chưa từng tạo task upload nào => chưa upload gì cả (hoac case da dat 100 progress thi da xoa het cache)
 	if total == 0 {

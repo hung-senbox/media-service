@@ -22,10 +22,10 @@ type LanguageContents struct {
 }
 
 type MediaContent struct {
-	UploadedURL *string `json:"uploaded_url"`
-	LinkURL     string  `json:"link_url"`
-	StartTime   *string `json:"start_time"`
-	EndTime     *string `json:"end_time"`
+	UploadedURL string `json:"uploaded_url"`
+	LinkURL     string `json:"link_url"`
+	StartTime   string `json:"start_time"`
+	EndTime     string `json:"end_time"`
 }
 
 type ImgEntry struct {

@@ -118,6 +118,9 @@ func (g *CachedUserGateway) GetUserByTeacher(ctx context.Context, teacherID stri
 	return user, nil
 }
 
+// ==============================
+// === GetParentByUser ===
+// ==============================
 func (g *CachedUserGateway) GetParentByUser(ctx context.Context, userID string) (*gw_response.ParentResponse, error) {
 	cacheKey := cache.ParentByUserCacheKey(userID)
 

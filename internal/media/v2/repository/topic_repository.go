@@ -36,7 +36,6 @@ func NewTopicRepository(topicCollection *mongo.Collection) TopicRepository {
 func (r *topicRepository) CreateTopic(ctx context.Context, topic *model.Topic) (*model.Topic, error) {
 	result, err := r.topicCollection.InsertOne(ctx, topic)
 	if err != nil {
-		fmt.Printf("[CreateTopic] Insert failed: %v\n", err)
 		return nil, fmt.Errorf("insert topic failed: %w", err)
 	}
 
@@ -48,32 +47,58 @@ func (r *topicRepository) CreateTopic(ctx context.Context, topic *model.Topic) (
 }
 
 func (r *topicRepository) SetImage(ctx context.Context, topicID string, languageID uint, img model.TopicImageConfig) error {
-	// convert string topicID → ObjectID
 	objID, err := primitive.ObjectIDFromHex(topicID)
 	if err != nil {
 		return fmt.Errorf("[SetImageForTopic] invalid topicID=%s: %w", topicID, err)
 	}
 
-	// filter theo topicID và languageID
+	// 1️⃣ Thử update nếu image_type đã tồn tại
 	filter := bson.M{
-		"_id":                         objID,
-		"language_config.language_id": languageID,
+		"_id": objID,
 	}
 
-	// push 1 image mới vào mảng images
 	update := bson.M{
-		"$push": bson.M{
-			"language_config.$.images": bson.M{
-				"image_type": img.ImageType,
-				"image_key":  img.ImageKey,
-				"link_url":   img.LinkUrl,
-			},
+		"$set": bson.M{
+			"language_config.$[lang].images.$[imgElem].image_key":  img.ImageKey,
+			"language_config.$[lang].images.$[imgElem].link_url":   img.LinkUrl,
+			"language_config.$[lang].images.$[imgElem].image_type": img.ImageType,
 		},
 	}
 
-	_, err = r.topicCollection.UpdateOne(ctx, filter, update)
+	arrayFilters := options.Update().SetArrayFilters(options.ArrayFilters{
+		Filters: []interface{}{
+			bson.M{"lang.language_id": languageID},
+			bson.M{"imgElem.image_type": img.ImageType},
+		},
+	})
+
+	res, err := r.topicCollection.UpdateOne(ctx, filter, update, arrayFilters)
 	if err != nil {
-		return fmt.Errorf("[SetImageForTopic] push failed: %w", err)
+		return fmt.Errorf("[SetImageForTopic] update failed: %w", err)
+	}
+
+	// 2️⃣ Nếu chưa có image_type → push thêm vào mảng
+	if res.ModifiedCount == 0 {
+		pushUpdate := bson.M{
+			"$push": bson.M{
+				"language_config.$[lang].images": bson.M{
+					"image_type": img.ImageType,
+					"image_key":  img.ImageKey,
+					"link_url":   img.LinkUrl,
+				},
+			},
+		}
+
+		pushFilter := options.Update().SetArrayFilters(options.ArrayFilters{
+			Filters: []interface{}{
+				bson.M{"lang.language_id": languageID},
+			},
+		})
+
+		_, err = r.topicCollection.UpdateOne(ctx, filter, pushUpdate, pushFilter)
+		if err != nil {
+			return fmt.Errorf("[SetImageForTopic] push failed: %w", err)
+		}
 	}
 
 	return nil

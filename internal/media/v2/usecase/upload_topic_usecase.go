@@ -84,6 +84,8 @@ func (uc *uploadTopicUseCase) UploadTopic(ctx context.Context, req request.Uploa
 	if totalTasks > 0 {
 		_ = uc.redisService.InitUploadProgress(ctx, orgID, topic.ID.Hex(), totalTasks)
 		go uc.uploadFilesAsyncWithContext(ctx, orgID, topic.ID.Hex(), req)
+	} else {
+		go uc.uploadFilesAsyncWithContext(ctx, orgID, topic.ID.Hex(), req)
 	}
 
 	return topic, nil
@@ -108,24 +110,18 @@ func (uc *uploadTopicUseCase) uploadFilesAsync(ctx context.Context, orgID, topic
 		}
 	}
 
-	if helper.IsValidFile(req.AudioFile) {
-		uc.uploadAndSaveAudio(ctx, orgID, topicID, req, decrementTask)
-	}
+	uc.uploadAndSaveAudio(ctx, orgID, topicID, req, decrementTask)
 
-	if helper.IsValidFile(req.VideoFile) {
-		uc.uploadAndSaveVideo(ctx, orgID, topicID, req, decrementTask)
-	}
+	uc.uploadAndSaveVideo(ctx, orgID, topicID, req, decrementTask)
 
 	uc.uploadAndSaveImages(ctx, orgID, topicID, req, decrementTask)
 }
 
 // ------------------- Upload handlers -------------------
 func (uc *uploadTopicUseCase) uploadAndSaveAudio(ctx context.Context, orgID, topicID string, req request.UploadTopicRequest, done func()) {
-	defer done()
 
 	topic, err := uc.topicRepo.GetByID(ctx, topicID)
 	if err != nil {
-		_ = uc.redisService.SetUploadError(ctx, orgID, topicID, "audio_error", err.Error())
 		return
 	}
 
@@ -149,6 +145,7 @@ func (uc *uploadTopicUseCase) uploadAndSaveAudio(ctx context.Context, orgID, top
 			return
 		}
 		finalAudioKey = resp.Key
+		defer done()
 	}
 
 	// cập nhật metadata + key (mới hoặc cũ)
@@ -164,11 +161,9 @@ func (uc *uploadTopicUseCase) uploadAndSaveAudio(ctx context.Context, orgID, top
 }
 
 func (uc *uploadTopicUseCase) uploadAndSaveVideo(ctx context.Context, orgID, topicID string, req request.UploadTopicRequest, done func()) {
-	defer done()
 
 	topic, err := uc.topicRepo.GetByID(ctx, topicID)
 	if err != nil {
-		_ = uc.redisService.SetUploadError(ctx, orgID, topicID, "video_error", err.Error())
 		return
 	}
 
@@ -191,6 +186,7 @@ func (uc *uploadTopicUseCase) uploadAndSaveVideo(ctx context.Context, orgID, top
 			return
 		}
 		finalVideoKey = resp.Key
+		defer done()
 	}
 
 	// cập nhật metadata + key (mới hoặc cũ)
@@ -270,12 +266,7 @@ func (uc *uploadTopicUseCase) uploadAndSaveImages(ctx context.Context, orgID, to
 			// task upload xong -> giảm 1 task
 			done()
 			continue
-		}
-
-		// 2) Nếu không có file nhưng có metadata (ví dụ link) => chỉ update metadata, KHÔNG gọi done()
-		//    (Điều kiện metadata tùy theo yêu cầu — ở đây ta check nếu link khác rỗng)
-		if img.link != "" {
-			// giữ image key cũ (nếu có) và cập nhật metadata (link)
+		} else {
 			oldKey := uc.getImageKeyByLanguageAndType(topic, req.LanguageID, img.typ)
 			if err := uc.topicRepo.SetImage(ctx, topicID, req.LanguageID, model.TopicImageConfig{
 				ImageKey:  oldKey,
@@ -285,10 +276,7 @@ func (uc *uploadTopicUseCase) uploadAndSaveImages(ctx context.Context, orgID, to
 				// chỉ log warning, không ghi Redis error
 				logger.WriteLogData("[uploadAndSaveImages] Failed to update metadata case2", err)
 			}
-			// KHÔNG gọi done() vì không phải upload task
 		}
-
-		// Nếu không file và không metadata -> skip (không task, không update)
 	}
 
 }
@@ -345,6 +333,7 @@ func (uc *uploadTopicUseCase) createTopicLanguage(ctx context.Context, req reque
 		Title:       req.Title,
 		Note:        req.Note,
 		Description: req.Description,
+		Images:      []model.TopicImageConfig{},
 	}
 	if err := uc.topicRepo.SetLanguageConfig(ctx, newTopic.ID.Hex(), langConfig); err != nil {
 		return nil, fmt.Errorf("set language config fail: %w", err)
