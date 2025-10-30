@@ -2,659 +2,85 @@ package service
 
 import (
 	"context"
-	"fmt"
-	"math"
-	"media-service/helper"
-	"media-service/internal/gateway"
-	gw_request "media-service/internal/gateway/dto/request"
-	gw_response "media-service/internal/gateway/dto/response"
 	"media-service/internal/media/model"
 	"media-service/internal/media/v2/dto/request"
 	"media-service/internal/media/v2/dto/response"
-	"media-service/internal/media/v2/mapper"
-	"media-service/internal/media/v2/repository"
 	"media-service/internal/media/v2/usecase"
-	"media-service/internal/redis"
-	"media-service/pkg/constants"
-	"mime/multipart"
 )
 
 type TopicService interface {
-	CreateTopic(ctx context.Context, req request.CreateTopicRequest) (*model.Topic, error)
-	UpdateTopic(ctx context.Context, req request.UpdateTopicRequest) error
+	UploadTopic(ctx context.Context, req request.UploadTopicRequest) (*model.Topic, error)
 	GetUploadProgress(ctx context.Context, topicID string) (*response.GetUploadProgressResponse, error)
 	GetTopics4Web(ctx context.Context) ([]response.TopicResponse4Web, error)
 	GetTopic4Web(ctx context.Context, topicID string) (*response.TopicResponse4Web, error)
-	UploadAudio(ctx context.Context, req request.UploadAudioRequest) error
-	UploadVideo(ctx context.Context, req request.UploadVideoRequest) error
-	UploadImage(ctx context.Context, req request.UploadImageRequest) error
 	GetTopics4Student4App(ctx context.Context, studentID string) ([]*response.GetTopic4StudentResponse4App, error)
 	GetTopics4Student4Web(ctx context.Context, studentID string) ([]*response.GetTopic4StudentResponse4Web, error)
 	GetTopics4Student4Gw(ctx context.Context, studentID string) ([]*response.GetTopic4StudentResponse4Gw, error)
-	GetTopic4GW(ctx context.Context, topicID string) (*response.TopicResponse4GW, error)
-	GetAllTopicsByOrganization4GW(ctx context.Context, organizationID string) ([]*response.TopicResponse4GW, error)
+	GetTopic4Gw(ctx context.Context, topicID string) (*response.TopicResponse4GW, error)
+	GetAllTopicsByOrganization4Gw(ctx context.Context, organizationID string) ([]*response.TopicResponse4GW, error)
 	GetTopics2Assign4Web(ctx context.Context) ([]*response.TopicResponse2Assign4Web, error)
 }
 
 type topicService struct {
-	cachedUserGw       gateway.UserGateway
-	fileGateway        gateway.FileGateway
-	redisService       *redis.RedisService
-	topicRepo          repository.TopicRepository
-	uploadTopicUseCase usecase.UploadTopicUseCase
+	uploadTopicUseCase       usecase.UploadTopicUseCase
+	getUploadProgressUseCase usecase.GetUploadProgressUseCase
+	getTopicAppUseCase       usecase.GetTopicAppUseCase
+	getTopicWebUseCase       usecase.GetTopicWebUseCase
+	getTopicGatewayUseCase   usecase.GetTopicGatewayUseCase
 }
 
-func NewTopicService(topicRepo repository.TopicRepository, fileGw gateway.FileGateway, redisService *redis.RedisService, cachedUserGw gateway.UserGateway, uploadTopicUseCase usecase.UploadTopicUseCase) TopicService {
+func NewTopicService(
+	uploadTopicUseCase usecase.UploadTopicUseCase,
+	getUploadProgressUseCase usecase.GetUploadProgressUseCase,
+	getTopicAppUseCase usecase.GetTopicAppUseCase,
+	getTopicWebUseCase usecase.GetTopicWebUseCase,
+	getTopicGatewayUseCase usecase.GetTopicGatewayUseCase,
+) TopicService {
 	return &topicService{
-		topicRepo:          topicRepo,
-		redisService:       redisService,
-		fileGateway:        fileGw,
-		cachedUserGw:       cachedUserGw,
-		uploadTopicUseCase: uploadTopicUseCase,
+		uploadTopicUseCase:       uploadTopicUseCase,
+		getUploadProgressUseCase: getUploadProgressUseCase,
+		getTopicAppUseCase:       getTopicAppUseCase,
+		getTopicWebUseCase:       getTopicWebUseCase,
+		getTopicGatewayUseCase:   getTopicGatewayUseCase,
 	}
 }
 
-// ------------------- Create Topic -------------------
-func (s *topicService) CreateTopic(ctx context.Context, req request.CreateTopicRequest) (*model.Topic, error) {
-	return s.uploadTopicUseCase.CreateTopic(ctx, req)
-}
-
-// ------------------- Upload Async -------------------
-func (s *topicService) uploadFilesAsync(ctx context.Context, orgID, topicID string, req request.CreateTopicRequest) {
-	decrementTask := func() {
-		remaining, _ := s.redisService.DecrementUploadTask(ctx, orgID, topicID)
-		if remaining <= 0 {
-			_ = s.redisService.SetUploadProgress(ctx, orgID, topicID, 0)
-		}
-	}
-
-	if helper.IsValidFile(req.AudioFile) {
-		s.uploadAndSaveAudio(ctx, orgID, topicID, req, decrementTask)
-	}
-
-	if helper.IsValidFile(req.VideoFile) {
-		s.uploadAndSaveVideo(ctx, orgID, topicID, req, decrementTask)
-	}
-	s.uploadAndSaveImages(ctx, orgID, topicID, req, decrementTask)
-}
-
-// --- Upload audio ---
-func (s *topicService) uploadAndSaveAudio(ctx context.Context, orgID, topicID string, req request.CreateTopicRequest, decrementTask func()) {
-	resp, err := s.fileGateway.UploadAudio(ctx, gw_request.UploadFileRequest{
-		File:     req.AudioFile,
-		Folder:   "topic_media",
-		FileName: req.Title + "_audio",
-		Mode:     "private",
-	})
-	if err != nil {
-		_ = s.redisService.SetUploadError(ctx, orgID, topicID, "audio_error", err.Error())
-	} else {
-		_ = s.topicRepo.SetAudio(ctx, topicID, req.LanguageID, model.TopicAudioConfig{
-			AudioKey:  resp.Key,
-			LinkUrl:   req.AudioLinkUrl,
-			StartTime: req.AudioStart,
-			EndTime:   req.AudioEnd,
-		})
-	}
-	decrementTask()
-}
-
-// --- Upload video ---
-func (s *topicService) uploadAndSaveVideo(ctx context.Context, orgID, topicID string, req request.CreateTopicRequest, decrementTask func()) {
-	resp, err := s.fileGateway.UploadVideo(ctx, gw_request.UploadFileRequest{
-		File:     req.VideoFile,
-		Folder:   "topic_media",
-		FileName: req.Title + "_video",
-		Mode:     "private",
-	})
-	if err != nil {
-		_ = s.redisService.SetUploadError(ctx, orgID, topicID, "video_error", err.Error())
-	} else {
-		_ = s.topicRepo.SetVideo(ctx, topicID, req.LanguageID, model.TopicVideoConfig{
-			VideoKey:  resp.Key,
-			LinkUrl:   req.VideoLinkUrl,
-			StartTime: req.VideoStart,
-			EndTime:   req.VideoEnd,
-		})
-	}
-	decrementTask()
-}
-
-// --- Upload images ---
-func (s *topicService) uploadAndSaveImages(ctx context.Context, orgID, topicID string, req request.CreateTopicRequest, decrementTask func()) {
-	imageFiles := []struct {
-		file *multipart.FileHeader
-		link string
-		typ  string
-	}{
-		{req.FullBackgroundFile, req.FullBackgroundLink, "full_background"},
-		{req.ClearBackgroundFile, req.ClearBackgroundLink, "clear_background"},
-		{req.ClipPartFile, req.ClipPartLink, "clip_part"},
-		{req.DrawingFile, req.DrawingLink, "drawing"},
-		{req.IconFile, req.IconLink, "icon"},
-		{req.BMFile, req.BMLink, "bm"},
-	}
-
-	for _, img := range imageFiles {
-		if !helper.IsValidFile(img.file) {
-			continue
-		}
-
-		resp, err := s.fileGateway.UploadImage(ctx, gw_request.UploadFileRequest{
-			File:      img.file,
-			Folder:    "topic_media",
-			FileName:  req.Title + "_" + img.typ + "_image",
-			ImageName: img.typ,
-			Mode:      "private",
-		})
-		if err != nil {
-			_ = s.redisService.SetUploadError(ctx, orgID, topicID, "image_"+img.typ, err.Error())
-		} else {
-			_ = s.topicRepo.SetImage(ctx, topicID, req.LanguageID, model.TopicImageConfig{
-				ImageKey:  resp.Key,
-				ImageType: img.typ,
-				LinkUrl:   img.link,
-			})
-		}
-		decrementTask()
-	}
+// ------------------- Upload Topic -------------------
+func (s *topicService) UploadTopic(ctx context.Context, req request.UploadTopicRequest) (*model.Topic, error) {
+	return s.uploadTopicUseCase.UploadTopic(ctx, req)
 }
 
 // ------------------- Get upload progress -------------------
 func (s *topicService) GetUploadProgress(ctx context.Context, topicID string) (*response.GetUploadProgressResponse, error) {
-	currentUser, _ := ctx.Value(constants.CurrentUserKey).(*gw_response.CurrentUser)
-	if currentUser.IsSuperAdmin || currentUser.OrganizationAdmin.ID == "" {
-		return nil, fmt.Errorf("access denied")
-	}
-
-	orgID := currentUser.OrganizationAdmin.ID
-	total, err := s.redisService.GetTotalUploadTask(ctx, orgID, topicID)
-	if err != nil {
-		return nil, err
-	}
-	remaining, err := s.redisService.GetUploadProgress(ctx, orgID, topicID)
-	if err != nil {
-		return nil, err
-	}
-	rawErrors, err := s.redisService.GetUploadErrors(ctx, orgID, topicID)
-	if err != nil {
-		return nil, err
-	}
-	topic, err := s.topicRepo.GetByID(ctx, topicID)
-	if err != nil {
-		return nil, err
-	}
-
-	// Nếu chưa từng tạo task upload nào => chưa upload gì cả (hoac case da dat 100 progress thi da xoa het cache)
-	if total == 0 {
-		// goi delete cache
-		_ = s.redisService.DeleteUploadProgress(ctx, orgID, topicID)
-
-		return &response.GetUploadProgressResponse{
-			Progress: -1,
-			FileName: topic.LanguageConfig[0].FileName,
-			UploadErrors: map[string]any{
-				"audio_error": "",
-				"video_error": "",
-				"image_error": map[string]string{
-					"full_background":  "",
-					"clear_background": "",
-					"clip_part":        "",
-					"drawing":          "",
-					"icon":             "",
-					"bm":               "",
-				},
-			},
-		}, nil
-	}
-
-	// Nếu có task upload
-	progress := int((total - remaining) * 100 / total)
-	progress = int(math.Min(float64(progress), 100.0))
-
-	imageErr := map[string]string{
-		"full_background":  rawErrors["image_full_background"],
-		"clear_background": rawErrors["image_clear_background"],
-		"clip_part":        rawErrors["image_clip_part"],
-		"drawing":          rawErrors["image_drawing"],
-		"icon":             rawErrors["image_icon"],
-		"bm":               rawErrors["image_bm"],
-	}
-
-	// goi delete cache
-	_ = s.redisService.DeleteUploadProgress(ctx, orgID, topicID)
-
-	return &response.GetUploadProgressResponse{
-		Progress: progress,
-		FileName: topic.LanguageConfig[0].FileName,
-		UploadErrors: map[string]any{
-			"audio_error": rawErrors["audio_error"],
-			"video_error": rawErrors["video_error"],
-			"image_error": imageErr,
-		},
-	}, nil
+	return s.getUploadProgressUseCase.GetUploadProgress(ctx, topicID)
 }
 
-func (s *topicService) GetTopics4Web(ctx context.Context) ([]response.TopicResponse4Web, error) {
-	currentUser, _ := ctx.Value(constants.CurrentUserKey).(*gw_response.CurrentUser)
-
-	if currentUser.IsSuperAdmin || currentUser.OrganizationAdmin.ID == "" {
-		return nil, fmt.Errorf("access denied")
-	}
-	orgID := currentUser.OrganizationAdmin.ID
-	topics, err := s.topicRepo.GetAllTopicByOrganizationID(ctx, orgID)
-	if err != nil {
-		return nil, err
-	}
-
-	for ti := range topics {
-		// duyệt qua từng language config
-		for li := range topics[ti].LanguageConfig {
-			langCfg := &topics[ti].LanguageConfig[li]
-
-			// images
-			for ii := range langCfg.Images {
-				img := &langCfg.Images[ii]
-				if img.ImageKey != "" {
-					url, err := s.fileGateway.GetImageUrl(ctx, gw_request.GetFileUrlRequest{
-						Key:  img.ImageKey,
-						Mode: "private",
-					})
-					if err == nil && url != nil {
-						img.UploadedUrl = *url
-					}
-				}
-			}
-
-			// video
-			if langCfg.Video.VideoKey != "" {
-				url, err := s.fileGateway.GetVideoUrl(ctx, gw_request.GetFileUrlRequest{
-					Key: langCfg.Video.VideoKey,
-				})
-				if err == nil && url != nil {
-					langCfg.Video.UploadedUrl = *url
-				}
-			}
-
-			// audio
-			if langCfg.Audio.AudioKey != "" {
-				url, err := s.fileGateway.GetAudioUrl(ctx, gw_request.GetFileUrlRequest{
-					Key:  langCfg.Audio.AudioKey,
-					Mode: "private",
-				})
-				if err == nil && url != nil {
-					langCfg.Audio.UploadedUrl = *url
-				}
-			}
-		}
-	}
-
-	return mapper.ToTopicResponses4Web(topics), nil
-
-}
-
-func (s *topicService) GetTopic4Web(ctx context.Context, topicID string) (*response.TopicResponse4Web, error) {
-
-	topic, err := s.topicRepo.GetByID(ctx, topicID)
-	if err != nil {
-		return nil, fmt.Errorf("get topic failed: %w", err)
-	}
-
-	for li := range topic.LanguageConfig {
-		langCfg := &topic.LanguageConfig[li]
-
-		// images
-		for ii := range langCfg.Images {
-			img := &langCfg.Images[ii]
-			if img.ImageKey != "" {
-				url, err := s.fileGateway.GetImageUrl(ctx, gw_request.GetFileUrlRequest{
-					Key:  img.ImageKey,
-					Mode: "private",
-				})
-				if err == nil && url != nil {
-					img.UploadedUrl = *url
-				}
-			}
-		}
-
-		// video
-		if langCfg.Video.VideoKey != "" {
-			url, err := s.fileGateway.GetVideoUrl(ctx, gw_request.GetFileUrlRequest{
-				Key:  langCfg.Video.VideoKey,
-				Mode: "private",
-			})
-			if err == nil && url != nil {
-				langCfg.Video.UploadedUrl = *url
-			}
-		}
-
-		// audio
-		if langCfg.Audio.AudioKey != "" {
-			url, err := s.fileGateway.GetAudioUrl(ctx, gw_request.GetFileUrlRequest{
-				Key:  langCfg.Audio.AudioKey,
-				Mode: "private",
-			})
-			if err == nil && url != nil {
-				langCfg.Audio.UploadedUrl = *url
-			}
-		}
-	}
-
-	return mapper.ToTopicResponse4Web(topic), nil
-}
-
-func (s *topicService) UpdateTopic(ctx context.Context, req request.UpdateTopicRequest) error {
-	oldTopic, err := s.topicRepo.GetByID(ctx, req.TopicID)
-	if err != nil {
-		return fmt.Errorf("get topic failed: %w", err)
-	}
-
-	found := false
-	for i, lc := range oldTopic.LanguageConfig {
-		if lc.LanguageID == req.LanguageID {
-			oldTopic.LanguageConfig[i].FileName = req.FileName
-			oldTopic.LanguageConfig[i].Title = req.Title
-			oldTopic.LanguageConfig[i].Note = req.Node
-			oldTopic.LanguageConfig[i].Description = req.Description
-			found = true
-			break
-		}
-	}
-
-	if !found {
-		oldTopic.LanguageConfig = append(oldTopic.LanguageConfig, model.TopicLanguageConfig{
-			LanguageID:  req.LanguageID,
-			FileName:    req.FileName,
-			Title:       req.Title,
-			Note:        req.Node,
-			Description: req.Description,
-		})
-	}
-
-	// Update published
-	oldTopic.IsPublished = *req.IsPublished
-
-	// Call repo update
-	return s.topicRepo.UpdateTopic(ctx, oldTopic)
-}
-
-func (s *topicService) UploadAudio(ctx context.Context, req request.UploadAudioRequest) error {
-
-	currentUser, _ := ctx.Value(constants.CurrentUserKey).(*gw_response.CurrentUser)
-
-	if currentUser.IsSuperAdmin || currentUser.OrganizationAdmin.ID == "" {
-		return fmt.Errorf("access denied")
-	}
-	orgID := currentUser.OrganizationAdmin.ID
-	// get topic
-	topic, err := s.topicRepo.GetByID(ctx, req.TopicID)
-	if err != nil {
-		return err
-	}
-
-	// case 1 : update co file
-	oldAudioKey := s.getAudioKeyByLanguage(topic, req.LanguageID)
-
-	if helper.IsValidFile(req.AudioFile) {
-		inProgress, err := s.redisService.HasAnyUploadInProgress(ctx, orgID)
-		if err == nil && inProgress {
-			return fmt.Errorf("please wait until the previous upload is completed")
-		}
-
-		// xoa file cu
-		if oldAudioKey != "" {
-			if err := s.fileGateway.DeleteAudio(ctx, oldAudioKey); err != nil {
-				return err
-			}
-		}
-
-		_ = s.redisService.InitUploadProgress(ctx, orgID, topic.ID.Hex(), 1)
-		var createTopicReq request.CreateTopicRequest
-		createTopicReq.AudioFile = req.AudioFile
-		createTopicReq.AudioLinkUrl = req.AudioLinkUrl
-		createTopicReq.AudioStart = req.AudioStart
-		createTopicReq.AudioEnd = req.AudioEnd
-		s.uploadFilesAsync(ctx, orgID, topic.ID.Hex(), createTopicReq)
-	}
-
-	// case 2 : update khong co file
-	return s.topicRepo.SetAudio(ctx, topic.ID.Hex(), req.LanguageID, model.TopicAudioConfig{
-		AudioKey:  oldAudioKey,
-		LinkUrl:   req.AudioLinkUrl,
-		StartTime: req.AudioStart,
-		EndTime:   req.AudioEnd,
-	})
-}
-
-func (s *topicService) UploadVideo(ctx context.Context, req request.UploadVideoRequest) error {
-
-	currentUser, _ := ctx.Value(constants.CurrentUserKey).(*gw_response.CurrentUser)
-
-	if currentUser.IsSuperAdmin || currentUser.OrganizationAdmin.ID == "" {
-		return fmt.Errorf("access denied")
-	}
-	orgID := currentUser.OrganizationAdmin.ID
-	// get topic
-	topic, err := s.topicRepo.GetByID(ctx, req.TopicID)
-	if err != nil {
-		return err
-	}
-
-	// case 1 : update co file
-	oldAudioKey := s.getAudioKeyByLanguage(topic, req.LanguageID)
-
-	if helper.IsValidFile(req.VideoFile) {
-		inProgress, err := s.redisService.HasAnyUploadInProgress(ctx, orgID)
-		if err == nil && inProgress {
-			return fmt.Errorf("please wait until the previous upload is completed")
-		}
-
-		// neu co old key thi xoa
-		if oldAudioKey != "" {
-			if err := s.fileGateway.DeleteVideo(ctx, oldAudioKey); err != nil {
-				return err
-			}
-		}
-
-		_ = s.redisService.InitUploadProgress(ctx, orgID, topic.ID.Hex(), 1)
-		var createTopicReq request.CreateTopicRequest
-		createTopicReq.VideoFile = req.VideoFile
-		createTopicReq.VideoLinkUrl = req.VideoLinkUrl
-		createTopicReq.VideoStart = req.VideoStart
-		createTopicReq.VideoEnd = req.VideoEnd
-		s.uploadFilesAsync(ctx, orgID, topic.ID.Hex(), createTopicReq)
-	}
-
-	return s.topicRepo.SetVideo(ctx, topic.ID.Hex(), req.LanguageID, model.TopicVideoConfig{
-		VideoKey:  oldAudioKey,
-		LinkUrl:   req.VideoLinkUrl,
-		StartTime: req.VideoStart,
-		EndTime:   req.VideoEnd,
-	})
-
-}
-
-func (s *topicService) UploadImage(ctx context.Context, req request.UploadImageRequest) error {
-	return nil
-}
-
-func (s *topicService) getAudioKeyByLanguage(topic *model.Topic, languageID uint) string {
-	for _, lc := range topic.LanguageConfig {
-		if lc.LanguageID == languageID {
-			if lc.Audio.AudioKey != "" {
-				return lc.Audio.AudioKey
-			}
-			break
-		}
-	}
-	return ""
-}
-
+// =============== Get Topic 4 App ================
 func (s *topicService) GetTopics4Student4App(ctx context.Context, studentID string) ([]*response.GetTopic4StudentResponse4App, error) {
-	// get org by student
-	student, err := s.cachedUserGw.GetStudentInfo(ctx, studentID)
-	if err != nil {
-		return nil, err
-	}
-	topics, err := s.topicRepo.GetAllTopicByOrganizationIDAndIsPublished(ctx, student.OrganizationID)
-	if err != nil {
-		return nil, err
-	}
-	appLanguage := helper.GetAppLanguage(ctx, 1)
-
-	return mapper.ToTopic4StudentResponses4App(topics, appLanguage), nil
+	return s.getTopicAppUseCase.GetTopics4Student4App(ctx, studentID)
 }
 
+// =============== Get Topic 4 Web ================
+func (s *topicService) GetTopics4Web(ctx context.Context) ([]response.TopicResponse4Web, error) {
+	return s.getTopicWebUseCase.GetTopics4Web(ctx)
+}
+func (s *topicService) GetTopic4Web(ctx context.Context, topicID string) (*response.TopicResponse4Web, error) {
+	return s.getTopicWebUseCase.GetTopic4Web(ctx, topicID)
+}
 func (s *topicService) GetTopics4Student4Web(ctx context.Context, studentID string) ([]*response.GetTopic4StudentResponse4Web, error) {
-	// get org by student
-	student, err := s.cachedUserGw.GetStudentInfo(ctx, studentID)
-	if err != nil {
-		return nil, err
-	}
-	topics, err := s.topicRepo.GetAllTopicByOrganizationIDAndIsPublished(ctx, student.OrganizationID)
-	if err != nil {
-		return nil, err
-	}
-	for ti := range topics {
-		for li := range topics[ti].LanguageConfig {
-			langCfg := &topics[ti].LanguageConfig[li]
-			for ii := range langCfg.Images {
-				img := &langCfg.Images[ii]
-				if img.ImageKey != "" {
-					url, err := s.fileGateway.GetImageUrl(ctx, gw_request.GetFileUrlRequest{
-						Key:  img.ImageKey,
-						Mode: "private",
-					})
-					if err == nil && url != nil {
-						img.UploadedUrl = *url
-					}
-				}
-			}
-		}
-	}
-	return mapper.ToTopic4StudentResponses4Web(topics, 1), nil
+	return s.getTopicWebUseCase.GetTopics4Student4Web(ctx, studentID)
 }
-
-func (s *topicService) GetTopics4Student4Gw(ctx context.Context, studentID string) ([]*response.GetTopic4StudentResponse4Gw, error) {
-	// get org by student
-	student, err := s.cachedUserGw.GetStudentInfo(ctx, studentID)
-	if err != nil {
-		return nil, err
-	}
-	topics, err := s.topicRepo.GetAllTopicByOrganizationIDAndIsPublished(ctx, student.OrganizationID)
-	if err != nil {
-		return nil, err
-	}
-	for ti := range topics {
-		for li := range topics[ti].LanguageConfig {
-			langCfg := &topics[ti].LanguageConfig[li]
-			for ii := range langCfg.Images {
-				img := &langCfg.Images[ii]
-				if img.ImageKey != "" {
-					url, err := s.fileGateway.GetImageUrl(ctx, gw_request.GetFileUrlRequest{
-						Key:  img.ImageKey,
-						Mode: "private",
-					})
-					if err == nil && url != nil {
-						img.UploadedUrl = *url
-					}
-				}
-			}
-		}
-	}
-	return mapper.ToTopic4StudentResponses4Gw(topics, 1), nil
-}
-
-func (s *topicService) GetTopic4GW(ctx context.Context, topicID string) (*response.TopicResponse4GW, error) {
-
-	topic, err := s.topicRepo.GetByID(ctx, topicID)
-	if err != nil {
-		return nil, err
-	}
-
-	appLang := helper.GetAppLanguage(ctx, 1)
-
-	// images
-	for ii := range topic.LanguageConfig[0].Images {
-		img := &topic.LanguageConfig[0].Images[ii]
-		if img.ImageKey != "" {
-			url, err := s.fileGateway.GetImageUrl(ctx, gw_request.GetFileUrlRequest{
-				Key:  img.ImageKey,
-				Mode: "private",
-			})
-			if err == nil && url != nil {
-				img.UploadedUrl = *url
-			}
-		}
-	}
-
-	return mapper.ToTopicResponses4GW(topic, appLang), nil
-}
-
 func (s *topicService) GetTopics2Assign4Web(ctx context.Context) ([]*response.TopicResponse2Assign4Web, error) {
-	currentUser, _ := ctx.Value(constants.CurrentUserKey).(*gw_response.CurrentUser)
-
-	if currentUser.IsSuperAdmin || currentUser.OrganizationAdmin.ID == "" {
-		return nil, fmt.Errorf("access denied")
-	}
-
-	topics, err := s.topicRepo.GetAllTopicByOrganizationIDAndIsPublished(ctx, currentUser.OrganizationAdmin.ID)
-	if err != nil {
-		return nil, err
-	}
-
-	for ti := range topics {
-		for li := range topics[ti].LanguageConfig {
-			langCfg := &topics[ti].LanguageConfig[li]
-			for ii := range langCfg.Images {
-				img := &langCfg.Images[ii]
-				if img.ImageKey != "" {
-					url, err := s.fileGateway.GetImageUrl(ctx, gw_request.GetFileUrlRequest{
-						Key:  img.ImageKey,
-						Mode: "private",
-					})
-					if err == nil && url != nil {
-						img.UploadedUrl = *url
-					}
-				}
-			}
-		}
-	}
-
-	return mapper.ToTopic2Assign4Web(topics, 1), nil
+	return s.getTopicWebUseCase.GetTopics2Assign4Web(ctx)
 }
 
-func (s *topicService) GetAllTopicsByOrganization4GW(ctx context.Context, organizationID string) ([]*response.TopicResponse4GW, error) {
-
-	topics, err := s.topicRepo.GetAllTopicByOrganizationIDAndIsPublished(ctx, organizationID)
-	if err != nil {
-		return nil, err
-	}
-
-	appLang := helper.GetAppLanguage(ctx, 1)
-
-	var result []*response.TopicResponse4GW
-
-	for _, topic := range topics {
-		// xử lý ảnh từng topic
-		for ii := range topic.LanguageConfig[0].Images {
-			img := &topic.LanguageConfig[0].Images[ii]
-			if img.ImageKey != "" {
-				url, err := s.fileGateway.GetImageUrl(ctx, gw_request.GetFileUrlRequest{
-					Key:  img.ImageKey,
-					Mode: "private",
-				})
-				if err == nil && url != nil {
-					img.UploadedUrl = *url
-				}
-			}
-		}
-
-		topicRes := mapper.ToTopicResponses4GW(&topic, appLang)
-		if topicRes != nil {
-			result = append(result, topicRes)
-		}
-	}
-
-	return result, nil
+// =============== Get Topic 4 Gateway ================
+func (s *topicService) GetTopics4Student4Gw(ctx context.Context, studentID string) ([]*response.GetTopic4StudentResponse4Gw, error) {
+	return s.getTopicGatewayUseCase.GetTopics4Student4Gw(ctx, studentID)
+}
+func (s *topicService) GetTopic4Gw(ctx context.Context, topicID string) (*response.TopicResponse4GW, error) {
+	return s.getTopicGatewayUseCase.GetTopic4Gw(ctx, topicID)
+}
+func (s *topicService) GetAllTopicsByOrganization4Gw(ctx context.Context, organizationID string) ([]*response.TopicResponse4GW, error) {
+	return s.getTopicGatewayUseCase.GetAllTopicsByOrganization4Gw(ctx, organizationID)
 }

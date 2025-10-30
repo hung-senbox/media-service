@@ -15,15 +15,12 @@ func RegisterTopicRoutes(r *gin.Engine, hv2 *handler.TopicHandler, userGw gatewa
 	{
 		topicsAdmin := adminGroup.Group("/topics")
 		{
-			topicsAdmin.POST("", hv2.CreateTopic)
+			topicsAdmin.POST("", hv2.UploadTopic)
 			topicsAdmin.GET("", hv2.GetTopics4Web)
 			topicsAdmin.GET("/:topic_id/progress", hv2.GetPregressUpload)
 			topicsAdmin.GET("/:topic_id", hv2.GetTopic4Web)
 			topicsAdmin.GET("/student/:student_id", hv2.GetTopics4Student4Web)
-			topicsAdmin.PUT("/:topic_id", hv2.UpdateTopic)
 			topicsAdmin.GET("/assign", hv2.GetTopics2Assign4Web)
-			topicsAdmin.PUT("/:topic_id/audio", hv2.UploadAudio)
-			topicsAdmin.PUT("/:topic_id/video", hv2.UploadVideo)
 		}
 	}
 
@@ -43,8 +40,8 @@ func RegisterTopicRoutes(r *gin.Engine, hv2 *handler.TopicHandler, userGw gatewa
 	{
 		topicsGateway := gatewayGroup.Group("/topics")
 		{
-			topicsGateway.GET("/organization/:organization_id", hv2.GetAllTopicsByOrganization4GW)
-			topicsGateway.GET("/:topic_id", hv2.GetTopic4GW)
+			topicsGateway.GET("/organization/:organization_id", hv2.GetAllTopicsByOrganization4Gw)
+			topicsGateway.GET("/:topic_id", hv2.GetTopic4Gw)
 			topicsGateway.GET("/student/:student_id", hv2.GetTopics4Student4Gw)
 		}
 	}

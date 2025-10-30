@@ -7,6 +7,7 @@ import (
 	"media-service/internal/media/v2/handler"
 	"media-service/internal/media/v2/repository"
 	"media-service/internal/media/v2/service"
+	"media-service/internal/media/v2/usecase"
 	"media-service/internal/pdf/domain"
 	route2 "media-service/internal/pdf/route"
 	"media-service/internal/redis"
@@ -32,15 +33,30 @@ func SetupRouter(consulClient *api.Client, cacheClientRedis *goredis.Client, top
 	systemCache := cache.NewRedisCache(cacheClientRedis)
 	cachedUserGateway := cached_service.NewCachedUserGateway(userGateway, systemCache, config.AppConfig.Database.RedisCache.TTLSeconds)
 
-	// topic
+	// ========================  Topic ======================== //
+	// --- Repo ---
 	topicRepov2 := repository.NewTopicRepository(topicCollection)
-	topicServicev2 := service.NewTopicService(topicRepov2, fileGateway, redisService, cachedUserGateway)
-	topicHandlerv2 := handler.NewTopicHandler(topicServicev2)
 
-	//pdf
+	// --- UseCase ---
+	uploadTopicUseCasev2 := usecase.NewUploadTopicUseCase(topicRepov2, fileGateway, redisService)
+	getTopicAppUseCasev2 := usecase.NewGetTopicAppUseCase(topicRepov2, cachedUserGateway)
+	getTopicWebUseCasev2 := usecase.NewGetTopicWebUseCase(topicRepov2, cachedUserGateway, fileGateway)
+	getTopicGatewayUseCasev2 := usecase.NewGetTopicGatewayUseCase(topicRepov2, cachedUserGateway, fileGateway)
+	getUploadProgressUseCasev2 := usecase.NewGetUploadProgressUseCase(redisService)
+
+	// --- Service ---
+	topicServicev2 := service.NewTopicService(uploadTopicUseCasev2, getUploadProgressUseCasev2, getTopicAppUseCasev2, getTopicWebUseCasev2, getTopicGatewayUseCasev2)
+
+	// --- Handler ---
+	topicHandlerv2 := handler.NewTopicHandler(topicServicev2)
+	// ========================  Topic ======================== //
+
+	// ========================  PDF ======================== //
 	pdfRepov2 := domain.NewUserResourceRepository(pdfCollection)
 	pdfServicev2 := domain.NewUserResourceService(pdfRepov2, fileGateway)
 	pdfHandlerv2 := domain.NewUserResourceHandler(pdfServicev2)
+	// ========================  PDF ======================== //
+
 	// Register routes
 	route.RegisterTopicRoutes(r, topicHandlerv2, cachedUserGateway)
 	route2.RegisterRoutes(r, pdfHandlerv2, cachedUserGateway)
