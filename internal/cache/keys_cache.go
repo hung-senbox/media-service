@@ -35,7 +35,7 @@ func StaffByUserAndOrgCacheKey(userID, orgID string) string {
 }
 
 func UserByTeacherCacheKey(teacherID string) string {
-	return constants.MainCachePrefix + "user-by-teacher-org:" + teacherID
+	return constants.MainCachePrefix + "user-by-teacher:" + teacherID
 }
 
 func ParentByUserCacheKey(userID string) string {
