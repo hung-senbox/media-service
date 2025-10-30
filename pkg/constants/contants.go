@@ -164,3 +164,4 @@ const (
 )
 
 const MainCachePrefix = "main-service:"
+const MediaCachePrefix = "media-service:"
