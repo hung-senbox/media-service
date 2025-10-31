@@ -19,6 +19,7 @@ type TopicService interface {
 	GetTopic4Gw(ctx context.Context, topicID string) (*response.TopicResponse4GW, error)
 	GetAllTopicsByOrganization4Gw(ctx context.Context, organizationID string) ([]*response.TopicResponse4GW, error)
 	GetTopics2Assign4Web(ctx context.Context) ([]*response.TopicResponse2Assign4Web, error)
+	GetTopics4App(ctx context.Context, organizationID string) ([]*response.GetTopic4StudentResponse4App, error)
 }
 
 type topicService struct {
@@ -58,6 +59,9 @@ func (s *topicService) GetUploadProgress(ctx context.Context, topicID string) (*
 // =============== Get Topic 4 App ================
 func (s *topicService) GetTopics4Student4App(ctx context.Context, studentID string) ([]*response.GetTopic4StudentResponse4App, error) {
 	return s.getTopicAppUseCase.GetTopics4Student4App(ctx, studentID)
+}
+func (s *topicService) GetTopics4App(ctx context.Context, organizationID string) ([]*response.GetTopic4StudentResponse4App, error) {
+	return s.getTopicAppUseCase.GetTopics4App(ctx, organizationID)
 }
 
 // =============== Get Topic 4 Web ================

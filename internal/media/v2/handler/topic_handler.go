@@ -157,3 +157,18 @@ func (h TopicHandler) GetTopics2Assign4Web(c *gin.Context) {
 
 	helper.SendSuccess(c, http.StatusOK, "get topics success", res)
 }
+
+func (h TopicHandler) GetTopics4App(c *gin.Context) {
+	organizationID := c.Param("organization_id")
+	if organizationID == "" {
+		helper.SendError(c, http.StatusBadRequest, nil, helper.ErrInvalidRequest)
+		return
+	}
+	res, err := h.service.GetTopics4App(c.Request.Context(), organizationID)
+	if err != nil {
+		helper.SendError(c, http.StatusInternalServerError, err, helper.ErrInvalidOperation)
+		return
+	}
+
+	helper.SendSuccess(c, http.StatusOK, "get topics success", res)
+}

@@ -31,6 +31,7 @@ func RegisterTopicRoutes(r *gin.Engine, hv2 *handler.TopicHandler, userGw gatewa
 		topicsUser := userGroup.Group("/topics")
 		{
 			topicsUser.GET("/student/:student_id", hv2.GetTopics4Student4App)
+			topicsUser.GET("/organization/:organization_id", hv2.GetTopics4App)
 		}
 	}
 
