@@ -134,11 +134,12 @@ func (uc *uploadTopicUseCase) uploadAndSaveAudio(ctx context.Context, orgID, top
 			_ = uc.fileGateway.DeleteAudio(ctx, oldAudioKey)
 		}
 
-		resp, err := uc.fileGateway.UploadAudio(ctx, gw_request.UploadFileRequest{
-			File:     req.AudioFile,
-			Folder:   "topic_media",
-			FileName: req.Title + "_audio",
-			Mode:     "private",
+		resp, err := uc.fileGateway.UploadAudio(ctx, gw_request.UploadAudioRequest{
+			File:      req.AudioFile,
+			Folder:    "topic_media",
+			FileName:  req.Title + "_audio",
+			Mode:      "private",
+			AudioName: req.Title,
 		})
 		if err != nil {
 			_ = uc.redisService.SetUploadError(ctx, orgID, topicID, "audio_error", err.Error())
@@ -175,11 +176,12 @@ func (uc *uploadTopicUseCase) uploadAndSaveVideo(ctx context.Context, orgID, top
 			_ = uc.fileGateway.DeleteVideo(ctx, oldVideoKey)
 		}
 
-		resp, err := uc.fileGateway.UploadVideo(ctx, gw_request.UploadFileRequest{
-			File:     req.VideoFile,
-			Folder:   "topic_media",
-			FileName: req.Title + "_video",
-			Mode:     "private",
+		resp, err := uc.fileGateway.UploadVideo(ctx, gw_request.UploadVideoRequest{
+			File:      req.VideoFile,
+			Folder:    "topic_media",
+			FileName:  req.Title + "_video",
+			Mode:      "private",
+			VideoName: req.Title,
 		})
 		if err != nil {
 			_ = uc.redisService.SetUploadError(ctx, orgID, topicID, "video_error", err.Error())

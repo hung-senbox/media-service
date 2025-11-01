@@ -97,7 +97,8 @@ func (uc *getTopicWebUseCase) GetTopics4Web(ctx context.Context) ([]response.Top
 			// video
 			if langCfg.Video.VideoKey != "" {
 				url, err := uc.fileGateway.GetVideoUrl(ctx, gw_request.GetFileUrlRequest{
-					Key: langCfg.Video.VideoKey,
+					Key:  langCfg.Video.VideoKey,
+					Mode: "private",
 				})
 				if err == nil && url != nil {
 					langCfg.Video.UploadedUrl = *url

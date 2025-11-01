@@ -17,8 +17,8 @@ import (
 
 type FileGateway interface {
 	UploadImage(ctx context.Context, req gw_request.UploadFileRequest) (*gw_response.UploadImageResponse, error)
-	UploadVideo(ctx context.Context, req gw_request.UploadFileRequest) (*gw_response.UploadVideoResponse, error)
-	UploadAudio(ctx context.Context, req gw_request.UploadFileRequest) (*gw_response.UploadAudioResponse, error)
+	UploadVideo(ctx context.Context, req gw_request.UploadVideoRequest) (*gw_response.UploadVideoResponse, error)
+	UploadAudio(ctx context.Context, req gw_request.UploadAudioRequest) (*gw_response.UploadAudioResponse, error)
 	UploadPDF(ctx context.Context, req gw_request.UploadFileRequest) (*gw_response.UploadPDFResponse, error)
 	DeleteVideo(ctx context.Context, videoKey string) error
 	DeleteAudio(ctx context.Context, audioKey string) error
@@ -78,6 +78,78 @@ func buildMultipartBody(req gw_request.UploadFileRequest) (*bytes.Buffer, string
 	return body, writer.FormDataContentType(), nil
 }
 
+func buildMultipartBodyVideo(req gw_request.UploadVideoRequest) (*bytes.Buffer, string, error) {
+	body := &bytes.Buffer{}
+	writer := multipart.NewWriter(body)
+
+	// --- add file ---
+	if req.File != nil {
+		file, err := req.File.Open()
+		if err != nil {
+			return nil, "", fmt.Errorf("open file fail: %w", err)
+		}
+		defer file.Close()
+
+		part, err := writer.CreateFormFile("file", req.File.Filename)
+		if err != nil {
+			return nil, "", fmt.Errorf("create form file fail: %w", err)
+		}
+		if _, err := io.Copy(part, file); err != nil {
+			return nil, "", fmt.Errorf("copy file fail: %w", err)
+		}
+	}
+
+	// --- add text fields ---
+	_ = writer.WriteField("folder", req.Folder)
+	_ = writer.WriteField("file_name", req.FileName)
+	_ = writer.WriteField("mode", req.Mode)
+	if req.VideoName != "" {
+		_ = writer.WriteField("video_name", req.VideoName)
+	}
+
+	if err := writer.Close(); err != nil {
+		return nil, "", fmt.Errorf("close writer fail: %w", err)
+	}
+
+	return body, writer.FormDataContentType(), nil
+}
+
+func buildMultipartBodyAudio(req gw_request.UploadAudioRequest) (*bytes.Buffer, string, error) {
+	body := &bytes.Buffer{}
+	writer := multipart.NewWriter(body)
+
+	// --- add file ---
+	if req.File != nil {
+		file, err := req.File.Open()
+		if err != nil {
+			return nil, "", fmt.Errorf("open file fail: %w", err)
+		}
+		defer file.Close()
+
+		part, err := writer.CreateFormFile("file", req.File.Filename)
+		if err != nil {
+			return nil, "", fmt.Errorf("create form file fail: %w", err)
+		}
+		if _, err := io.Copy(part, file); err != nil {
+			return nil, "", fmt.Errorf("copy file fail: %w", err)
+		}
+	}
+
+	// --- add text fields ---
+	_ = writer.WriteField("folder", req.Folder)
+	_ = writer.WriteField("file_name", req.FileName)
+	_ = writer.WriteField("mode", req.Mode)
+	if req.AudioName != "" {
+		_ = writer.WriteField("audio_name", req.AudioName)
+	}
+
+	if err := writer.Close(); err != nil {
+		return nil, "", fmt.Errorf("close writer fail: %w", err)
+	}
+
+	return body, writer.FormDataContentType(), nil
+}
+
 // --- Upload Image ---
 func (g *fileGateway) UploadImage(ctx context.Context, req gw_request.UploadFileRequest) (*gw_response.UploadImageResponse, error) {
 	token, ok := ctx.Value(constants.Token).(string)
@@ -113,7 +185,7 @@ func (g *fileGateway) UploadImage(ctx context.Context, req gw_request.UploadFile
 }
 
 // --- Upload Video ---
-func (g *fileGateway) UploadVideo(ctx context.Context, req gw_request.UploadFileRequest) (*gw_response.UploadVideoResponse, error) {
+func (g *fileGateway) UploadVideo(ctx context.Context, req gw_request.UploadVideoRequest) (*gw_response.UploadVideoResponse, error) {
 	token, ok := ctx.Value(constants.Token).(string)
 	if !ok {
 		return nil, fmt.Errorf("token not found in context")
@@ -124,7 +196,7 @@ func (g *fileGateway) UploadVideo(ctx context.Context, req gw_request.UploadFile
 		return nil, err
 	}
 
-	body, contentType, err := buildMultipartBody(req)
+	body, contentType, err := buildMultipartBodyVideo(req)
 	if err != nil {
 		return nil, err
 	}
@@ -146,7 +218,7 @@ func (g *fileGateway) UploadVideo(ctx context.Context, req gw_request.UploadFile
 	return &gwResp.Data, nil
 }
 
-func (g *fileGateway) UploadAudio(ctx context.Context, req gw_request.UploadFileRequest) (*gw_response.UploadAudioResponse, error) {
+func (g *fileGateway) UploadAudio(ctx context.Context, req gw_request.UploadAudioRequest) (*gw_response.UploadAudioResponse, error) {
 	token, ok := ctx.Value(constants.Token).(string)
 	if !ok {
 		return nil, fmt.Errorf("token not found in context")
@@ -158,7 +230,7 @@ func (g *fileGateway) UploadAudio(ctx context.Context, req gw_request.UploadFile
 	}
 
 	// multipart body
-	body, contentType, err := buildMultipartBody(req)
+	body, contentType, err := buildMultipartBodyAudio(req)
 	if err != nil {
 		return nil, err
 	}

@@ -67,7 +67,7 @@ func (r *topicRepository) SetImage(ctx context.Context, topicID string, language
 
 	arrayFilters := options.Update().SetArrayFilters(options.ArrayFilters{
 		Filters: []interface{}{
-			bson.M{"lang.language_id": languageID},
+			bson.M{"lang.language_id": bson.M{"$in": []interface{}{int32(languageID), int64(languageID), languageID}}},
 			bson.M{"imgElem.image_type": img.ImageType},
 		},
 	})
@@ -91,7 +91,7 @@ func (r *topicRepository) SetImage(ctx context.Context, topicID string, language
 
 		pushFilter := options.Update().SetArrayFilters(options.ArrayFilters{
 			Filters: []interface{}{
-				bson.M{"lang.language_id": languageID},
+				bson.M{"lang.language_id": bson.M{"$in": []interface{}{int32(languageID), int64(languageID), languageID}}},
 			},
 		})
 
@@ -230,15 +230,9 @@ func (r *topicRepository) GetAllTopicByOrganizationID(ctx context.Context, orgID
 func (r *topicRepository) UpdateTopic(ctx context.Context, topic *model.Topic) (*model.Topic, error) {
 	filter := bson.M{"_id": topic.ID}
 
-	updateFields := bson.M{
-		"is_published": topic.IsPublished,
-		"updated_at":   time.Now(),
-	}
-
-	// xử lý LanguageConfig - chỉ update các trường cụ thể, không thay thế toàn bộ array
+	// 1) Update or insert language-level metadata WITHOUT replacing entire language_config
 	if len(topic.LanguageConfig) > 0 {
-		for i, lc := range topic.LanguageConfig {
-			// Cập nhật từng language config riêng biệt
+		for _, lc := range topic.LanguageConfig {
 			langFilter := bson.M{
 				"_id":                         topic.ID,
 				"language_config.language_id": lc.LanguageID,
@@ -254,76 +248,49 @@ func (r *topicRepository) UpdateTopic(ctx context.Context, topic *model.Topic) (
 				},
 			}
 
-			// Nếu đây là lần đầu tiên, thêm vào mảng nếu chưa có
-			if i == 0 && len(topic.LanguageConfig) > 0 {
-				// Thử update trước
-				res, err := r.topicCollection.UpdateOne(ctx, langFilter, langUpdate)
-				if err != nil {
-					return nil, fmt.Errorf("update language config failed: %w", err)
-				}
+			res, err := r.topicCollection.UpdateOne(ctx, langFilter, langUpdate)
+			if err != nil {
+				return nil, fmt.Errorf("update language config failed: %w", err)
+			}
 
-				// Nếu không match (chưa có language config này), push thêm
-				if res.MatchedCount == 0 {
-					pushFilter := bson.M{"_id": topic.ID}
-					pushUpdate := bson.M{
-						"$push": bson.M{
-							"language_config": lc,
+			if res.MatchedCount == 0 {
+				// Insert new language config entry preserving media subdocuments by initializing empty values
+				pushUpdate := bson.M{
+					"$push": bson.M{
+						"language_config": bson.M{
+							"language_id": lc.LanguageID,
+							"file_name":   lc.FileName,
+							"title":       lc.Title,
+							"note":        lc.Note,
+							"description": lc.Description,
+							"images":      []model.TopicImageConfig{},
+							"audio":       model.TopicAudioConfig{},
+							"video":       model.TopicVideoConfig{},
 						},
-					}
-					_, err = r.topicCollection.UpdateOne(ctx, pushFilter, pushUpdate)
-					if err != nil {
-						return nil, fmt.Errorf("insert language config failed: %w", err)
-					}
+					},
 				}
-			} else if i > 0 {
-				// Cập nhật các language config tiếp theo
-				res, err := r.topicCollection.UpdateOne(ctx, langFilter, langUpdate)
-				if err != nil {
-					return nil, fmt.Errorf("update language config failed: %w", err)
-				}
-
-				// Nếu không match, push thêm
-				if res.MatchedCount == 0 {
-					pushFilter := bson.M{"_id": topic.ID}
-					pushUpdate := bson.M{
-						"$push": bson.M{
-							"language_config": lc,
-						},
-					}
-					_, err = r.topicCollection.UpdateOne(ctx, pushFilter, pushUpdate)
-					if err != nil {
-						return nil, fmt.Errorf("insert language config failed: %w", err)
-					}
+				if _, err := r.topicCollection.UpdateOne(ctx, bson.M{"_id": topic.ID}, pushUpdate); err != nil {
+					return nil, fmt.Errorf("insert language config failed: %w", err)
 				}
 			}
 		}
 	}
 
-	// Chỉ cập nhật is_published và updated_at nếu không có language config
-	if len(topic.LanguageConfig) == 0 {
-		update := bson.M{"$set": updateFields}
-		opts := options.FindOneAndUpdate().SetReturnDocument(options.After)
+	// 2) Update top-level fields and return the updated document
+	update := bson.M{"$set": bson.M{
+		"is_published": topic.IsPublished,
+		"updated_at":   time.Now(),
+	}}
 
-		var updatedTopic model.Topic
-		err := r.topicCollection.FindOneAndUpdate(ctx, filter, update, opts).Decode(&updatedTopic)
-		if err != nil {
-			if errors.Is(err, mongo.ErrNoDocuments) {
-				return nil, fmt.Errorf("topic not found")
-			}
-			return nil, fmt.Errorf("update topic failed: %w", err)
-		}
+	opts := options.FindOneAndUpdate().SetReturnDocument(options.After)
 
-		return &updatedTopic, nil
-	}
-
-	// Fetch lại topic sau khi update
 	var updatedTopic model.Topic
-	err := r.topicCollection.FindOne(ctx, filter).Decode(&updatedTopic)
+	err := r.topicCollection.FindOneAndUpdate(ctx, filter, update, opts).Decode(&updatedTopic)
 	if err != nil {
 		if errors.Is(err, mongo.ErrNoDocuments) {
 			return nil, fmt.Errorf("topic not found")
 		}
-		return nil, fmt.Errorf("fetch updated topic failed: %w", err)
+		return nil, fmt.Errorf("update topic failed: %w", err)
 	}
 
 	return &updatedTopic, nil

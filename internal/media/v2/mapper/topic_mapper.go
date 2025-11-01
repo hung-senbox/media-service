@@ -29,23 +29,19 @@ func ToTopicResponses4Web(topics []model.Topic) []response.TopicResponse4Web {
 			}
 
 			// map audio
-			if lc.Audio.LinkUrl != "" {
-				entry.Contents.Audio = &response.MediaContent{
-					UploadedURL: lc.Audio.UploadedUrl,
-					LinkURL:     lc.Audio.LinkUrl,
-					StartTime:   strPtr(trimQuotes(lc.Audio.StartTime)),
-					EndTime:     strPtr(trimQuotes(lc.Audio.EndTime)),
-				}
+			entry.Contents.Audio = response.MediaContent{
+				UploadedURL: lc.Audio.UploadedUrl,
+				LinkURL:     lc.Audio.LinkUrl,
+				StartTime:   strPtr(trimQuotes(lc.Audio.StartTime)),
+				EndTime:     strPtr(trimQuotes(lc.Audio.EndTime)),
 			}
 
 			// map video
-			if lc.Video.LinkUrl != "" {
-				entry.Contents.Video = &response.MediaContent{
-					UploadedURL: lc.Video.UploadedUrl,
-					LinkURL:     lc.Video.LinkUrl,
-					StartTime:   strPtr(trimQuotes(lc.Video.StartTime)),
-					EndTime:     strPtr(trimQuotes(lc.Video.EndTime)),
-				}
+			entry.Contents.Video = response.MediaContent{
+				UploadedURL: lc.Video.UploadedUrl,
+				LinkURL:     lc.Video.LinkUrl,
+				StartTime:   strPtr(trimQuotes(lc.Video.StartTime)),
+				EndTime:     strPtr(trimQuotes(lc.Video.EndTime)),
 			}
 
 			// map images slice → object
@@ -118,23 +114,19 @@ func ToTopicResponse4Web(t *model.Topic) *response.TopicResponse4Web {
 		}
 
 		// map audio
-		if lc.Audio.LinkUrl != "" {
-			entry.Contents.Audio = &response.MediaContent{
-				UploadedURL: lc.Audio.UploadedUrl,
-				LinkURL:     lc.Audio.LinkUrl,
-				StartTime:   strPtr(trimQuotes(lc.Audio.StartTime)),
-				EndTime:     strPtr(trimQuotes(lc.Audio.EndTime)),
-			}
+		entry.Contents.Audio = response.MediaContent{
+			UploadedURL: lc.Audio.UploadedUrl,
+			LinkURL:     lc.Audio.LinkUrl,
+			StartTime:   strPtr(trimQuotes(lc.Audio.StartTime)),
+			EndTime:     strPtr(trimQuotes(lc.Audio.EndTime)),
 		}
 
 		// map video
-		if lc.Video.LinkUrl != "" {
-			entry.Contents.Video = &response.MediaContent{
-				UploadedURL: lc.Video.UploadedUrl,
-				LinkURL:     lc.Video.LinkUrl,
-				StartTime:   strPtr(trimQuotes(lc.Video.StartTime)),
-				EndTime:     strPtr(trimQuotes(lc.Video.EndTime)),
-			}
+		entry.Contents.Video = response.MediaContent{
+			UploadedURL: lc.Video.UploadedUrl,
+			LinkURL:     lc.Video.LinkUrl,
+			StartTime:   strPtr(trimQuotes(lc.Video.StartTime)),
+			EndTime:     strPtr(trimQuotes(lc.Video.EndTime)),
 		}
 
 		// map images slice → object

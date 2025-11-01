@@ -17,8 +17,8 @@ type LanguageContents struct {
 	Title       string              `json:"title"`
 	Note        string              `json:"note"`
 	Description string              `json:"description"`
-	Audio       *MediaContent       `json:"audio,omitempty"`
-	Video       *MediaContent       `json:"video,omitempty"`
+	Audio       MediaContent        `json:"audio,omitempty"`
+	Video       MediaContent        `json:"video,omitempty"`
 	Images      map[string]ImgEntry `json:"images,omitempty"`
 }
 
