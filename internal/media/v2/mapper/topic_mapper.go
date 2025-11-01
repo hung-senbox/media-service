@@ -66,8 +66,11 @@ func ToTopicResponses4Web(topics []model.Topic) []response.TopicResponse4Web {
 		if len(t.LanguageConfig) > 0 {
 			for _, lc := range t.LanguageConfig {
 				if lc.LanguageID == 1 {
-					if lc.Images[0].UploadedUrl != "" {
-						mainImageUrl = lc.Images[0].UploadedUrl
+					for _, img := range lc.Images {
+						if img.ImageType == "full_background" && img.UploadedUrl != "" {
+							mainImageUrl = img.UploadedUrl
+							break
+						}
 					}
 					break
 				}
