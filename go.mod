@@ -7,8 +7,9 @@ require (
 	github.com/gin-gonic/gin v1.10.1
 	github.com/golang-jwt/jwt/v5 v5.2.2
 	github.com/hashicorp/consul/api v1.32.1
+	github.com/hung-senbox/senbox-cache-service v1.0.7
 	github.com/natefinch/lumberjack v2.0.0+incompatible
-	github.com/redis/go-redis/v9 v9.14.0
+	github.com/redis/go-redis/v9 v9.16.0
 	github.com/sirupsen/logrus v1.7.0
 	github.com/spf13/viper v1.20.1
 	go.mongodb.org/mongo-driver v1.17.4

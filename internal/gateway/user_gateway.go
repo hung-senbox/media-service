@@ -10,6 +10,7 @@ import (
 	"media-service/pkg/constants"
 
 	"github.com/hashicorp/consul/api"
+	"github.com/hung-senbox/senbox-cache-service/pkg/cache/cached"
 )
 
 type UserGateway interface {
@@ -23,14 +24,16 @@ type UserGateway interface {
 }
 
 type userGatewayImpl struct {
-	serviceName string
-	consul      *api.Client
+	serviceName       string
+	consul            *api.Client
+	cachedMainGateway cached.CachedMainGateway
 }
 
-func NewUserGateway(serviceName string, consulClient *api.Client) UserGateway {
+func NewUserGateway(serviceName string, consulClient *api.Client, cachedMainGateway cached.CachedMainGateway) UserGateway {
 	return &userGatewayImpl{
-		serviceName: serviceName,
-		consul:      consulClient,
+		serviceName:       serviceName,
+		consul:            consulClient,
+		cachedMainGateway: cachedMainGateway,
 	}
 }
 
@@ -82,6 +85,18 @@ func (g *userGatewayImpl) GetCurrentUser(ctx context.Context) (*response.Current
 }
 
 func (g *userGatewayImpl) GetStudentInfo(ctx context.Context, studentID string) (*response.StudentResponse, error) {
+
+	studentCache, err := g.cachedMainGateway.GetStudentCache(ctx, studentID)
+	if err != nil {
+		fmt.Printf("warning: get teacher cache failed: %v\n", err)
+	} else if studentCache != nil {
+		var student response.StudentResponse
+		b, _ := json.Marshal(studentCache)
+		if err := json.Unmarshal(b, &student); err == nil && student.ID != "" && student.Name != "" {
+			return &student, nil
+		}
+	}
+
 	token, ok := ctx.Value(constants.Token).(string)
 	if !ok {
 		return nil, fmt.Errorf("token not found in context")
@@ -114,6 +129,17 @@ func (g *userGatewayImpl) GetStudentInfo(ctx context.Context, studentID string) 
 }
 
 func (g *userGatewayImpl) GetTeacherInfo(ctx context.Context, teacherID string) (*response.TeacherResponse, error) {
+	teacherCache, err := g.cachedMainGateway.GetTeacherCache(ctx, teacherID)
+	if err != nil {
+		fmt.Printf("warning: get teacher cache failed: %v\n", err)
+	} else if teacherCache != nil {
+		var teacher response.TeacherResponse
+		b, _ := json.Marshal(teacherCache)
+		if err := json.Unmarshal(b, &teacher); err == nil && teacher.ID != "" && teacher.Name != "" {
+			return &teacher, nil
+		}
+	}
+
 	token, ok := ctx.Value(constants.Token).(string)
 	if !ok {
 		return nil, fmt.Errorf("token not found in context")
@@ -147,6 +173,16 @@ func (g *userGatewayImpl) GetTeacherInfo(ctx context.Context, teacherID string) 
 }
 
 func (g *userGatewayImpl) GetTeacherByUserAndOrganization(ctx context.Context, userID, organizationID string) (*response.TeacherResponse, error) {
+	teacherCache, err := g.cachedMainGateway.GetTeacherByUserAndOrgCache(ctx, userID, organizationID)
+	if err != nil {
+		fmt.Printf("warning: get teacher cache failed: %v\n", err)
+	} else if teacherCache != nil {
+		var teacher response.TeacherResponse
+		b, _ := json.Marshal(teacherCache)
+		if err := json.Unmarshal(b, &teacher); err == nil && teacher.ID != "" && teacher.Name != "" {
+			return &teacher, nil
+		}
+	}
 	token, ok := ctx.Value(constants.Token).(string)
 	if !ok {
 		return nil, fmt.Errorf("token not found in context")
@@ -179,6 +215,16 @@ func (g *userGatewayImpl) GetTeacherByUserAndOrganization(ctx context.Context, u
 }
 
 func (g *userGatewayImpl) GetStaffByUserAndOrganization(ctx context.Context, userID, organizationID string) (*response.StaffResponse, error) {
+	staffCache, err := g.cachedMainGateway.GetStaffByUserAndOrgCache(ctx, userID, organizationID)
+	if err != nil {
+		fmt.Printf("warning: get staff cache failed: %v\n", err)
+	} else if staffCache != nil {
+		var staff response.StaffResponse
+		b, _ := json.Marshal(staffCache)
+		if err := json.Unmarshal(b, &staff); err == nil && staff.ID != "" && staff.Name != "" {
+			return &staff, nil
+		}
+	}
 	token, ok := ctx.Value(constants.Token).(string)
 	if !ok {
 		return nil, fmt.Errorf("token not found in context")
@@ -211,6 +257,16 @@ func (g *userGatewayImpl) GetStaffByUserAndOrganization(ctx context.Context, use
 }
 
 func (g *userGatewayImpl) GetUserByTeacher(ctx context.Context, teacherID string) (*response.CurrentUser, error) {
+	userCache, err := g.cachedMainGateway.GetUserByTeacherCache(ctx, teacherID)
+	if err != nil {
+		fmt.Printf("warning: get user cache failed: %v\n", err)
+	} else if userCache != nil {
+		var user response.CurrentUser
+		b, _ := json.Marshal(userCache)
+		if err := json.Unmarshal(b, &user); err == nil && user.ID != "" {
+			return &user, nil
+		}
+	}
 	token, ok := ctx.Value(constants.Token).(string)
 	if !ok {
 		return nil, fmt.Errorf("token not found in context")
@@ -243,6 +299,16 @@ func (g *userGatewayImpl) GetUserByTeacher(ctx context.Context, teacherID string
 }
 
 func (g *userGatewayImpl) GetParentByUser(ctx context.Context, userID string) (*response.ParentResponse, error) {
+	parentCache, err := g.cachedMainGateway.GetParentByUserCache(ctx, userID)
+	if err != nil {
+		fmt.Printf("warning: get parent cache failed: %v\n", err)
+	} else if parentCache != nil {
+		var parent response.ParentResponse
+		b, _ := json.Marshal(parentCache)
+		if err := json.Unmarshal(b, &parent); err == nil && parent.ID != "" && parent.Name != "" {
+			return &parent, nil
+		}
+	}
 	token, ok := ctx.Value(constants.Token).(string)
 	if !ok {
 		return nil, fmt.Errorf("token not found in context")

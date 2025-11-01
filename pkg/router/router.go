@@ -1,7 +1,6 @@
 package router
 
 import (
-	"media-service/internal/cache"
 	"media-service/internal/gateway"
 	"media-service/internal/media/route"
 	"media-service/internal/media/v2/handler"
@@ -11,27 +10,22 @@ import (
 	"media-service/internal/pdf/domain"
 	route2 "media-service/internal/pdf/route"
 	"media-service/internal/redis"
-	"media-service/pkg/config"
-
-	cached_service "media-service/internal/cache/service"
 
 	"github.com/gin-gonic/gin"
 	"github.com/hashicorp/consul/api"
-	goredis "github.com/redis/go-redis/v9"
+	"github.com/hung-senbox/senbox-cache-service/pkg/cache"
+	"github.com/hung-senbox/senbox-cache-service/pkg/cache/cached"
 	"go.mongodb.org/mongo-driver/mongo"
 )
 
-func SetupRouter(consulClient *api.Client, cacheClientRedis *goredis.Client, topicCollection, pdfCollection, topicResourceCollection *mongo.Collection) *gin.Engine {
+func SetupRouter(consulClient *api.Client, cacheClientRedis *cache.RedisCache, topicCollection, pdfCollection, topicResourceCollection *mongo.Collection) *gin.Engine {
 	r := gin.Default()
 
 	// gateway
-	userGateway := gateway.NewUserGateway("go-main-service", consulClient)
+	cachedMainGateway := cached.NewCachedMainGateway(cacheClientRedis)
+	userGateway := gateway.NewUserGateway("go-main-service", consulClient, cachedMainGateway)
 	fileGateway := gateway.NewFileGateway("go-main-service", consulClient)
 	redisService := redis.NewRedisService()
-
-	// cache setup
-	systemCache := cache.NewRedisCache(cacheClientRedis)
-	cachedUserGateway := cached_service.NewCachedUserGateway(userGateway, systemCache, config.AppConfig.Database.RedisCache.TTLSeconds)
 
 	// ========================  Topic ======================== //
 	// --- Repo ---
@@ -39,9 +33,9 @@ func SetupRouter(consulClient *api.Client, cacheClientRedis *goredis.Client, top
 
 	// --- UseCase ---
 	uploadTopicUseCasev2 := usecase.NewUploadTopicUseCase(topicRepov2, fileGateway, redisService)
-	getTopicAppUseCasev2 := usecase.NewGetTopicAppUseCase(topicRepov2, cachedUserGateway)
-	getTopicWebUseCasev2 := usecase.NewGetTopicWebUseCase(topicRepov2, cachedUserGateway, fileGateway)
-	getTopicGatewayUseCasev2 := usecase.NewGetTopicGatewayUseCase(topicRepov2, cachedUserGateway, fileGateway)
+	getTopicAppUseCasev2 := usecase.NewGetTopicAppUseCase(topicRepov2, userGateway)
+	getTopicWebUseCasev2 := usecase.NewGetTopicWebUseCase(topicRepov2, userGateway, fileGateway)
+	getTopicGatewayUseCasev2 := usecase.NewGetTopicGatewayUseCase(topicRepov2, userGateway, fileGateway)
 	getUploadProgressUseCasev2 := usecase.NewGetUploadProgressUseCase(topicRepov2, redisService)
 
 	// --- Service ---
@@ -53,16 +47,16 @@ func SetupRouter(consulClient *api.Client, cacheClientRedis *goredis.Client, top
 
 	// ========================  PDF ======================== //
 	pdfRepov2 := domain.NewUserResourceRepository(pdfCollection)
-	pdfServicev2 := domain.NewUserResourceService(pdfRepov2, fileGateway, cachedUserGateway)
+	pdfServicev2 := domain.NewUserResourceService(pdfRepov2, fileGateway, userGateway)
 	pdfHandlerv2 := domain.NewUserResourceHandler(pdfServicev2)
 	// ========================  PDF ======================== //
 
 	topicResourceRepov2 := repository.NewTopicResourceRepository(topicResourceCollection)
-	topicResourceServicev2 := service.NewTopicResourceService(topicResourceRepov2, topicRepov2, fileGateway, cachedUserGateway)
+	topicResourceServicev2 := service.NewTopicResourceService(topicResourceRepov2, topicRepov2, fileGateway, userGateway)
 	topicResourceHandlerv2 := handler.NewTopicResourceHandler(topicResourceServicev2)
 	// Register routes
-	route.RegisterTopicRoutes(r, topicHandlerv2, cachedUserGateway)
-	route.RegisterTopicResourceRoutes(r, topicResourceHandlerv2, cachedUserGateway)
-	route2.RegisterRoutes(r, pdfHandlerv2, cachedUserGateway)
+	route.RegisterTopicRoutes(r, topicHandlerv2, userGateway)
+	route.RegisterTopicResourceRoutes(r, topicResourceHandlerv2, userGateway)
+	route2.RegisterRoutes(r, pdfHandlerv2, userGateway)
 	return r
 }

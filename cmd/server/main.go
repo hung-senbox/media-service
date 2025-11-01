@@ -16,6 +16,7 @@ import (
 	"media-service/pkg/zap"
 
 	consulapi "github.com/hashicorp/consul/api"
+	redis "github.com/hung-senbox/senbox-cache-service/pkg/redis"
 )
 
 func main() {
@@ -53,8 +54,11 @@ func main() {
 	defer db.Client.Close()
 
 	// redis cache
-	cacheClientRedis := db.InitRedisCache()
-	defer cacheClientRedis.Close()
+	cacheClientRedis, err := redis.InitRedisCache(config.AppConfig.Database.RedisCache.Host, config.AppConfig.Database.RedisCache.Port, config.AppConfig.Database.RedisCache.Password, config.AppConfig.Database.RedisCache.DB)
+	if err != nil {
+		logger.Fatalf("Failed to initialize Redis cache: %v", err)
+		return
+	}
 
 	r := router.SetupRouter(consulClient, cacheClientRedis, db.TopicCollection, db.PDFCollection, db.TopicResourceCollection)
 
