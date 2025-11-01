@@ -21,7 +21,7 @@ import (
 	"go.mongodb.org/mongo-driver/mongo"
 )
 
-func SetupRouter(consulClient *api.Client, cacheClientRedis *goredis.Client, topicCollection, pdfCollection *mongo.Collection) *gin.Engine {
+func SetupRouter(consulClient *api.Client, cacheClientRedis *goredis.Client, topicCollection, pdfCollection, topicResourceCollection *mongo.Collection) *gin.Engine {
 	r := gin.Default()
 
 	// gateway
@@ -57,8 +57,12 @@ func SetupRouter(consulClient *api.Client, cacheClientRedis *goredis.Client, top
 	pdfHandlerv2 := domain.NewUserResourceHandler(pdfServicev2)
 	// ========================  PDF ======================== //
 
+	topicResourceRepov2 := repository.NewTopicResourceRepository(topicResourceCollection)
+	topicResourceServicev2 := service.NewTopicResourceService(topicResourceRepov2, topicRepov2, fileGateway, cachedUserGateway)
+	topicResourceHandlerv2 := handler.NewTopicResourceHandler(topicResourceServicev2)
 	// Register routes
 	route.RegisterTopicRoutes(r, topicHandlerv2, cachedUserGateway)
+	route.RegisterTopicResourceRoutes(r, topicResourceHandlerv2, cachedUserGateway)
 	route2.RegisterRoutes(r, pdfHandlerv2, cachedUserGateway)
 	return r
 }

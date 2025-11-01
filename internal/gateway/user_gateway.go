@@ -127,6 +127,7 @@ func (g *userGatewayImpl) GetTeacherInfo(ctx context.Context, teacherID string) 
 	headers := helper.GetHeaders(ctx)
 
 	resp, err := client.Call("GET", "/v1/gateway/teachers/"+teacherID, nil, headers)
+
 	if err != nil {
 		return nil, fmt.Errorf("call API teacher fail: %w", err)
 	}

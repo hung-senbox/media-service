@@ -56,7 +56,7 @@ func main() {
 	cacheClientRedis := db.InitRedisCache()
 	defer cacheClientRedis.Close()
 
-	r := router.SetupRouter(consulClient, cacheClientRedis, db.TopicCollection, db.PDFCollection)
+	r := router.SetupRouter(consulClient, cacheClientRedis, db.TopicCollection, db.PDFCollection, db.TopicResourceCollection)
 
 	port := cfg.Server.Port
 	if err := r.Run(":" + port); err != nil {
