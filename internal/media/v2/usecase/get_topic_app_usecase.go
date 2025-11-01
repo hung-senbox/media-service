@@ -4,6 +4,7 @@ import (
 	"context"
 	"media-service/helper"
 	"media-service/internal/gateway"
+	gw_request "media-service/internal/gateway/dto/request"
 	"media-service/internal/media/v2/dto/response"
 	"media-service/internal/media/v2/mapper"
 	"media-service/internal/media/v2/repository"
@@ -17,22 +18,24 @@ type GetTopicAppUseCase interface {
 type getTopicAppUseCase struct {
 	topicRepo    repository.TopicRepository
 	cachedUserGw gateway.UserGateway
+	fileGateway  gateway.FileGateway
 }
 
-func NewGetTopicAppUseCase(topicRepo repository.TopicRepository, cachedUserGw gateway.UserGateway) GetTopicAppUseCase {
+func NewGetTopicAppUseCase(topicRepo repository.TopicRepository, cachedUserGw gateway.UserGateway, fileGateway gateway.FileGateway) GetTopicAppUseCase {
 	return &getTopicAppUseCase{
 		topicRepo:    topicRepo,
 		cachedUserGw: cachedUserGw,
+		fileGateway:  fileGateway,
 	}
 }
 
-func (s *getTopicAppUseCase) GetTopics4Student4App(ctx context.Context, studentID string) ([]*response.GetTopic4StudentResponse4App, error) {
+func (uc *getTopicAppUseCase) GetTopics4Student4App(ctx context.Context, studentID string) ([]*response.GetTopic4StudentResponse4App, error) {
 	// get org by student
-	student, err := s.cachedUserGw.GetStudentInfo(ctx, studentID)
+	student, err := uc.cachedUserGw.GetStudentInfo(ctx, studentID)
 	if err != nil {
 		return nil, err
 	}
-	topics, err := s.topicRepo.GetAllTopicByOrganizationIDAndIsPublished(ctx, student.OrganizationID)
+	topics, err := uc.topicRepo.GetAllTopicByOrganizationIDAndIsPublished(ctx, student.OrganizationID)
 	if err != nil {
 		return nil, err
 	}
@@ -41,12 +44,33 @@ func (s *getTopicAppUseCase) GetTopics4Student4App(ctx context.Context, studentI
 	return mapper.ToTopic4StudentResponses4App(topics, appLanguage), nil
 }
 
-func (s *getTopicAppUseCase) GetTopics4App(ctx context.Context, organizationID string) ([]*response.GetTopic4StudentResponse4App, error) {
-	topics, err := s.topicRepo.GetAllTopicByOrganizationIDAndIsPublished(ctx, organizationID)
+func (uc *getTopicAppUseCase) GetTopics4App(ctx context.Context, organizationID string) ([]*response.GetTopic4StudentResponse4App, error) {
+	topics, err := uc.topicRepo.GetAllTopicByOrganizationIDAndIsPublished(ctx, organizationID)
 	if err != nil {
 		return nil, err
 	}
 	appLanguage := helper.GetAppLanguage(ctx, 1)
+
+	for ti := range topics {
+		// duyệt qua từng language config
+		for li := range topics[ti].LanguageConfig {
+			langCfg := &topics[ti].LanguageConfig[li]
+
+			// images
+			for ii := range langCfg.Images {
+				img := &langCfg.Images[ii]
+				if img.ImageKey != "" {
+					url, err := uc.fileGateway.GetImageUrl(ctx, gw_request.GetFileUrlRequest{
+						Key:  img.ImageKey,
+						Mode: "private",
+					})
+					if err == nil && url != nil {
+						img.UploadedUrl = *url
+					}
+				}
+			}
+		}
+	}
 
 	return mapper.ToTopic4StudentResponses4App(topics, appLanguage), nil
 }

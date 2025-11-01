@@ -36,9 +36,10 @@ type ImgEntry struct {
 //// 4 App
 
 type GetTopic4StudentResponse4App struct {
-	ID          string `json:"id"`
-	IsPublished bool   `json:"is_published"`
-	Title       string `json:"title"`
+	ID           string `json:"id"`
+	IsPublished  bool   `json:"is_published"`
+	Title        string `json:"title"`
+	MainImageUrl string `json:"main_image_url"`
 }
 
 type GetTopic4StudentResponse4Web struct {
