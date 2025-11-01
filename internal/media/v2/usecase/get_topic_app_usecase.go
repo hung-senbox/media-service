@@ -11,6 +11,7 @@ import (
 
 type GetTopicAppUseCase interface {
 	GetTopics4Student4App(ctx context.Context, studentID string) ([]*response.GetTopic4StudentResponse4App, error)
+	GetTopics4App(ctx context.Context, organizationID string) ([]*response.GetTopic4StudentResponse4App, error)
 }
 
 type getTopicAppUseCase struct {
@@ -32,6 +33,16 @@ func (s *getTopicAppUseCase) GetTopics4Student4App(ctx context.Context, studentI
 		return nil, err
 	}
 	topics, err := s.topicRepo.GetAllTopicByOrganizationIDAndIsPublished(ctx, student.OrganizationID)
+	if err != nil {
+		return nil, err
+	}
+	appLanguage := helper.GetAppLanguage(ctx, 1)
+
+	return mapper.ToTopic4StudentResponses4App(topics, appLanguage), nil
+}
+
+func (s *getTopicAppUseCase) GetTopics4App(ctx context.Context, organizationID string) ([]*response.GetTopic4StudentResponse4App, error) {
+	topics, err := s.topicRepo.GetAllTopicByOrganizationIDAndIsPublished(ctx, organizationID)
 	if err != nil {
 		return nil, err
 	}

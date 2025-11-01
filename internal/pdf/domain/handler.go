@@ -88,7 +88,7 @@ func (h *UserResourceHandler) UploadDocumentToResource(c *gin.Context) {
 }
 
 func (h *UserResourceHandler) UploadSignatureToResource(c *gin.Context) {
-	
+
 	var req dto.UploadSignatureRequest
 
 	if err := c.ShouldBind(&req); err != nil {
