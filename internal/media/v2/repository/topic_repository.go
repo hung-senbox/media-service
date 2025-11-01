@@ -245,9 +245,6 @@ func (r *topicRepository) UpdateTopic(ctx context.Context, topic *model.Topic) (
 				"title":       lc.Title,
 				"note":        lc.Note,
 				"description": lc.Description,
-				"audio":       lc.Audio,
-				"video":       lc.Video,
-				"images":      lc.Images,
 			}
 			langs = append(langs, langUpdate)
 		}

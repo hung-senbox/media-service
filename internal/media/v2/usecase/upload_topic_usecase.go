@@ -334,6 +334,8 @@ func (uc *uploadTopicUseCase) createTopicLanguage(ctx context.Context, req reque
 		Note:        req.Note,
 		Description: req.Description,
 		Images:      []model.TopicImageConfig{},
+		Audio:       model.TopicAudioConfig{},
+		Video:       model.TopicVideoConfig{},
 	}
 	if err := uc.topicRepo.SetLanguageConfig(ctx, newTopic.ID.Hex(), langConfig); err != nil {
 		return nil, fmt.Errorf("set language config fail: %w", err)

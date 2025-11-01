@@ -3,6 +3,7 @@ package response
 type TopicResponse4Web struct {
 	ID           string                 `json:"id"`
 	IsPublished  bool                   `json:"is_published"`
+	MainImageUrl string                 `json:"main_image_url"`
 	MessageLangs []MessageLanguageEntry `json:"message_languages"`
 }
 
