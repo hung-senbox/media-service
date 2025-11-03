@@ -26,3 +26,11 @@ type UpdateResourceRequest struct {
 type UploadSignatureRequest struct {
 	SignatureKey string `json:"signature_key" bson:"signature_key"`
 }
+
+type UpdateResourceStatusRequest struct {
+	Status int `json:"status" bson:"status"`
+}
+
+type UpdateDownloadPermissionRequest struct {
+	IsDownloaded int `json:"is_downloaded" bson:"is_downloaded"` // 0 not downloaded, 1 downloaded
+}

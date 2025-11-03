@@ -10,6 +10,7 @@ import (
 	"media-service/internal/pdf/model"
 	"time"
 
+	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/bson/primitive"
 )
 
@@ -18,6 +19,8 @@ type UserResourceService interface {
 	GetResources(ctx context.Context, role, organizationID string) (*dto.GroupedResourceResponse, error)
 	UploadDocumentToResource(ctx context.Context, id string, req dto.UpdateResourceRequest) (string, error)
 	UploadSignatureToResource(ctx context.Context, id string, req dto.UploadSignatureRequest) (string, error)
+	UpdateResourceStatus(ctx context.Context, id string, req dto.UpdateResourceStatusRequest) error
+	UpdateResourceDownloadPermission(ctx context.Context, id string, req dto.UpdateDownloadPermissionRequest) error
 	DeleteResource(ctx context.Context, id string) error
 }
 
@@ -104,20 +107,22 @@ func (s *userResourceService) CreateResource(ctx context.Context, req dto.Create
 	ID := primitive.NewObjectID()
 
 	err := s.UserResourceRepository.CreateResource(ctx, &model.UserResource{
-		ID:           ID,
-		UploaderID:   uploaderData,
-		TargetID:     targetData,
-		Type:         req.Type,
-		ResourceType: "",
-		FileName:     nil,
-		Folder:       req.Folder,
-		Color:        req.Color,
-		SignatureKey: nil,
-		URL:          nil,
-		PDFKey:       nil,
-		CreatedBy:    helper.GetUserID(ctx),
-		CreatedAt:    time.Now(),
-		UpdatedAt:    time.Now(),
+		ID:            ID,
+		UploaderID:    uploaderData,
+		TargetID:      targetData,
+		Type:          req.Type,
+		ResourceType:  "",
+		FileName:      nil,
+		Folder:        req.Folder,
+		Color:         req.Color,
+		Status:        0, 
+		IsDownloaded:  0,
+		SignatureKey:  nil,
+		URL:           nil,
+		PDFKey:        nil,
+		CreatedBy:     helper.GetUserID(ctx),
+		CreatedAt:     time.Now(),
+		UpdatedAt:     time.Now(),
 	})
 
 	if err != nil {
@@ -164,7 +169,6 @@ func (s *userResourceService) GetResources(ctx context.Context, role, organizati
 	default:
 		return nil, fmt.Errorf("unsupported role: %s", role)
 	}
-	
 
 	return &dto.GroupedResourceResponse{
 		SelfResources:    dto.ToResourceResponses(ctx, organizationID, selfResources, s.userGateway, s.fileGateway),
@@ -291,6 +295,66 @@ func (s *userResourceService) UploadSignatureToResource(ctx context.Context, id 
 
 	return req.SignatureKey, nil
 
+}
+
+func (s *userResourceService) UpdateResourceStatus(ctx context.Context, id string, req dto.UpdateResourceStatusRequest) error {
+	objectID, err := primitive.ObjectIDFromHex(id)
+	if err != nil {
+		return err
+	}
+
+	if req.Status < 0 {
+		return fmt.Errorf("status cannot be empty")
+	}
+
+	resource, err := s.UserResourceRepository.GetResourceByID(ctx, objectID)
+	if err != nil {
+		return err
+	}
+
+	if resource == nil {
+		return fmt.Errorf("resource not found")
+	}
+
+	updateFields := bson.M{
+		"status":  req.Status,
+		"updated_at": time.Now(),
+	}
+
+	err = s.UserResourceRepository.UpdateResourceFields(ctx, objectID, updateFields)
+	if err != nil {
+		return err
+	}
+
+	return nil
+}
+
+func (s *userResourceService) UpdateResourceDownloadPermission(ctx context.Context, id string, req dto.UpdateDownloadPermissionRequest) error {
+	objectID, err := primitive.ObjectIDFromHex(id)
+	if err != nil {
+		return err
+	}
+
+	resource, err := s.UserResourceRepository.GetResourceByID(ctx, objectID)
+	if err != nil {
+		return err
+	}
+
+	if resource == nil {
+		return fmt.Errorf("resource not found")
+	}
+
+	updateFields := bson.M{
+		"is_downloaded": req.IsDownloaded,
+		"updated_at":     time.Now(),
+	}
+
+	err = s.UserResourceRepository.UpdateResourceFields(ctx, objectID, updateFields)
+	if err != nil {
+		return err
+	}
+
+	return nil
 }
 
 func (s *userResourceService) DeleteResource(ctx context.Context, id string) error {

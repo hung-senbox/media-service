@@ -14,7 +14,9 @@ func RegisterRoutes(route *gin.Engine, userResource *domain.UserResourceHandler,
 		pdfGroup.POST("/resource", userResource.CreateResource)
 		pdfGroup.GET("/resource", userResource.GetResources)
 		pdfGroup.DELETE("/resource/:id", userResource.DeleteResource)
-		pdfGroup.PUT("resource/:id", userResource.UploadDocumentToResource)
-		pdfGroup.PUT("resource/add-signature/:id", userResource.UploadSignatureToResource)
+		pdfGroup.PUT("/resource/:id", userResource.UploadDocumentToResource)
+		pdfGroup.PUT("/resource/add-signature/:id", userResource.UploadSignatureToResource)
+		pdfGroup.PUT("/resource/update-status/:id", userResource.UpdateResourceStatus)
+		pdfGroup.PUT("/resource/update-download-permission/:id", userResource.UpdateResourceDownloadPermission)
 	}
 }

@@ -112,6 +112,52 @@ func (h *UserResourceHandler) UploadSignatureToResource(c *gin.Context) {
 
 }
 
+func (h *UserResourceHandler) UpdateResourceStatus(c *gin.Context) {
+	var req dto.UpdateResourceStatusRequest
+
+	if err := c.ShouldBindJSON(&req); err != nil {
+		helper.SendError(c, http.StatusBadRequest, err, helper.ErrInvalidRequest)
+		return
+	}
+
+	id := c.Param("id")
+	if id == "" {
+		helper.SendError(c, http.StatusBadRequest, fmt.Errorf("id is required"), helper.ErrInvalidRequest)
+		return
+	}
+
+	err := h.userResourceService.UpdateResourceStatus(c.Request.Context(), id, req)
+	if err != nil {
+		helper.SendError(c, http.StatusInternalServerError, err, helper.ErrInvalidOperation)
+		return
+	}
+
+	helper.SendSuccess(c, http.StatusOK, "update resource status success", nil)
+}
+
+func (h *UserResourceHandler) UpdateResourceDownloadPermission(c *gin.Context) {
+	var req dto.UpdateDownloadPermissionRequest
+
+	if err := c.ShouldBindJSON(&req); err != nil {
+		helper.SendError(c, http.StatusBadRequest, err, helper.ErrInvalidRequest)
+		return
+	}
+
+	id := c.Param("id")
+	if id == "" {
+		helper.SendError(c, http.StatusBadRequest, fmt.Errorf("id is required"), helper.ErrInvalidRequest)
+		return
+	}
+
+	err := h.userResourceService.UpdateResourceDownloadPermission(c.Request.Context(), id, req)
+	if err != nil {
+		helper.SendError(c, http.StatusInternalServerError, err, helper.ErrInvalidOperation)
+		return
+	}
+
+	helper.SendSuccess(c, http.StatusOK, "update resource download permission success", nil)
+}
+
 func (h *UserResourceHandler) DeleteResource(c *gin.Context) {
 
 	id := c.Param("id")

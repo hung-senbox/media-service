@@ -16,6 +16,8 @@ type UserResource struct {
 	FileName     *string            `json:"file_name" bson:"file_name"`
 	Folder       string             `json:"folder" bson:"folder"`
 	Color        string             `json:"color" bson:"color"`
+	Status       int                `json:"status" bson:"status"` // 0 waiting, 1 viewed, 2 rejected, 3 signed, 4 need to helps
+	IsDownloaded int                `json:"is_downloaded" bson:"is_downloaded"` // 0 not downloaded, 1 downloaded
 	SignatureKey *string            `json:"signature_key" bson:"signature_key"`
 	URL          *string            `json:"url" bson:"url"`
 	PDFKey       *string            `json:"pdf_key" bson:"pdf_key"`
