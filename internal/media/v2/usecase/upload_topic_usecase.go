@@ -298,6 +298,12 @@ func (uc *uploadTopicUseCase) updateTopicLanguage(ctx context.Context, req reque
 			oldTopic.LanguageConfig[i].Note = req.Note
 			oldTopic.LanguageConfig[i].Description = req.Description
 			found = true
+			if len(lc.Images) == 0 {
+				err = uc.topicRepo.InitImages(ctx, oldTopic.ID.Hex(), req.LanguageID)
+				if err != nil {
+					return nil, fmt.Errorf("init images fail: %w", err)
+				}
+			}
 			break
 		}
 	}
@@ -310,6 +316,11 @@ func (uc *uploadTopicUseCase) updateTopicLanguage(ctx context.Context, req reque
 			Note:        req.Note,
 			Description: req.Description,
 		})
+		// init images
+		err = uc.topicRepo.InitImages(ctx, oldTopic.ID.Hex(), req.LanguageID)
+		if err != nil {
+			return nil, fmt.Errorf("init images fail: %w", err)
+		}
 	}
 
 	oldTopic.IsPublished = req.IsPublished
@@ -341,6 +352,12 @@ func (uc *uploadTopicUseCase) createTopicLanguage(ctx context.Context, req reque
 	}
 	if err := uc.topicRepo.SetLanguageConfig(ctx, newTopic.ID.Hex(), langConfig); err != nil {
 		return nil, fmt.Errorf("set language config fail: %w", err)
+	}
+
+	// init images
+	err = uc.topicRepo.InitImages(ctx, newTopic.ID.Hex(), req.LanguageID)
+	if err != nil {
+		return nil, fmt.Errorf("init images fail: %w", err)
 	}
 
 	return newTopic, nil

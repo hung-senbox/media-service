@@ -5,6 +5,7 @@ import (
 	"errors"
 	"fmt"
 	"media-service/internal/media/model"
+	"strings"
 	"time"
 
 	"go.mongodb.org/mongo-driver/bson"
@@ -23,6 +24,7 @@ type TopicRepository interface {
 	GetAllTopicByOrganizationID(ctx context.Context, orgID string) ([]model.Topic, error)
 	GetByID(ctx context.Context, id string) (*model.Topic, error)
 	GetAllTopicByOrganizationIDAndIsPublished(ctx context.Context, orgID string) ([]model.Topic, error)
+	InitImages(ctx context.Context, topicID string, languageID uint) error
 }
 
 type topicRepository struct {
@@ -52,50 +54,72 @@ func (r *topicRepository) SetImage(ctx context.Context, topicID string, language
 		return fmt.Errorf("[SetImageForTopic] invalid topicID=%s: %w", topicID, err)
 	}
 
-	// 1️⃣ Thử update nếu image_type đã tồn tại
-	filter := bson.M{
-		"_id": objID,
+	// Chuẩn hóa image_type
+	img.ImageType = strings.TrimSpace(strings.TrimSuffix(img.ImageType, ","))
+	img.ImageType = strings.ToLower(img.ImageType)
+
+	langVariants := []interface{}{languageID, int32(languageID), int64(languageID)}
+
+	// 1️⃣ Đảm bảo tồn tại language_config
+	langFilter := bson.M{
+		"_id":                         objID,
+		"language_config.language_id": bson.M{"$in": langVariants},
+	}
+	count, _ := r.topicCollection.CountDocuments(ctx, langFilter)
+	if count == 0 {
+		newLang := bson.M{
+			"language_id": languageID,
+			"images":      []interface{}{},
+		}
+		_, err := r.topicCollection.UpdateOne(ctx,
+			bson.M{"_id": objID},
+			bson.M{"$push": bson.M{"language_config": newLang}},
+		)
+		if err != nil {
+			return fmt.Errorf("[SetImageForTopic] create new language_config failed: %w", err)
+		}
 	}
 
+	// 2️⃣ Cập nhật ảnh nếu image_type đã có
+	filter := bson.M{"_id": objID}
 	update := bson.M{
 		"$set": bson.M{
-			"language_config.$[lang].images.$[imgElem].image_key":  img.ImageKey,
-			"language_config.$[lang].images.$[imgElem].link_url":   img.LinkUrl,
-			"language_config.$[lang].images.$[imgElem].image_type": img.ImageType,
+			"language_config.$[lang].images.$[img].image_key":    img.ImageKey,
+			"language_config.$[lang].images.$[img].link_url":     img.LinkUrl,
+			"language_config.$[lang].images.$[img].uploaded_url": img.UploadedUrl,
+			"language_config.$[lang].images.$[img].image_type":   img.ImageType,
 		},
 	}
-
-	arrayFilters := options.Update().SetArrayFilters(options.ArrayFilters{
+	opts := options.Update().SetArrayFilters(options.ArrayFilters{
 		Filters: []interface{}{
-			bson.M{"lang.language_id": bson.M{"$in": []interface{}{int32(languageID), int64(languageID), languageID}}},
-			bson.M{"imgElem.image_type": img.ImageType},
+			bson.M{"lang.language_id": bson.M{"$in": langVariants}},
+			bson.M{"img.image_type": img.ImageType},
 		},
 	})
 
-	res, err := r.topicCollection.UpdateOne(ctx, filter, update, arrayFilters)
+	res, err := r.topicCollection.UpdateOne(ctx, filter, update, opts)
 	if err != nil {
 		return fmt.Errorf("[SetImageForTopic] update failed: %w", err)
 	}
 
-	// 2️⃣ Nếu chưa có image_type → push thêm vào mảng
-	if res.ModifiedCount == 0 {
+	// 3️⃣ Nếu chưa có image_type → push mới
+	if res.MatchedCount == 0 {
 		pushUpdate := bson.M{
 			"$push": bson.M{
 				"language_config.$[lang].images": bson.M{
-					"image_type": img.ImageType,
-					"image_key":  img.ImageKey,
-					"link_url":   img.LinkUrl,
+					"image_type":   img.ImageType,
+					"image_key":    img.ImageKey,
+					"link_url":     img.LinkUrl,
+					"uploaded_url": img.UploadedUrl,
 				},
 			},
 		}
-
-		pushFilter := options.Update().SetArrayFilters(options.ArrayFilters{
+		pushOpts := options.Update().SetArrayFilters(options.ArrayFilters{
 			Filters: []interface{}{
-				bson.M{"lang.language_id": bson.M{"$in": []interface{}{int32(languageID), int64(languageID), languageID}}},
+				bson.M{"lang.language_id": bson.M{"$in": langVariants}},
 			},
 		})
-
-		_, err = r.topicCollection.UpdateOne(ctx, filter, pushUpdate, pushFilter)
+		_, err = r.topicCollection.UpdateOne(ctx, filter, pushUpdate, pushOpts)
 		if err != nil {
 			return fmt.Errorf("[SetImageForTopic] push failed: %w", err)
 		}
@@ -331,4 +355,66 @@ func (r *topicRepository) GetAllTopicByOrganizationIDAndIsPublished(ctx context.
 		return nil, err
 	}
 	return topics, nil
+}
+
+func (r *topicRepository) InitImages(ctx context.Context, topicID string, languageID uint) error {
+	objID, err := primitive.ObjectIDFromHex(topicID)
+	if err != nil {
+		return fmt.Errorf("[InitImages] invalid topicID=%s: %w", topicID, err)
+	}
+
+	// Danh sách 6 loại hình mặc định
+	defaultImageTypes := []string{
+		"full_background",
+		"clear_background",
+		"clip_part",
+		"drawing",
+		"icon",
+		"bm",
+	}
+
+	// Tạo danh sách hình mặc định
+	var images []model.TopicImageConfig
+	for _, t := range defaultImageTypes {
+		images = append(images, model.TopicImageConfig{
+			ImageType: t,
+			ImageKey:  "",
+			LinkUrl:   "",
+		})
+	}
+
+	// Cập nhật images vào language_config có language_id tương ứng
+	filter := bson.M{
+		"_id":                         objID,
+		"language_config.language_id": languageID,
+	}
+
+	update := bson.M{
+		"$set": bson.M{
+			"language_config.$.images": images,
+			"updated_at":               time.Now(),
+		},
+	}
+
+	res, err := r.topicCollection.UpdateOne(ctx, filter, update)
+	if err != nil {
+		return fmt.Errorf("[InitImages] update failed: %w", err)
+	}
+
+	// Nếu chưa tồn tại language_id thì thêm mới
+	if res.MatchedCount == 0 {
+		newLang := model.TopicLanguageConfig{
+			LanguageID: languageID,
+			Images:     images,
+		}
+		_, err = r.topicCollection.UpdateOne(ctx,
+			bson.M{"_id": objID},
+			bson.M{"$push": bson.M{"language_config": newLang}},
+		)
+		if err != nil {
+			return fmt.Errorf("[InitImages] push new language_config failed: %w", err)
+		}
+	}
+
+	return nil
 }
