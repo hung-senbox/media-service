@@ -12,6 +12,7 @@ type CreateResourceRequest struct {
 	TargetID       *model.Owner `json:"target_id" bson:"target_id"`
 	Type           string       `json:"type" bson:"type"`
 	ResourceType   string       `json:"resource_type" bson:"resource_type"`
+	IsDownloaded   int          `json:"is_downloaded" bson:"is_downloaded"`
 	Color          string       `json:"color" bson:"color"`
 	Folder         string       `json:"folder" bson:"folder"`
 	SignatureKey   string       `json:"signature_key" bson:"signature_key"`

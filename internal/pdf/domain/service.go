@@ -54,6 +54,10 @@ func (s *userResourceService) CreateResource(ctx context.Context, req dto.Create
 		return "", fmt.Errorf("type cannot be empty")
 	}
 
+	if req.IsDownloaded < 0 {
+		return "", fmt.Errorf("is_downloaded cannot be empty")
+	}
+
 	var uploaderData *model.Owner
 	var targetData *model.Owner
 
@@ -116,7 +120,7 @@ func (s *userResourceService) CreateResource(ctx context.Context, req dto.Create
 		Folder:        req.Folder,
 		Color:         req.Color,
 		Status:        0, 
-		IsDownloaded:  0,
+		IsDownloaded:  req.IsDownloaded,
 		SignatureKey:  nil,
 		URL:           nil,
 		PDFKey:        nil,
