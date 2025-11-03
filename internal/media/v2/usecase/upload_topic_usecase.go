@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 	"mime/multipart"
+	"time"
 
 	"media-service/helper"
 	"media-service/internal/gateway"
@@ -129,6 +130,7 @@ func (uc *uploadTopicUseCase) uploadAndSaveAudio(ctx context.Context, orgID, top
 	finalAudioKey := oldAudioKey
 
 	if helper.IsValidFile(req.AudioFile) {
+		time.Sleep(time.Second * 3)
 		// xóa file cũ nếu có
 		if oldAudioKey != "" {
 			_ = uc.fileGateway.DeleteAudio(ctx, oldAudioKey)
@@ -171,6 +173,7 @@ func (uc *uploadTopicUseCase) uploadAndSaveVideo(ctx context.Context, orgID, top
 	oldVideoKey := uc.getVideoKeyByLanguage(topic, req.LanguageID)
 	finalVideoKey := oldVideoKey
 	if helper.IsValidFile(req.VideoFile) {
+		time.Sleep(time.Second * 3)
 		// xóa file cũ nếu có
 		if oldVideoKey != "" {
 			_ = uc.fileGateway.DeleteVideo(ctx, oldVideoKey)
@@ -235,7 +238,7 @@ func (uc *uploadTopicUseCase) uploadAndSaveImages(ctx context.Context, orgID, to
 	for _, img := range imageFiles {
 		// 1) Nếu có file => đây là task upload (done() phải được gọi)
 		if helper.IsValidFile(img.file) {
-			// Lấy key cũ (nếu có)
+			time.Sleep(time.Second * 1)
 			oldKey := uc.getImageKeyByLanguageAndType(topic, req.LanguageID, img.typ)
 			if oldKey != "" {
 				// cố gắng xóa file cũ (ignore error)
