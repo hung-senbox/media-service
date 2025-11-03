@@ -22,6 +22,8 @@ func ToResourceResponses(
 			ResourceType:   r.ResourceType,
 			Folder:         r.Folder,
 			Color:          r.Color,
+			Status:         r.Status,
+			IsDownloaded:   r.IsDownloaded,
 			CreatedBy:      r.CreatedBy,
 			CreatedAt:      r.CreatedAt,
 			UpdatedAt:      r.UpdatedAt,
