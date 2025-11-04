@@ -25,6 +25,9 @@ type TopicRepository interface {
 	GetByID(ctx context.Context, id string) (*model.Topic, error)
 	GetAllTopicByOrganizationIDAndIsPublished(ctx context.Context, orgID string) ([]model.Topic, error)
 	InitImages(ctx context.Context, topicID string, languageID uint) error
+	DeleteAudioKey(ctx context.Context, topicID string, languageID uint) error
+	DeleteVideoKey(ctx context.Context, topicID string, languageID uint) error
+	DeleteImageKey(ctx context.Context, topicID string, languageID uint, imageType string) error
 }
 
 type topicRepository struct {
@@ -414,6 +417,87 @@ func (r *topicRepository) InitImages(ctx context.Context, topicID string, langua
 		if err != nil {
 			return fmt.Errorf("[InitImages] push new language_config failed: %w", err)
 		}
+	}
+
+	return nil
+}
+
+func (r *topicRepository) DeleteAudioKey(ctx context.Context, topicID string, languageID uint) error {
+	objID, err := primitive.ObjectIDFromHex(topicID)
+	if err != nil {
+		return fmt.Errorf("[DeleteAudioKey] invalid topicID=%s: %w", topicID, err)
+	}
+
+	filter := bson.M{
+		"_id":                         objID,
+		"language_config.language_id": languageID,
+	}
+
+	update := bson.M{
+		"$set": bson.M{
+			"language_config.$.audio": bson.M{
+				"audio_key": "",
+			},
+		},
+	}
+
+	_, err = r.topicCollection.UpdateOne(ctx, filter, update)
+	if err != nil {
+		return fmt.Errorf("[DeleteAudioKey] update failed: %w", err)
+	}
+
+	return nil
+}
+
+func (r *topicRepository) DeleteVideoKey(ctx context.Context, topicID string, languageID uint) error {
+	objID, err := primitive.ObjectIDFromHex(topicID)
+	if err != nil {
+		return fmt.Errorf("[DeleteVideoKey] invalid topicID=%s: %w", topicID, err)
+	}
+
+	filter := bson.M{
+		"_id":                         objID,
+		"language_config.language_id": languageID,
+	}
+
+	update := bson.M{
+		"$set": bson.M{
+			"language_config.$.video": bson.M{
+				"video_key": "",
+			},
+		},
+	}
+
+	_, err = r.topicCollection.UpdateOne(ctx, filter, update)
+	if err != nil {
+		return fmt.Errorf("[DeleteVideoKey] update failed: %w", err)
+	}
+
+	return nil
+}
+
+func (r *topicRepository) DeleteImageKey(ctx context.Context, topicID string, languageID uint, imageType string) error {
+	objID, err := primitive.ObjectIDFromHex(topicID)
+	if err != nil {
+		return fmt.Errorf("[DeleteImageKey] invalid topicID=%s: %w", topicID, err)
+	}
+
+	filter := bson.M{
+		"_id":                         objID,
+		"language_config.language_id": languageID,
+	}
+
+	update := bson.M{
+		"$set": bson.M{
+			"language_config.$.images": bson.M{
+				"image_key": "",
+			},
+		},
+	}
+
+	_, err = r.topicCollection.UpdateOne(ctx, filter, update)
+	if err != nil {
+		return fmt.Errorf("[DeleteImageKey] update failed: %w", err)
 	}
 
 	return nil
