@@ -83,8 +83,7 @@ func (r *topicResourceRepository) DeleteTopicResource(ctx context.Context, topic
 func (r *topicResourceRepository) GetTopicResouresByOrganizationAndTopicID(ctx context.Context, topicID, organizationID string) ([]*model.TopicResource, error) {
 	var result []*model.TopicResource
 	filter := bson.M{
-		"topic_id":        topicID,
-		"organization_id": organizationID,
+		"topic_id": topicID,
 	}
 	cursor, err := r.topicResourceCollection.Find(ctx, filter)
 	if err != nil {
