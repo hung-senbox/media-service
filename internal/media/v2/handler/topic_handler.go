@@ -5,6 +5,7 @@ import (
 	"media-service/internal/media/v2/dto/request"
 	"media-service/internal/media/v2/service"
 	"net/http"
+	"strconv"
 
 	"github.com/gin-gonic/gin"
 )
@@ -171,4 +172,81 @@ func (h TopicHandler) GetTopics4App(c *gin.Context) {
 	}
 
 	helper.SendSuccess(c, http.StatusOK, "get topics success", res)
+}
+
+func (h TopicHandler) DeleteTopicAudioKey(c *gin.Context) {
+	topicID := c.Param("topic_id")
+	if topicID == "" {
+		helper.SendError(c, http.StatusBadRequest, nil, helper.ErrInvalidRequest)
+		return
+	}
+	languageID := c.Param("language_id")
+	if languageID == "" {
+		helper.SendError(c, http.StatusBadRequest, nil, helper.ErrInvalidRequest)
+		return
+	}
+	languageIDUint, err := strconv.ParseUint(languageID, 10, 64)
+	if err != nil {
+		helper.SendError(c, http.StatusBadRequest, err, helper.ErrInvalidRequest)
+		return
+	}
+	err = h.service.DeleteTopicAudioKey(c.Request.Context(), topicID, uint(languageIDUint))
+	if err != nil {
+		helper.SendError(c, http.StatusInternalServerError, err, helper.ErrInvalidOperation)
+		return
+	}
+	helper.SendSuccess(c, http.StatusOK, "delete topic audio key success", nil)
+}
+
+func (h TopicHandler) DeleteTopicVideoKey(c *gin.Context) {
+	topicID := c.Param("topic_id")
+	if topicID == "" {
+		helper.SendError(c, http.StatusBadRequest, nil, helper.ErrInvalidRequest)
+		return
+	}
+	languageID := c.Param("language_id")
+	if languageID == "" {
+		helper.SendError(c, http.StatusBadRequest, nil, helper.ErrInvalidRequest)
+		return
+	}
+	languageIDUint, err := strconv.ParseUint(languageID, 10, 64)
+	if err != nil {
+		helper.SendError(c, http.StatusBadRequest, err, helper.ErrInvalidRequest)
+		return
+	}
+	err = h.service.DeleteTopicVideoKey(c.Request.Context(), topicID, uint(languageIDUint))
+	if err != nil {
+		helper.SendError(c, http.StatusInternalServerError, err, helper.ErrInvalidOperation)
+		return
+	}
+	helper.SendSuccess(c, http.StatusOK, "delete topic video key success", nil)
+}
+
+func (h TopicHandler) DeleteTopicImageKey(c *gin.Context) {
+	topicID := c.Param("topic_id")
+	if topicID == "" {
+		helper.SendError(c, http.StatusBadRequest, nil, helper.ErrInvalidRequest)
+		return
+	}
+	languageID := c.Param("language_id")
+	if languageID == "" {
+		helper.SendError(c, http.StatusBadRequest, nil, helper.ErrInvalidRequest)
+		return
+	}
+	languageIDUint, err := strconv.ParseUint(languageID, 10, 64)
+	if err != nil {
+		helper.SendError(c, http.StatusBadRequest, err, helper.ErrInvalidRequest)
+		return
+	}
+	imageType := c.Param("image_type")
+	if imageType == "" {
+		helper.SendError(c, http.StatusBadRequest, nil, helper.ErrInvalidRequest)
+		return
+	}
+	err = h.service.DeleteTopicImageKey(c.Request.Context(), topicID, uint(languageIDUint), imageType)
+	if err != nil {
+		helper.SendError(c, http.StatusInternalServerError, err, helper.ErrInvalidOperation)
+		return
+	}
+	helper.SendSuccess(c, http.StatusOK, "delete topic image key success", nil)
 }

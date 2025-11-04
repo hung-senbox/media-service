@@ -21,6 +21,9 @@ func RegisterTopicRoutes(r *gin.Engine, hv2 *handler.TopicHandler, userGw gatewa
 			topicsAdmin.GET("/:topic_id", hv2.GetTopic4Web)
 			topicsAdmin.GET("/student/:student_id", hv2.GetTopics4Student4Web)
 			topicsAdmin.GET("/assign", hv2.GetTopics2Assign4Web)
+			topicsAdmin.DELETE("/audio/:topic_id/language/:language_id", hv2.DeleteTopicAudioKey)
+			topicsAdmin.DELETE("/video/:topic_id/language/:language_id", hv2.DeleteTopicVideoKey)
+			topicsAdmin.DELETE("/image/:topic_id/language/:language_id/type/:image_type", hv2.DeleteTopicImageKey)
 		}
 	}
 

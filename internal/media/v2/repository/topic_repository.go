@@ -482,20 +482,24 @@ func (r *topicRepository) DeleteImageKey(ctx context.Context, topicID string, la
 		return fmt.Errorf("[DeleteImageKey] invalid topicID=%s: %w", topicID, err)
 	}
 
-	filter := bson.M{
-		"_id":                         objID,
-		"language_config.language_id": languageID,
-	}
+	// Chuẩn hóa imageType và hỗ trợ nhiều kiểu số cho language_id
+	imgType := strings.TrimSpace(strings.TrimSuffix(strings.ToLower(imageType), ","))
+	langVariants := []interface{}{languageID, int32(languageID), int64(languageID)}
 
+	filter := bson.M{"_id": objID}
 	update := bson.M{
 		"$set": bson.M{
-			"language_config.$.images": bson.M{
-				"image_key": "",
-			},
+			"language_config.$[lang].images.$[img].image_key": "",
 		},
 	}
+	opts := options.Update().SetArrayFilters(options.ArrayFilters{
+		Filters: []interface{}{
+			bson.M{"lang.language_id": bson.M{"$in": langVariants}},
+			bson.M{"img.image_type": imgType},
+		},
+	})
 
-	_, err = r.topicCollection.UpdateOne(ctx, filter, update)
+	_, err = r.topicCollection.UpdateOne(ctx, filter, update, opts)
 	if err != nil {
 		return fmt.Errorf("[DeleteImageKey] update failed: %w", err)
 	}

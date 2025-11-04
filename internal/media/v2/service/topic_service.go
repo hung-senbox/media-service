@@ -20,6 +20,9 @@ type TopicService interface {
 	GetAllTopicsByOrganization4Gw(ctx context.Context, organizationID string) ([]*response.TopicResponse4GW, error)
 	GetTopics2Assign4Web(ctx context.Context) ([]*response.TopicResponse2Assign4Web, error)
 	GetTopics4App(ctx context.Context, organizationID string) ([]*response.GetTopic4StudentResponse4App, error)
+	DeleteTopicAudioKey(ctx context.Context, topicID string, languageID uint) error
+	DeleteTopicVideoKey(ctx context.Context, topicID string, languageID uint) error
+	DeleteTopicImageKey(ctx context.Context, topicID string, languageID uint, imageType string) error
 }
 
 type topicService struct {
@@ -28,6 +31,7 @@ type topicService struct {
 	getTopicAppUseCase       usecase.GetTopicAppUseCase
 	getTopicWebUseCase       usecase.GetTopicWebUseCase
 	getTopicGatewayUseCase   usecase.GetTopicGatewayUseCase
+	deleteTopicFileUseCase   usecase.DeleteTopicFileUseCase
 }
 
 func NewTopicService(
@@ -36,6 +40,7 @@ func NewTopicService(
 	getTopicAppUseCase usecase.GetTopicAppUseCase,
 	getTopicWebUseCase usecase.GetTopicWebUseCase,
 	getTopicGatewayUseCase usecase.GetTopicGatewayUseCase,
+	deleteTopicFileUseCase usecase.DeleteTopicFileUseCase,
 ) TopicService {
 	return &topicService{
 		uploadTopicUseCase:       uploadTopicUseCase,
@@ -43,6 +48,7 @@ func NewTopicService(
 		getTopicAppUseCase:       getTopicAppUseCase,
 		getTopicWebUseCase:       getTopicWebUseCase,
 		getTopicGatewayUseCase:   getTopicGatewayUseCase,
+		deleteTopicFileUseCase:   deleteTopicFileUseCase,
 	}
 }
 
@@ -87,4 +93,15 @@ func (s *topicService) GetTopic4Gw(ctx context.Context, topicID string) (*respon
 }
 func (s *topicService) GetAllTopicsByOrganization4Gw(ctx context.Context, organizationID string) ([]*response.TopicResponse4GW, error) {
 	return s.getTopicGatewayUseCase.GetAllTopicsByOrganization4Gw(ctx, organizationID)
+}
+
+// =============== Delete Topic File ================
+func (s *topicService) DeleteTopicAudioKey(ctx context.Context, topicID string, languageID uint) error {
+	return s.deleteTopicFileUseCase.DeleteTopicAudioKey(ctx, topicID, languageID)
+}
+func (s *topicService) DeleteTopicVideoKey(ctx context.Context, topicID string, languageID uint) error {
+	return s.deleteTopicFileUseCase.DeleteTopicVideoKey(ctx, topicID, languageID)
+}
+func (s *topicService) DeleteTopicImageKey(ctx context.Context, topicID string, languageID uint, imageType string) error {
+	return s.deleteTopicFileUseCase.DeleteTopicImageKey(ctx, topicID, languageID, imageType)
 }
