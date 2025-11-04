@@ -28,22 +28,6 @@ func NewGetUploadProgressUseCase(topicRepo repository.TopicRepository, redisServ
 }
 
 func (uc *getUploadProgressUseCase) GetUploadProgress(ctx context.Context, topicID string) (*response.GetUploadProgressResponse, error) {
-	return &response.GetUploadProgressResponse{
-		Progress: 2,
-		FileName: "hard",
-		UploadErrors: map[string]any{
-			"audio_error": "",
-			"video_error": "",
-			"image_error": map[string]string{
-				"full_background":  "",
-				"clear_background": "",
-				"clip_part":        "",
-				"drawing":          "",
-				"icon":             "",
-				"bm":               "",
-			},
-		},
-	}, nil
 
 	currentUser, _ := ctx.Value(constants.CurrentUserKey).(*gw_response.CurrentUser)
 	if currentUser.IsSuperAdmin || currentUser.OrganizationAdmin.ID == "" {
