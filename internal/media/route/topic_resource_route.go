@@ -17,5 +17,6 @@ func RegisterTopicResourceRoutes(r *gin.Engine, h *handler.TopicResourceHandler,
 		topicResourceGroup.GET("/:topic_resource_id", h.GetTopicResource)
 		topicResourceGroup.PUT("/:topic_resource_id", h.UpdateTopicResource)
 		topicResourceGroup.DELETE("/:topic_resource_id", h.DeleteTopicResource)
+		topicResourceGroup.GET("/topic/:topic_id", h.GetTopicResoures4Web)
 	}
 }

@@ -6,11 +6,13 @@ import (
 	"media-service/helper"
 	"media-service/internal/gateway"
 	gw_request "media-service/internal/gateway/dto/request"
+	gw_response "media-service/internal/gateway/dto/response"
 	"media-service/internal/media/model"
 	"media-service/internal/media/v2/dto/request"
 	"media-service/internal/media/v2/dto/response"
 	"media-service/internal/media/v2/mapper"
 	"media-service/internal/media/v2/repository"
+	"media-service/pkg/constants"
 	"time"
 
 	"go.mongodb.org/mongo-driver/bson/primitive"
@@ -22,6 +24,7 @@ type TopicResourceService interface {
 	GetTopicResource(ctx context.Context, topicResourceID, orgID string) (*response.GetTopicResourceResponse, error)
 	UpdateTopicResource(ctx context.Context, topicResourceID string, req request.UpdateTopicResourceRequest) (string, error)
 	DeleteTopicResource(ctx context.Context, topicResourceID string) error
+	GetTopicResoures4Web(ctx context.Context, topicID string) ([]*response.GetTopicResourceResponse, error)
 }
 
 type topicResourceService struct {
@@ -124,12 +127,12 @@ func (s *topicResourceService) GetTopicResource(ctx context.Context, topicResour
 }
 
 func (s *topicResourceService) UpdateTopicResource(ctx context.Context, topicResourceID string, req request.UpdateTopicResourceRequest) (string, error) {
-	
+
 	objectID, err := primitive.ObjectIDFromHex(topicResourceID)
 	if err != nil {
 		return "", err
 	}
-	
+
 	topicResource, err := s.topicResourceRepository.GetTopicResource(ctx, objectID)
 	if err != nil {
 		return "", err
@@ -137,7 +140,7 @@ func (s *topicResourceService) UpdateTopicResource(ctx context.Context, topicRes
 
 	if topicResource == nil {
 		return "", fmt.Errorf("topic resource not found")
-	}	
+	}
 
 	if req.FileName != "" {
 		topicResource.FileName = req.FileName
@@ -146,7 +149,7 @@ func (s *topicResourceService) UpdateTopicResource(ctx context.Context, topicRes
 	if req.TopicID != "" {
 		topicResource.TopicID = req.TopicID
 	}
-	
+
 	if req.File != nil {
 		if topicResource.ImageKey != "" {
 			err = s.fileGateway.DeleteImage(ctx, topicResource.ImageKey)
@@ -190,7 +193,7 @@ func (s *topicResourceService) DeleteTopicResource(ctx context.Context, topicRes
 	if topicResource == nil {
 		return fmt.Errorf("topic resource not found")
 	}
-	
+
 	if topicResource.ImageKey != "" {
 		err = s.fileGateway.DeleteImage(ctx, topicResource.ImageKey)
 		if err != nil {
@@ -201,7 +204,21 @@ func (s *topicResourceService) DeleteTopicResource(ctx context.Context, topicRes
 	err = s.topicResourceRepository.DeleteTopicResource(ctx, objectID)
 	if err != nil {
 		return err
-	}	
+	}
 	return nil
-	
+
+}
+
+func (s *topicResourceService) GetTopicResoures4Web(ctx context.Context, topicID string) ([]*response.GetTopicResourceResponse, error) {
+	currentUser, _ := ctx.Value(constants.CurrentUserKey).(*gw_response.CurrentUser)
+	if currentUser.IsSuperAdmin || currentUser.OrganizationAdmin.ID == "" {
+		return nil, fmt.Errorf("access denied")
+	}
+
+	topicResources, err := s.topicResourceRepository.GetTopicResouresByOrganizationAndTopicID(ctx, topicID, currentUser.OrganizationAdmin.ID)
+	if err != nil {
+		return nil, err
+	}
+
+	return mapper.ToGetTopicResourceResponses(ctx, currentUser.OrganizationAdmin.ID, topicResources, s.topicRepository, s.userGw, s.fileGateway), nil
 }

@@ -15,6 +15,7 @@ type TopicResourceRepository interface {
 	GetTopicResource(ctx context.Context, topicResourceID primitive.ObjectID) (*model.TopicResource, error)
 	UpdateTopicResource(ctx context.Context, topicResourceID primitive.ObjectID, topicResource *model.TopicResource) error
 	DeleteTopicResource(ctx context.Context, topicResourceID primitive.ObjectID) error
+	GetTopicResouresByOrganizationAndTopicID(ctx context.Context, topicID, organizationID string) ([]*model.TopicResource, error)
 }
 
 type topicResourceRepository struct {
@@ -77,4 +78,21 @@ func (r *topicResourceRepository) UpdateTopicResource(ctx context.Context, topic
 func (r *topicResourceRepository) DeleteTopicResource(ctx context.Context, topicResourceID primitive.ObjectID) error {
 	_, err := r.topicResourceCollection.DeleteOne(ctx, bson.M{"_id": topicResourceID})
 	return err
+}
+
+func (r *topicResourceRepository) GetTopicResouresByOrganizationAndTopicID(ctx context.Context, topicID, organizationID string) ([]*model.TopicResource, error) {
+	var result []*model.TopicResource
+	filter := bson.M{
+		"topic_id":        topicID,
+		"organization_id": organizationID,
+	}
+	cursor, err := r.topicResourceCollection.Find(ctx, filter)
+	if err != nil {
+		return nil, err
+	}
+	err = cursor.All(ctx, &result)
+	if err != nil {
+		return nil, err
+	}
+	return result, nil
 }
