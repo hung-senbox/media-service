@@ -28,6 +28,8 @@ type TopicRepository interface {
 	DeleteAudioKey(ctx context.Context, topicID string, languageID uint) error
 	DeleteVideoKey(ctx context.Context, topicID string, languageID uint) error
 	DeleteImageKey(ctx context.Context, topicID string, languageID uint, imageType string) error
+	GetTopicsByIDs(ctx context.Context, topicIDs []string) ([]model.Topic, error)
+	GetTopicByID(ctx context.Context, id string) (*model.Topic, error)
 }
 
 type topicRepository struct {
@@ -505,4 +507,35 @@ func (r *topicRepository) DeleteImageKey(ctx context.Context, topicID string, la
 	}
 
 	return nil
+}
+
+func (r *topicRepository) GetTopicsByIDs(ctx context.Context, topicIDs []string) ([]model.Topic, error) {
+	var topics []model.Topic
+	filter := bson.M{
+		"_id": bson.M{"$in": topicIDs},
+	}
+	cursor, err := r.topicCollection.Find(ctx, filter)
+	if err != nil {
+		return nil, err
+	}
+
+	if err := cursor.All(ctx, &topics); err != nil {
+		return nil, err
+	}
+	return topics, nil
+}
+
+func (r *topicRepository) GetTopicByID(ctx context.Context, id string) (*model.Topic, error) {
+	objID, err := primitive.ObjectIDFromHex(id)
+	if err != nil {
+		return nil, fmt.Errorf("[GetTopicByID] invalid id=%s: %w", id, err)
+	}
+
+	filter := bson.M{"_id": objID}
+	var topic model.Topic
+	err = r.topicCollection.FindOne(ctx, filter).Decode(&topic)
+	if err != nil {
+		return nil, err
+	}
+	return &topic, nil
 }

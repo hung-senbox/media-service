@@ -30,11 +30,12 @@ func SetupRouter(consulClient *api.Client, cacheClientRedis *cache.RedisCache, t
 	// ========================  Topic ======================== //
 	// --- Repo ---
 	topicRepov2 := repository.NewTopicRepository(topicCollection)
+	topicResourceRepov2 := repository.NewTopicResourceRepository(topicResourceCollection)
 
 	// --- UseCase ---
 	uploadTopicUseCasev2 := usecase.NewUploadTopicUseCase(topicRepov2, fileGateway, redisService)
 	getTopicAppUseCasev2 := usecase.NewGetTopicAppUseCase(topicRepov2, userGateway, fileGateway)
-	getTopicWebUseCasev2 := usecase.NewGetTopicWebUseCase(topicRepov2, userGateway, fileGateway)
+	getTopicWebUseCasev2 := usecase.NewGetTopicWebUseCase(topicRepov2, topicResourceRepov2, userGateway, fileGateway)
 	getTopicGatewayUseCasev2 := usecase.NewGetTopicGatewayUseCase(topicRepov2, userGateway, fileGateway)
 	getUploadProgressUseCasev2 := usecase.NewGetUploadProgressUseCase(topicRepov2, redisService)
 	deleteTopicFileUseCasev2 := usecase.NewDeleteTopicFileUseCase(topicRepov2, fileGateway)
@@ -52,7 +53,6 @@ func SetupRouter(consulClient *api.Client, cacheClientRedis *cache.RedisCache, t
 	pdfHandlerv2 := domain.NewUserResourceHandler(pdfServicev2)
 	// ========================  PDF ======================== //
 
-	topicResourceRepov2 := repository.NewTopicResourceRepository(topicResourceCollection)
 	topicResourceServicev2 := service.NewTopicResourceService(topicResourceRepov2, topicRepov2, fileGateway, userGateway)
 	topicResourceHandlerv2 := handler.NewTopicResourceHandler(topicResourceServicev2)
 	// Register routes

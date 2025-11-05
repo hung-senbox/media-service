@@ -49,7 +49,10 @@ func (h TopicHandler) GetPregressUpload(c *gin.Context) {
 }
 
 func (h TopicHandler) GetTopics4Web(c *gin.Context) {
-	res, err := h.service.GetTopics4Web(c.Request.Context())
+
+	studentID := c.Query("student_id")
+
+	res, err := h.service.GetTopics4Web(c.Request.Context(), studentID)
 	if err != nil {
 		helper.SendError(c, http.StatusInternalServerError, err, helper.ErrInvalidOperation)
 		return

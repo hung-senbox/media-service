@@ -11,7 +11,7 @@ import (
 type TopicService interface {
 	UploadTopic(ctx context.Context, req request.UploadTopicRequest) (*model.Topic, error)
 	GetUploadProgress(ctx context.Context, topicID string) (*response.GetUploadProgressResponse, error)
-	GetTopics4Web(ctx context.Context) ([]response.TopicResponse4Web, error)
+	GetTopics4Web(ctx context.Context, studentID string) ([]response.TopicResponse4Web, error)
 	GetTopic4Web(ctx context.Context, topicID string) (*response.TopicResponse4Web, error)
 	GetTopics4Student4App(ctx context.Context, studentID string) ([]*response.GetTopic4StudentResponse4App, error)
 	GetTopics4Student4Web(ctx context.Context, studentID string) ([]*response.GetTopic4StudentResponse4Web, error)
@@ -71,8 +71,8 @@ func (s *topicService) GetTopics4App(ctx context.Context, organizationID string)
 }
 
 // =============== Get Topic 4 Web ================
-func (s *topicService) GetTopics4Web(ctx context.Context) ([]response.TopicResponse4Web, error) {
-	return s.getTopicWebUseCase.GetTopics4Web(ctx)
+func (s *topicService) GetTopics4Web(ctx context.Context, studentID string) ([]response.TopicResponse4Web, error) {
+	return s.getTopicWebUseCase.GetTopics4Web(ctx, studentID)
 }
 func (s *topicService) GetTopic4Web(ctx context.Context, topicID string) (*response.TopicResponse4Web, error) {
 	return s.getTopicWebUseCase.GetTopic4Web(ctx, topicID)
