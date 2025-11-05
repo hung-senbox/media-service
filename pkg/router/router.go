@@ -18,7 +18,7 @@ import (
 	"go.mongodb.org/mongo-driver/mongo"
 )
 
-func SetupRouter(consulClient *api.Client, cacheClientRedis *cache.RedisCache, topicCollection, pdfCollection, topicResourceCollection *mongo.Collection) *gin.Engine {
+func SetupRouter(consulClient *api.Client, cacheClientRedis *cache.RedisCache, topicCollection, pdfCollection, topicResourceCollection, videoUploaderCollection *mongo.Collection) *gin.Engine {
 	r := gin.Default()
 
 	// gateway
@@ -56,9 +56,17 @@ func SetupRouter(consulClient *api.Client, cacheClientRedis *cache.RedisCache, t
 
 	topicResourceServicev2 := service.NewTopicResourceService(topicResourceRepov2, topicRepov2, fileGateway, userGateway, getTopicResourcesWebUseCasev2)
 	topicResourceHandlerv2 := handler.NewTopicResourceHandler(topicResourceServicev2)
+
+	// ========================  Video Uploader ======================== //
+	videoUploaderRepo := repository.NewVideoUploaderRepository(videoUploaderCollection)
+	videoUploaderService := service.NewVideoUploaderService(videoUploaderRepo, fileGateway, redisService)
+	videoUploaderHandler := handler.NewVideoUploaderHandler(videoUploaderService)
+	// ========================  Video Uploader ======================== //
+
 	// Register routes
 	route.RegisterTopicRoutes(r, topicHandlerv2, userGateway)
 	route.RegisterTopicResourceRoutes(r, topicResourceHandlerv2, userGateway)
+	route.RegisterVideoUploaderRoutes(r, videoUploaderHandler, userGateway)
 	route2.RegisterRoutes(r, pdfHandlerv2, userGateway)
 	return r
 }

@@ -2,6 +2,7 @@ package helper
 
 import (
 	"context"
+	"fmt"
 	"media-service/internal/media/model"
 	"media-service/pkg/constants"
 	"mime/multipart"
@@ -93,4 +94,8 @@ func RemoveDuplicateString(slice []string) []string {
 		}
 	}
 	return list
+}
+
+func BuildVideoUploaderRedisKey(videoUploaderID, organizationID string) string {
+	return fmt.Sprintf("media:upload_status:%s:%s", videoUploaderID, organizationID)
 }

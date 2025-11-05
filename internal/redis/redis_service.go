@@ -2,9 +2,12 @@ package redis
 
 import (
 	"context"
+	"encoding/json"
 	"fmt"
 	"media-service/pkg/db"
 	"strconv"
+
+	"github.com/redis/go-redis/v9"
 )
 
 type RedisService struct{}
@@ -16,6 +19,36 @@ func NewRedisService() *RedisService {
 // helper để build key
 func buildKey(organizationID, topicID, field string) string {
 	return fmt.Sprintf("topic_upload:%s:%s:%s", organizationID, topicID, field)
+}
+
+func (s *RedisService) SetUploaderStatus(ctx context.Context, key string, values map[string]interface{}) error {
+	data, err := json.Marshal(values)
+	if err != nil {
+		return fmt.Errorf("failed to marshal redis value: %w", err)
+	}
+
+	return db.Client.Set(ctx, key, data, 0).Err()
+}
+
+func (s *RedisService) GetUploaderStatus(ctx context.Context, key string) (map[string]interface{}, error) {
+	val, err := db.Client.Get(ctx, key).Result()
+	if err != nil {
+		if err == redis.Nil {
+			return nil, nil
+		}
+		return nil, fmt.Errorf("failed to get redis value: %w", err)
+	}
+
+	var result map[string]interface{}
+	if err := json.Unmarshal([]byte(val), &result); err != nil {
+		return nil, fmt.Errorf("failed to unmarshal redis value: %w", err)
+	}
+
+	return result, nil
+}
+
+func (s *RedisService) DeleteUploaderStatusKey(ctx context.Context, key string) error {
+	return db.Client.Del(ctx, key).Err()
 }
 
 // Khởi tạo progress upload

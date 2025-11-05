@@ -60,7 +60,7 @@ func main() {
 		return
 	}
 
-	r := router.SetupRouter(consulClient, cacheClientRedis, db.TopicCollection, db.PDFCollection, db.TopicResourceCollection)
+	r := router.SetupRouter(consulClient, cacheClientRedis, db.TopicCollection, db.PDFCollection, db.TopicResourceCollection, db.VideoUploaderCollection)
 
 	port := cfg.Server.Port
 	if err := r.Run(":" + port); err != nil {
