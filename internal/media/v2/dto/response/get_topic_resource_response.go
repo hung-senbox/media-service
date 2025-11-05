@@ -15,3 +15,11 @@ type GetTopicResourceResponse struct {
 	CreatedAt time.Time                 `json:"created_at"`
 	UpdatedAt time.Time                 `json:"updated_at"`
 }
+
+type GetTopicResourcesResponse4Web struct {
+	ID        string    `json:"id"`
+	FileName  string    `json:"file_name"`
+	ImageUrl  string    `json:"image_url"`
+	CreatedAt time.Time `json:"created_at"`
+	PicID     string    `json:"pic_id"`
+}

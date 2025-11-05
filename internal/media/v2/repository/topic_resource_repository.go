@@ -15,8 +15,9 @@ type TopicResourceRepository interface {
 	GetTopicResource(ctx context.Context, topicResourceID primitive.ObjectID) (*model.TopicResource, error)
 	UpdateTopicResource(ctx context.Context, topicResourceID primitive.ObjectID, topicResource *model.TopicResource) error
 	DeleteTopicResource(ctx context.Context, topicResourceID primitive.ObjectID) error
-	GetTopicResouresByOrganizationAndTopicID(ctx context.Context, topicID, organizationID string) ([]*model.TopicResource, error)
+	GetTopicResouresByTopic(ctx context.Context, topicID string) ([]*model.TopicResource, error)
 	GetTopicResouresByStudentID(ctx context.Context, studentID string) ([]*model.TopicResource, error)
+	GetTopicResouresByTopicAndStudent(ctx context.Context, topicID, studentID string) ([]*model.TopicResource, error)
 }
 
 type topicResourceRepository struct {
@@ -81,7 +82,7 @@ func (r *topicResourceRepository) DeleteTopicResource(ctx context.Context, topic
 	return err
 }
 
-func (r *topicResourceRepository) GetTopicResouresByOrganizationAndTopicID(ctx context.Context, topicID, organizationID string) ([]*model.TopicResource, error) {
+func (r *topicResourceRepository) GetTopicResouresByTopic(ctx context.Context, topicID string) ([]*model.TopicResource, error) {
 	var result []*model.TopicResource
 	filter := bson.M{
 		"topic_id": topicID,
@@ -100,6 +101,23 @@ func (r *topicResourceRepository) GetTopicResouresByOrganizationAndTopicID(ctx c
 func (r *topicResourceRepository) GetTopicResouresByStudentID(ctx context.Context, studentID string) ([]*model.TopicResource, error) {
 	var result []*model.TopicResource
 	filter := bson.M{
+		"student_id": studentID,
+	}
+	cursor, err := r.topicResourceCollection.Find(ctx, filter)
+	if err != nil {
+		return nil, err
+	}
+	err = cursor.All(ctx, &result)
+	if err != nil {
+		return nil, err
+	}
+	return result, nil
+}
+
+func (r *topicResourceRepository) GetTopicResouresByTopicAndStudent(ctx context.Context, topicID, studentID string) ([]*model.TopicResource, error) {
+	var result []*model.TopicResource
+	filter := bson.M{
+		"topic_id":   topicID,
 		"student_id": studentID,
 	}
 	cursor, err := r.topicResourceCollection.Find(ctx, filter)

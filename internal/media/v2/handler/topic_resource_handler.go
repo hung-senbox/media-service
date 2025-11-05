@@ -92,13 +92,28 @@ func (h *TopicResourceHandler) DeleteTopicResource(c *gin.Context) {
 	helper.SendSuccess(c, http.StatusOK, "delete topic resource success", nil)
 }
 
-func (h *TopicResourceHandler) GetTopicResoures4Web(c *gin.Context) {
+func (h *TopicResourceHandler) GetTopicResourcesByTopic4Web(c *gin.Context) {
 	topicID := c.Param("topic_id")
 	if topicID == "" {
 		helper.SendError(c, http.StatusBadRequest, nil, helper.ErrInvalidRequest)
 		return
 	}
-	res, err := h.topicResourceService.GetTopicResoures4Web(c.Request.Context(), topicID)
+	res, err := h.topicResourceService.GetTopicResourcesByTopic4Web(c.Request.Context(), topicID)
+	if err != nil {
+		helper.SendError(c, http.StatusInternalServerError, err, helper.ErrInvalidOperation)
+		return
+	}
+	helper.SendSuccess(c, http.StatusOK, "get topic resources success", res)
+}
+
+func (h *TopicResourceHandler) GetTopicResourcesByTopicAndStudent4Web(c *gin.Context) {
+	topicID := c.Param("topic_id")
+	studentID := c.Param("student_id")
+	if topicID == "" || studentID == "" {
+		helper.SendError(c, http.StatusBadRequest, nil, helper.ErrInvalidRequest)
+		return
+	}
+	res, err := h.topicResourceService.GetTopicResourcesByTopicAndStudent4Web(c.Request.Context(), topicID, studentID)
 	if err != nil {
 		helper.SendError(c, http.StatusInternalServerError, err, helper.ErrInvalidOperation)
 		return

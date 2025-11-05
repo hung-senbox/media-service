@@ -89,7 +89,6 @@ func ToGetTopicResourceResponses(
 	return res
 }
 
-
 func ToGetTopicResourceResponse(
 	ctx context.Context,
 	orgID string,
@@ -97,8 +96,8 @@ func ToGetTopicResourceResponse(
 	topicRepository repository.TopicRepository,
 	userGw gateway.UserGateway,
 	fileGateway gateway.FileGateway,
-	) *response.GetTopicResourceResponse {
-	
+) *response.GetTopicResourceResponse {
+
 	var imageUrl string
 	var student *gw_response.StudentResponse
 	var createdBy *gw_response.TeacherResponse
@@ -152,5 +151,20 @@ func ToGetTopicResourceResponse(
 		CreatedBy: createdBy,
 		CreatedAt: topicResource.CreatedAt,
 		UpdatedAt: topicResource.UpdatedAt,
+	}
+}
+
+func ToGetTopicResourcesResponse4Web(
+	ctx context.Context,
+	topicResources *model.TopicResource,
+	resourceImageUrl string,
+) *response.GetTopicResourcesResponse4Web {
+
+	return &response.GetTopicResourcesResponse4Web{
+		ID:        topicResources.ID.Hex(),
+		FileName:  topicResources.FileName,
+		ImageUrl:  resourceImageUrl,
+		CreatedAt: topicResources.CreatedAt,
+		PicID:     topicResources.CreatedAt.Format("02 Jan 2006 15:04"),
 	}
 }

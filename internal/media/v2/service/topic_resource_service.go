@@ -6,13 +6,12 @@ import (
 	"media-service/helper"
 	"media-service/internal/gateway"
 	gw_request "media-service/internal/gateway/dto/request"
-	gw_response "media-service/internal/gateway/dto/response"
 	"media-service/internal/media/model"
 	"media-service/internal/media/v2/dto/request"
 	"media-service/internal/media/v2/dto/response"
 	"media-service/internal/media/v2/mapper"
 	"media-service/internal/media/v2/repository"
-	"media-service/pkg/constants"
+	"media-service/internal/media/v2/usecase"
 	"time"
 
 	"go.mongodb.org/mongo-driver/bson/primitive"
@@ -24,18 +23,32 @@ type TopicResourceService interface {
 	GetTopicResource(ctx context.Context, topicResourceID, orgID string) (*response.GetTopicResourceResponse, error)
 	UpdateTopicResource(ctx context.Context, topicResourceID string, req request.UpdateTopicResourceRequest) (string, error)
 	DeleteTopicResource(ctx context.Context, topicResourceID string) error
-	GetTopicResoures4Web(ctx context.Context, topicID string) ([]*response.GetTopicResourceResponse, error)
+	GetTopicResourcesByTopic4Web(ctx context.Context, topicID string) ([]*response.GetTopicResourcesResponse4Web, error)
+	GetTopicResourcesByTopicAndStudent4Web(ctx context.Context, topicID, studentID string) ([]*response.GetTopicResourcesResponse4Web, error)
 }
 
 type topicResourceService struct {
-	topicResourceRepository repository.TopicResourceRepository
-	topicRepository         repository.TopicRepository
-	fileGateway             gateway.FileGateway
-	userGw                  gateway.UserGateway
+	topicResourceRepository     repository.TopicResourceRepository
+	topicRepository             repository.TopicRepository
+	fileGateway                 gateway.FileGateway
+	userGw                      gateway.UserGateway
+	getTopicResourcesWebUseCase usecase.GetTopicResourcesWebUseCase
 }
 
-func NewTopicResourceService(topicResourceRepository repository.TopicResourceRepository, topicRepository repository.TopicRepository, fileGateway gateway.FileGateway, userGw gateway.UserGateway) TopicResourceService {
-	return &topicResourceService{topicResourceRepository: topicResourceRepository, topicRepository: topicRepository, fileGateway: fileGateway, userGw: userGw}
+func NewTopicResourceService(
+	topicResourceRepository repository.TopicResourceRepository,
+	topicRepository repository.TopicRepository,
+	fileGateway gateway.FileGateway,
+	userGw gateway.UserGateway,
+	getTopicResourcesWebUseCase usecase.GetTopicResourcesWebUseCase,
+) TopicResourceService {
+	return &topicResourceService{
+		topicResourceRepository:     topicResourceRepository,
+		topicRepository:             topicRepository,
+		fileGateway:                 fileGateway,
+		userGw:                      userGw,
+		getTopicResourcesWebUseCase: getTopicResourcesWebUseCase,
+	}
 }
 
 func (s *topicResourceService) CreateTopicResource(ctx context.Context, req request.CreateTopicResourceRequest) (string, error) {
@@ -209,16 +222,10 @@ func (s *topicResourceService) DeleteTopicResource(ctx context.Context, topicRes
 
 }
 
-func (s *topicResourceService) GetTopicResoures4Web(ctx context.Context, topicID string) ([]*response.GetTopicResourceResponse, error) {
-	currentUser, _ := ctx.Value(constants.CurrentUserKey).(*gw_response.CurrentUser)
-	if currentUser.IsSuperAdmin || currentUser.OrganizationAdmin.ID == "" {
-		return nil, fmt.Errorf("access denied")
-	}
+func (s *topicResourceService) GetTopicResourcesByTopic4Web(ctx context.Context, topicID string) ([]*response.GetTopicResourcesResponse4Web, error) {
+	return s.getTopicResourcesWebUseCase.GetTopicResourcesByTopic4Web(ctx, topicID)
+}
 
-	topicResources, err := s.topicResourceRepository.GetTopicResouresByOrganizationAndTopicID(ctx, topicID, currentUser.OrganizationAdmin.ID)
-	if err != nil {
-		return nil, err
-	}
-
-	return mapper.ToGetTopicResourceResponses(ctx, currentUser.OrganizationAdmin.ID, topicResources, s.topicRepository, s.userGw, s.fileGateway), nil
+func (s *topicResourceService) GetTopicResourcesByTopicAndStudent4Web(ctx context.Context, topicID, studentID string) ([]*response.GetTopicResourcesResponse4Web, error) {
+	return s.getTopicResourcesWebUseCase.GetTopicResourcesByTopicAndStudent4Web(ctx, topicID, studentID)
 }
