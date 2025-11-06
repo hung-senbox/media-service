@@ -41,13 +41,12 @@ func NewUploadTopicUseCase(topicRepo repository.TopicRepository, fileGw gateway.
 // ------------------- UploadTopic main flow -------------------
 func (uc *uploadTopicUseCase) UploadTopic(ctx context.Context, req request.UploadTopicRequest) (*model.Topic, error) {
 	currentUser, _ := ctx.Value(constants.CurrentUserKey).(*gw_response.CurrentUser)
-	if currentUser == nil || currentUser.OrganizationAdmin.ID == "" || currentUser.IsSuperAdmin {
+	if currentUser == nil || !currentUser.IsSuperAdmin {
 		return nil, fmt.Errorf("access denied")
 	}
-	orgID := currentUser.OrganizationAdmin.ID
 
-	// Check upload in progress
-	inProgress, err := uc.redisService.HasAnyUploadInProgress(ctx, orgID)
+	// Check upload in progress (toàn cục, không phụ thuộc organization)
+	inProgress, err := uc.redisService.HasAnyUploadInProgress(ctx)
 	if err == nil && inProgress {
 		return nil, fmt.Errorf("please wait until the previous upload is completed")
 	}
@@ -62,7 +61,7 @@ func (uc *uploadTopicUseCase) UploadTopic(ctx context.Context, req request.Uploa
 		}
 	} else {
 		// Case create new topic
-		topic, err = uc.createTopicLanguage(ctx, req, orgID)
+		topic, err = uc.createTopicLanguage(ctx, req)
 		if err != nil {
 			return nil, err
 		}
@@ -83,43 +82,43 @@ func (uc *uploadTopicUseCase) UploadTopic(ctx context.Context, req request.Uploa
 	}
 
 	if totalTasks > 0 {
-		_ = uc.redisService.InitUploadProgress(ctx, orgID, topic.ID.Hex(), totalTasks)
-		go uc.uploadFilesAsyncWithContext(ctx, orgID, topic.ID.Hex(), req)
+		_ = uc.redisService.InitUploadProgress(ctx, topic.ID.Hex(), totalTasks)
+		go uc.uploadFilesAsyncWithContext(ctx, topic.ID.Hex(), req)
 	} else {
-		go uc.uploadFilesAsyncWithContext(ctx, orgID, topic.ID.Hex(), req)
+		go uc.uploadFilesAsyncWithContext(ctx, topic.ID.Hex(), req)
 	}
 
 	return topic, nil
 }
 
 // ------------------- Upload async -------------------
-func (uc *uploadTopicUseCase) uploadFilesAsyncWithContext(ctx context.Context, orgID, topicID string, req request.UploadTopicRequest) {
+func (uc *uploadTopicUseCase) uploadFilesAsyncWithContext(ctx context.Context, topicID string, req request.UploadTopicRequest) {
 	ctxUpload := context.Background()
 
 	if token, ok := ctx.Value(constants.Token).(string); ok {
 		ctxUpload = context.WithValue(ctxUpload, constants.Token, token)
 	}
 
-	uc.uploadFilesAsync(ctxUpload, orgID, topicID, req)
+	uc.uploadFilesAsync(ctxUpload, topicID, req)
 }
 
-func (uc *uploadTopicUseCase) uploadFilesAsync(ctx context.Context, orgID, topicID string, req request.UploadTopicRequest) {
+func (uc *uploadTopicUseCase) uploadFilesAsync(ctx context.Context, topicID string, req request.UploadTopicRequest) {
 	decrementTask := func() {
-		remaining, _ := uc.redisService.DecrementUploadTask(ctx, orgID, topicID)
+		remaining, _ := uc.redisService.DecrementUploadTask(ctx, topicID)
 		if remaining <= 0 {
-			_ = uc.redisService.SetUploadProgress(ctx, orgID, topicID, 0)
+			_ = uc.redisService.SetUploadProgress(ctx, topicID, 0)
 		}
 	}
 
-	uc.uploadAndSaveAudio(ctx, orgID, topicID, req, decrementTask)
+	uc.uploadAndSaveAudio(ctx, topicID, req, decrementTask)
 
-	uc.uploadAndSaveVideo(ctx, orgID, topicID, req, decrementTask)
+	uc.uploadAndSaveVideo(ctx, topicID, req, decrementTask)
 
-	uc.uploadAndSaveImages(ctx, orgID, topicID, req, decrementTask)
+	uc.uploadAndSaveImages(ctx, topicID, req, decrementTask)
 }
 
 // ------------------- Upload handlers -------------------
-func (uc *uploadTopicUseCase) uploadAndSaveAudio(ctx context.Context, orgID, topicID string, req request.UploadTopicRequest, done func()) {
+func (uc *uploadTopicUseCase) uploadAndSaveAudio(ctx context.Context, topicID string, req request.UploadTopicRequest, done func()) {
 
 	topic, err := uc.topicRepo.GetByID(ctx, topicID)
 	if err != nil {
@@ -144,7 +143,7 @@ func (uc *uploadTopicUseCase) uploadAndSaveAudio(ctx context.Context, orgID, top
 			AudioName: req.Title,
 		})
 		if err != nil {
-			_ = uc.redisService.SetUploadError(ctx, orgID, topicID, "audio_error", err.Error())
+			_ = uc.redisService.SetUploadError(ctx, topicID, "audio_error", err.Error())
 			return
 		}
 		finalAudioKey = resp.Key
@@ -159,11 +158,11 @@ func (uc *uploadTopicUseCase) uploadAndSaveAudio(ctx context.Context, orgID, top
 		EndTime:   req.AudioEnd,
 	})
 	if err != nil {
-		_ = uc.redisService.SetUploadError(ctx, orgID, topicID, "audio_error", err.Error())
+		_ = uc.redisService.SetUploadError(ctx, topicID, "audio_error", err.Error())
 	}
 }
 
-func (uc *uploadTopicUseCase) uploadAndSaveVideo(ctx context.Context, orgID, topicID string, req request.UploadTopicRequest, done func()) {
+func (uc *uploadTopicUseCase) uploadAndSaveVideo(ctx context.Context, topicID string, req request.UploadTopicRequest, done func()) {
 
 	topic, err := uc.topicRepo.GetByID(ctx, topicID)
 	if err != nil {
@@ -187,7 +186,7 @@ func (uc *uploadTopicUseCase) uploadAndSaveVideo(ctx context.Context, orgID, top
 			VideoName: req.Title,
 		})
 		if err != nil {
-			_ = uc.redisService.SetUploadError(ctx, orgID, topicID, "video_error", err.Error())
+			_ = uc.redisService.SetUploadError(ctx, topicID, "video_error", err.Error())
 			return
 		}
 		finalVideoKey = resp.Key
@@ -202,11 +201,11 @@ func (uc *uploadTopicUseCase) uploadAndSaveVideo(ctx context.Context, orgID, top
 		EndTime:   req.VideoEnd,
 	})
 	if err != nil {
-		_ = uc.redisService.SetUploadError(ctx, orgID, topicID, "video_error", err.Error())
+		_ = uc.redisService.SetUploadError(ctx, topicID, "video_error", err.Error())
 	}
 }
 
-func (uc *uploadTopicUseCase) uploadAndSaveImages(ctx context.Context, orgID, topicID string, req request.UploadTopicRequest, done func()) {
+func (uc *uploadTopicUseCase) uploadAndSaveImages(ctx context.Context, topicID string, req request.UploadTopicRequest, done func()) {
 	imageFiles := []struct {
 		file *multipart.FileHeader
 		link string
@@ -229,7 +228,7 @@ func (uc *uploadTopicUseCase) uploadAndSaveImages(ctx context.Context, orgID, to
 			if !helper.IsValidFile(img.file) {
 				continue
 			}
-			_ = uc.redisService.SetUploadError(ctx, orgID, topicID, "image_"+img.typ, err.Error())
+			_ = uc.redisService.SetUploadError(ctx, topicID, "image_"+img.typ, err.Error())
 			done()
 		}
 		return
@@ -253,7 +252,7 @@ func (uc *uploadTopicUseCase) uploadAndSaveImages(ctx context.Context, orgID, to
 				Mode:      "private",
 			})
 			if err != nil {
-				_ = uc.redisService.SetUploadError(ctx, orgID, topicID, "image_"+img.typ, err.Error())
+				_ = uc.redisService.SetUploadError(ctx, topicID, "image_"+img.typ, err.Error())
 				// giảm 1 task vì đây là 1 task upload (dù lỗi)
 				done()
 				continue
@@ -265,7 +264,7 @@ func (uc *uploadTopicUseCase) uploadAndSaveImages(ctx context.Context, orgID, to
 				ImageType: img.typ,
 				LinkUrl:   img.link,
 			}); err != nil {
-				_ = uc.redisService.SetUploadError(ctx, orgID, topicID, "image_"+img.typ, err.Error())
+				_ = uc.redisService.SetUploadError(ctx, topicID, "image_"+img.typ, err.Error())
 			}
 
 			// task upload xong -> giảm 1 task
@@ -330,10 +329,9 @@ func (uc *uploadTopicUseCase) updateTopicLanguage(ctx context.Context, req reque
 	return uc.topicRepo.UpdateTopic(ctx, oldTopic)
 }
 
-func (uc *uploadTopicUseCase) createTopicLanguage(ctx context.Context, req request.UploadTopicRequest, orgID string) (*model.Topic, error) {
+func (uc *uploadTopicUseCase) createTopicLanguage(ctx context.Context, req request.UploadTopicRequest) (*model.Topic, error) {
 	topic := &model.Topic{
 		ID:             primitive.NewObjectID(),
-		OrganizationID: orgID,
 		IsPublished:    req.IsPublished,
 		LanguageConfig: []model.TopicLanguageConfig{},
 	}

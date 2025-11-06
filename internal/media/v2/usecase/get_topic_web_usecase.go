@@ -3,7 +3,6 @@ package usecase
 import (
 	"context"
 	"fmt"
-	"media-service/helper"
 	"media-service/internal/gateway"
 	gw_request "media-service/internal/gateway/dto/request"
 	gw_response "media-service/internal/gateway/dto/response"
@@ -43,11 +42,11 @@ func NewGetTopicWebUseCase(
 
 func (uc *getTopicWebUseCase) GetTopics4Student4Web(ctx context.Context, studentID string) ([]*response.GetTopic4StudentResponse4Web, error) {
 	// get org by student
-	student, err := uc.cachedUserGw.GetStudentInfo(ctx, studentID)
-	if err != nil {
-		return nil, err
-	}
-	topics, err := uc.topicRepo.GetAllTopicByOrganizationIDAndIsPublished(ctx, student.OrganizationID)
+	// student, err := uc.cachedUserGw.GetStudentInfo(ctx, studentID)
+	// if err != nil {
+	// 	return nil, err
+	// }
+	topics, err := uc.topicRepo.GetAllTopicsIsPublished(ctx)
 	if err != nil {
 		return nil, err
 	}
@@ -77,15 +76,22 @@ func (uc *getTopicWebUseCase) GetTopics4Web(ctx context.Context, studentID strin
 		return nil, fmt.Errorf("access denied")
 	}
 
-	if currentUser.IsSuperAdmin || currentUser.OrganizationAdmin.ID == "" {
-		return nil, fmt.Errorf("access denied")
-	}
-	orgID := currentUser.OrganizationAdmin.ID
-	if studentID != "" {
-		return uc.getTopicsByStudentFromResource4Web(ctx, studentID)
+	if currentUser.IsSuperAdmin {
+		topics, err := uc.topicRepo.GetAllTopics(ctx)
+		if err != nil {
+			return nil, err
+		}
+		for ti := range topics {
+			uc.populateMediaUrlsForTopic(ctx, &topics[ti])
+		}
+		return mapper.ToTopicResponses4Web(topics), nil
 	}
 
-	topics, err := uc.topicRepo.GetAllTopicByOrganizationID(ctx, orgID)
+	if currentUser.OrganizationAdmin.ID == "" {
+		return nil, fmt.Errorf("access denied")
+	}
+
+	topics, err := uc.topicRepo.GetAllTopicsIsPublished(ctx)
 	if err != nil {
 		return nil, err
 	}
@@ -93,6 +99,7 @@ func (uc *getTopicWebUseCase) GetTopics4Web(ctx context.Context, studentID strin
 	for ti := range topics {
 		uc.populateMediaUrlsForTopic(ctx, &topics[ti])
 	}
+
 	return mapper.ToTopicResponses4Web(topics), nil
 
 }
@@ -110,13 +117,13 @@ func (uc *getTopicWebUseCase) GetTopic4Web(ctx context.Context, topicID string) 
 }
 
 func (uc *getTopicWebUseCase) GetTopics2Assign4Web(ctx context.Context) ([]*response.TopicResponse2Assign4Web, error) {
-	currentUser, _ := ctx.Value(constants.CurrentUserKey).(*gw_response.CurrentUser)
+	// currentUser, _ := ctx.Value(constants.CurrentUserKey).(*gw_response.CurrentUser)
 
-	if currentUser.IsSuperAdmin || currentUser.OrganizationAdmin.ID == "" {
-		return nil, fmt.Errorf("access denied")
-	}
+	// if currentUser.IsSuperAdmin || currentUser.OrganizationAdmin.ID == "" {
+	// 	return nil, fmt.Errorf("access denied")
+	// }
 
-	topics, err := uc.topicRepo.GetAllTopicByOrganizationIDAndIsPublished(ctx, currentUser.OrganizationAdmin.ID)
+	topics, err := uc.topicRepo.GetAllTopicsIsPublished(ctx)
 	if err != nil {
 		return nil, err
 	}
@@ -140,35 +147,6 @@ func (uc *getTopicWebUseCase) GetTopics2Assign4Web(ctx context.Context) ([]*resp
 	}
 
 	return mapper.ToTopic2Assign4Web(topics, 1), nil
-}
-
-func (uc *getTopicWebUseCase) getTopicsByStudentFromResource4Web(ctx context.Context, studentID string) ([]response.TopicResponse4Web, error) {
-
-	topicResources, err := uc.topicResourceRepo.GetTopicResouresByStudentID(ctx, studentID)
-	if err != nil {
-		return nil, err
-	}
-
-	// loc ra topicResources co topicID khac nhau
-	topicIDs := make([]string, 0)
-	for _, topicResource := range topicResources {
-		topicIDs = append(topicIDs, topicResource.TopicID)
-	}
-	topicIDs = helper.RemoveDuplicateString(topicIDs)
-
-	var topics []model.Topic
-	for _, topicID := range topicIDs {
-		topic, _ := uc.topicRepo.GetTopicByID(ctx, topicID)
-		if topic != nil {
-			topics = append(topics, *topic)
-		}
-	}
-
-	for ti := range topics {
-		uc.populateMediaUrlsForTopic(ctx, &topics[ti])
-	}
-
-	return mapper.ToTopicResponses4Web(topics), nil
 }
 
 // populateMediaUrlsForTopic enriches a topic's language configs with signed media URLs when keys exist

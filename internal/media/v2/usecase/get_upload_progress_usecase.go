@@ -30,21 +30,19 @@ func NewGetUploadProgressUseCase(topicRepo repository.TopicRepository, redisServ
 func (uc *getUploadProgressUseCase) GetUploadProgress(ctx context.Context, topicID string) (*response.GetUploadProgressResponse, error) {
 
 	currentUser, _ := ctx.Value(constants.CurrentUserKey).(*gw_response.CurrentUser)
-	if currentUser.IsSuperAdmin || currentUser.OrganizationAdmin.ID == "" {
+	if currentUser == nil || !currentUser.IsSuperAdmin {
 		return nil, fmt.Errorf("access denied")
 	}
-
-	orgID := currentUser.OrganizationAdmin.ID
 	topic, _ := uc.topicRepo.GetByID(ctx, topicID)
 
-	total, _ := uc.redisService.GetTotalUploadTask(ctx, orgID, topicID)
-	remaining, _ := uc.redisService.GetUploadProgress(ctx, orgID, topicID)
-	rawErrors, _ := uc.redisService.GetUploadErrors(ctx, orgID, topicID)
+	total, _ := uc.redisService.GetTotalUploadTask(ctx, topicID)
+	remaining, _ := uc.redisService.GetUploadProgress(ctx, topicID)
+	rawErrors, _ := uc.redisService.GetUploadErrors(ctx, topicID)
 
 	// Nếu chưa từng tạo task upload nào => chưa upload gì cả (hoac case da dat 100 progress thi da xoa het cache)
 	if total == 0 {
 		// goi delete cache
-		_ = uc.redisService.DeleteUploadProgress(ctx, orgID, topicID)
+		_ = uc.redisService.DeleteUploadProgress(ctx, topicID)
 
 		return &response.GetUploadProgressResponse{
 			Progress: -1,
@@ -78,7 +76,7 @@ func (uc *getUploadProgressUseCase) GetUploadProgress(ctx context.Context, topic
 	}
 
 	// goi delete cache
-	_ = uc.redisService.DeleteUploadProgress(ctx, orgID, topicID)
+	_ = uc.redisService.DeleteUploadProgress(ctx, topicID)
 
 	return &response.GetUploadProgressResponse{
 		Progress: progress,

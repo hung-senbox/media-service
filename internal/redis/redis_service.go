@@ -16,9 +16,9 @@ func NewRedisService() *RedisService {
 	return &RedisService{}
 }
 
-// helper để build key
-func buildKey(organizationID, topicID, field string) string {
-	return fmt.Sprintf("topic_upload:%s:%s:%s", organizationID, topicID, field)
+// helper để build key (không phụ thuộc organization)
+func buildKey(topicID, field string) string {
+	return fmt.Sprintf("topic_upload:%s:%s", topicID, field)
 }
 
 func (s *RedisService) SetUploaderStatus(ctx context.Context, key string, values map[string]interface{}) error {
@@ -52,9 +52,9 @@ func (s *RedisService) DeleteUploaderStatusKey(ctx context.Context, key string) 
 }
 
 // Khởi tạo progress upload
-func (s *RedisService) InitUploadProgress(ctx context.Context, organizationID, topicID string, totalTasks int) error {
-	totalKey := buildKey(organizationID, topicID, "total")
-	remainKey := buildKey(organizationID, topicID, "remaining")
+func (s *RedisService) InitUploadProgress(ctx context.Context, topicID string, totalTasks int) error {
+	totalKey := buildKey(topicID, "total")
+	remainKey := buildKey(topicID, "remaining")
 
 	pipe := db.Client.TxPipeline()
 	pipe.Set(ctx, totalKey, totalTasks, 0)
@@ -64,20 +64,20 @@ func (s *RedisService) InitUploadProgress(ctx context.Context, organizationID, t
 }
 
 // Giảm số task còn lại
-func (s *RedisService) DecrementUploadTask(ctx context.Context, organizationID, topicID string) (int64, error) {
-	remainKey := buildKey(organizationID, topicID, "remaining")
+func (s *RedisService) DecrementUploadTask(ctx context.Context, topicID string) (int64, error) {
+	remainKey := buildKey(topicID, "remaining")
 	return db.Client.Decr(ctx, remainKey).Result()
 }
 
 // SetUploadProgress cập nhật progress (%) cho topic
-func (s *RedisService) SetUploadProgress(ctx context.Context, organizationID, topicID string, progress int) error {
-	key := fmt.Sprintf("topic_upload:%s:%s:progress", organizationID, topicID)
+func (s *RedisService) SetUploadProgress(ctx context.Context, topicID string, progress int) error {
+	key := buildKey(topicID, "progress")
 	return db.Client.Set(ctx, key, progress, 0).Err()
 }
 
 // Lấy số task còn lại
-func (s *RedisService) GetUploadProgress(ctx context.Context, organizationID, topicID string) (int64, error) {
-	remainKey := buildKey(organizationID, topicID, "remaining")
+func (s *RedisService) GetUploadProgress(ctx context.Context, topicID string) (int64, error) {
+	remainKey := buildKey(topicID, "remaining")
 	val, err := db.Client.Get(ctx, remainKey).Result()
 	if err != nil {
 		return 0, err
@@ -86,8 +86,8 @@ func (s *RedisService) GetUploadProgress(ctx context.Context, organizationID, to
 }
 
 // Lấy tổng task
-func (s *RedisService) GetTotalUploadTask(ctx context.Context, organizationID, topicID string) (int64, error) {
-	totalKey := buildKey(organizationID, topicID, "total")
+func (s *RedisService) GetTotalUploadTask(ctx context.Context, topicID string) (int64, error) {
+	totalKey := buildKey(topicID, "total")
 	val, err := db.Client.Get(ctx, totalKey).Result()
 	if err != nil {
 		return 0, err
@@ -96,23 +96,23 @@ func (s *RedisService) GetTotalUploadTask(ctx context.Context, organizationID, t
 }
 
 // Lưu lỗi upload
-func (s *RedisService) SetUploadError(ctx context.Context, organizationID, topicID, key, errMsg string) error {
-	redisKey := buildKey(organizationID, topicID, "errors")
+func (s *RedisService) SetUploadError(ctx context.Context, topicID, key, errMsg string) error {
+	redisKey := buildKey(topicID, "errors")
 	return db.Client.HSet(ctx, redisKey, key, errMsg).Err()
 }
 
 // Lấy tất cả lỗi
-func (s *RedisService) GetUploadErrors(ctx context.Context, organizationID, topicID string) (map[string]string, error) {
-	redisKey := buildKey(organizationID, topicID, "errors")
+func (s *RedisService) GetUploadErrors(ctx context.Context, topicID string) (map[string]string, error) {
+	redisKey := buildKey(topicID, "errors")
 	return db.Client.HGetAll(ctx, redisKey).Result()
 }
 
 // Xoá progress + errors
-func (s *RedisService) DeleteUploadProgress(ctx context.Context, organizationID, topicID string) error {
-	totalKey := buildKey(organizationID, topicID, "total")
-	remainKey := buildKey(organizationID, topicID, "remaining")
-	errorKey := buildKey(organizationID, topicID, "errors")
-	progressKey := buildKey(organizationID, topicID, "progress")
+func (s *RedisService) DeleteUploadProgress(ctx context.Context, topicID string) error {
+	totalKey := buildKey(topicID, "total")
+	remainKey := buildKey(topicID, "remaining")
+	errorKey := buildKey(topicID, "errors")
+	progressKey := buildKey(topicID, "progress")
 	pipe := db.Client.TxPipeline()
 	pipe.Del(ctx, totalKey)
 	pipe.Del(ctx, remainKey)
@@ -123,9 +123,9 @@ func (s *RedisService) DeleteUploadProgress(ctx context.Context, organizationID,
 }
 
 // HasAnyUploadInProgress check xem trong org còn topic nào chưa upload xong không
-func (s *RedisService) HasAnyUploadInProgress(ctx context.Context, organizationID string) (bool, error) {
-	// pattern cho tất cả remaining key của org này
-	pattern := fmt.Sprintf("topic_upload:%s:*:remaining", organizationID)
+func (s *RedisService) HasAnyUploadInProgress(ctx context.Context) (bool, error) {
+	// pattern cho tất cả remaining key (toàn cục)
+	pattern := "topic_upload:*:remaining"
 
 	iter := db.Client.Scan(ctx, 0, pattern, 0).Iterator()
 	for iter.Next(ctx) {

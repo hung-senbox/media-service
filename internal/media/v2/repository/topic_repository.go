@@ -30,6 +30,8 @@ type TopicRepository interface {
 	DeleteImageKey(ctx context.Context, topicID string, languageID uint, imageType string) error
 	GetTopicsByIDs(ctx context.Context, topicIDs []string) ([]model.Topic, error)
 	GetTopicByID(ctx context.Context, id string) (*model.Topic, error)
+	GetAllTopics(ctx context.Context) ([]model.Topic, error)
+	GetAllTopicsIsPublished(ctx context.Context) ([]model.Topic, error)
 }
 
 type topicRepository struct {
@@ -538,4 +540,28 @@ func (r *topicRepository) GetTopicByID(ctx context.Context, id string) (*model.T
 		return nil, err
 	}
 	return &topic, nil
+}
+
+func (r *topicRepository) GetAllTopics(ctx context.Context) ([]model.Topic, error) {
+	var topics []model.Topic
+	cursor, err := r.topicCollection.Find(ctx, bson.M{})
+	if err != nil {
+		return nil, err
+	}
+	if err := cursor.All(ctx, &topics); err != nil {
+		return nil, err
+	}
+	return topics, nil
+}
+
+func (r *topicRepository) GetAllTopicsIsPublished(ctx context.Context) ([]model.Topic, error) {
+	var topics []model.Topic
+	cursor, err := r.topicCollection.Find(ctx, bson.M{"is_published": true})
+	if err != nil {
+		return nil, err
+	}
+	if err := cursor.All(ctx, &topics); err != nil {
+		return nil, err
+	}
+	return topics, nil
 }
