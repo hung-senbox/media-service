@@ -53,10 +53,10 @@ func (uc *getTopicResourcesWebUseCase) GetTopicResourcesByTopicAndStudent4Web(ct
 }
 
 func (uc *getTopicResourcesWebUseCase) GetTopicResourcesByTopic4Web(ctx context.Context, topicID string) ([]*response.GetTopicResourcesResponse4Web, error) {
-	currentUser, _ := ctx.Value(constants.CurrentUserKey).(*gw_response.CurrentUser)
-	if currentUser.IsSuperAdmin || currentUser.OrganizationAdmin.ID == "" {
-		return nil, fmt.Errorf("access denied")
-	}
+	// currentUser, _ := ctx.Value(constants.CurrentUserKey).(*gw_response.CurrentUser)
+	// if currentUser.IsSuperAdmin || currentUser.OrganizationAdmin.ID == "" {
+	// 	return nil, fmt.Errorf("access denied")
+	// }
 	topicResources, err := uc.topicResourceRepository.GetTopicResouresByTopic(ctx, topicID)
 	if err != nil {
 		return nil, err

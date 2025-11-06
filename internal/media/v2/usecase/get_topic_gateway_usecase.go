@@ -32,11 +32,11 @@ func NewGetTopicGatewayUseCase(topicRepo repository.TopicRepository, cachedUserG
 
 func (uc *getTopicGatewayUseCase) GetTopics4Student4Gw(ctx context.Context, studentID string) ([]*response.GetTopic4StudentResponse4Gw, error) {
 	// get org by student
-	student, err := uc.cachedUserGw.GetStudentInfo(ctx, studentID)
-	if err != nil {
-		return nil, err
-	}
-	topics, err := uc.topicRepo.GetAllTopicByOrganizationIDAndIsPublished(ctx, student.OrganizationID)
+	// student, err := uc.cachedUserGw.GetStudentInfo(ctx, studentID)
+	// if err != nil {
+	// 	return nil, err
+	// }
+	topics, err := uc.topicRepo.GetAllTopicsIsPublished(ctx)
 	if err != nil {
 		return nil, err
 	}
@@ -84,9 +84,11 @@ func (uc *getTopicGatewayUseCase) GetTopic4Gw(ctx context.Context, topicID strin
 
 	return mapper.ToTopicResponses4GW(topic, appLang), nil
 }
+
+// Hien tai khong dung den organizationID
 func (uc *getTopicGatewayUseCase) GetAllTopicsByOrganization4Gw(ctx context.Context, organizationID string) ([]*response.TopicResponse4GW, error) {
 
-	topics, err := uc.topicRepo.GetAllTopicByOrganizationIDAndIsPublished(ctx, organizationID)
+	topics, err := uc.topicRepo.GetAllTopicsIsPublished(ctx)
 	if err != nil {
 		return nil, err
 	}
