@@ -320,8 +320,26 @@ func (s *userResourceService) UpdateResourceStatus(ctx context.Context, id strin
 		return fmt.Errorf("resource not found")
 	}
 
+	var color string
+
+	switch req.Status {
+	case 0:
+		color = "#9E9E9E"
+	case 1:
+		color = "#FFEB3B"
+	case 2:
+		color = "#F44336"
+	case 3:
+		color = "#4CAF50"
+	case 4:
+		color = "#FF9800"
+	default:
+		return fmt.Errorf("status not supported")
+	}
+
 	updateFields := bson.M{
 		"status":  req.Status,
+		"color":   color,
 		"updated_at": time.Now(),
 	}
 
