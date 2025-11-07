@@ -349,3 +349,40 @@ func ToTopic2Assign4Web(topics []model.Topic, appLanguage uint) []*response.Topi
 
 	return res
 }
+
+func ToTopicResponse4App(t *model.Topic, appLanguage uint) *response.GetTopicResponse4App {
+	// Nếu topic chưa publish thì bỏ qua
+	if !t.IsPublished {
+		return nil
+	}
+
+	// Tìm language config phù hợp
+	var langConfig *model.TopicLanguageConfig
+	for _, lc := range t.LanguageConfig {
+		if lc.LanguageID == appLanguage {
+			langConfig = &lc
+			break
+		}
+	}
+
+	if langConfig == nil {
+		return nil
+	}
+
+	// Lấy ảnh full_background (nếu có)
+	mainImageUrl := ""
+	for _, img := range langConfig.Images {
+		if img.ImageType == "full_background" {
+			mainImageUrl = img.UploadedUrl
+			break
+		}
+	}
+
+	// Trả về response
+	return &response.GetTopicResponse4App{
+		ID:           t.ID.Hex(),
+		IsPublished:  t.IsPublished,
+		Title:        langConfig.Title,
+		MainImageUrl: mainImageUrl,
+	}
+}

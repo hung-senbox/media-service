@@ -25,9 +25,10 @@ type GetTopicResourcesResponse4Web struct {
 }
 
 type GetTopicResourcesResponse4App struct {
-	ID        string    `json:"id"`
-	FileName  string    `json:"file_name"`
-	ImageUrl  string    `json:"image_url"`
-	CreatedAt time.Time `json:"created_at"`
-	PicID     string    `json:"pic_id"`
+	ID        string               `json:"id"`
+	FileName  string               `json:"file_name"`
+	ImageUrl  string               `json:"image_url"`
+	CreatedAt time.Time            `json:"created_at"`
+	PicID     string               `json:"pic_id"`
+	Topic     GetTopicResponse4App `json:"topic"`
 }

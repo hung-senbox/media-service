@@ -173,12 +173,15 @@ func ToGetTopicResourcesResponse4App(
 	ctx context.Context,
 	topicResources *model.TopicResource,
 	resourceImageUrl string,
+	topic response.GetTopicResponse4App,
 ) *response.GetTopicResourcesResponse4App {
+
 	return &response.GetTopicResourcesResponse4App{
 		ID:        topicResources.ID.Hex(),
 		FileName:  topicResources.FileName,
 		ImageUrl:  resourceImageUrl,
 		CreatedAt: topicResources.CreatedAt,
 		PicID:     topicResources.CreatedAt.Format("02 Jan 2006 15:04"),
+		Topic:     topic,
 	}
 }

@@ -40,7 +40,7 @@ func SetupRouter(consulClient *api.Client, cacheClientRedis *cache.RedisCache, t
 	getUploadProgressUseCasev2 := usecase.NewGetUploadProgressUseCase(topicRepov2, redisService)
 	deleteTopicFileUseCasev2 := usecase.NewDeleteTopicFileUseCase(topicRepov2, fileGateway)
 	getTopicResourcesWebUseCasev2 := usecase.NewGetTopicResourcesWebUseCase(topicResourceRepov2, fileGateway)
-	getTopicResourceAppUseCasev2 := usecase.NewGetTopicResourceAppUseCase(topicResourceRepov2)
+	getTopicResourceAppUseCasev2 := usecase.NewGetTopicResourceAppUseCase(topicRepov2, topicResourceRepov2, fileGateway)
 
 	// --- Service ---
 	topicServicev2 := service.NewTopicService(uploadTopicUseCasev2, getUploadProgressUseCasev2, getTopicAppUseCasev2, getTopicWebUseCasev2, getTopicGatewayUseCasev2, deleteTopicFileUseCasev2)

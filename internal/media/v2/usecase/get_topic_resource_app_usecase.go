@@ -2,6 +2,7 @@ package usecase
 
 import (
 	"context"
+	"media-service/helper"
 	"media-service/internal/gateway"
 	gw_request "media-service/internal/gateway/dto/request"
 	"media-service/internal/media/model"
@@ -16,12 +17,13 @@ type GetTopicResourceAppUseCase interface {
 }
 
 type getTopicResourceAppUseCase struct {
+	topicRepo               repository.TopicRepository
 	topicResourceRepository repository.TopicResourceRepository
 	fileGateway             gateway.FileGateway
 }
 
-func NewGetTopicResourceAppUseCase(topicResourceRepository repository.TopicResourceRepository) GetTopicResourceAppUseCase {
-	return &getTopicResourceAppUseCase{topicResourceRepository: topicResourceRepository}
+func NewGetTopicResourceAppUseCase(topicRepo repository.TopicRepository, topicResourceRepository repository.TopicResourceRepository, fileGateway gateway.FileGateway) GetTopicResourceAppUseCase {
+	return &getTopicResourceAppUseCase{topicRepo: topicRepo, topicResourceRepository: topicResourceRepository, fileGateway: fileGateway}
 }
 
 func (uc *getTopicResourceAppUseCase) GetOutputResources4App(ctx context.Context, studentID string, month, year int) ([]*response.GetTopicResourcesResponse4App, error) {
@@ -36,14 +38,21 @@ func (uc *getTopicResourceAppUseCase) GetOutputResources4App(ctx context.Context
 		if tr == nil {
 			continue
 		}
-		var imageUrl string
+		resourceImageUrl := ""
 		if tr.ImageKey != "" {
-			if url, err := uc.fileGateway.GetImageUrl(ctx, gw_request.GetFileUrlRequest{Key: tr.ImageKey, Mode: "private"}); err == nil && url != nil {
-				imageUrl = *url
+			imageUrl, _ := uc.fileGateway.GetImageUrl(ctx, gw_request.GetFileUrlRequest{Key: tr.ImageKey, Mode: "private"})
+			if imageUrl != nil {
+				resourceImageUrl = *imageUrl
 			}
 		}
 		if tr.IsOutput {
-			result = append(result, mapper.ToGetTopicResourcesResponse4App(ctx, tr, imageUrl))
+			topic, err := uc.topicRepo.GetByID(ctx, tr.TopicID)
+			if err != nil {
+				return nil, err
+			}
+			appLanguage := helper.GetAppLanguage(ctx, 1)
+			topicResp := mapper.ToTopicResponse4App(topic, appLanguage)
+			result = append(result, mapper.ToGetTopicResourcesResponse4App(ctx, tr, resourceImageUrl, *topicResp))
 		}
 	}
 	return result, nil
