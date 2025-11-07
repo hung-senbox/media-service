@@ -51,6 +51,33 @@ func (uc *getTopicResourceAppUseCase) GetOutputResources4App(ctx context.Context
 				return nil, err
 			}
 			appLanguage := helper.GetAppLanguage(ctx, 1)
+			// Select language config by LanguageID instead of using it as slice index
+			var langCfg *model.TopicLanguageConfig
+			for i := range topic.LanguageConfig {
+				if topic.LanguageConfig[i].LanguageID == appLanguage {
+					langCfg = &topic.LanguageConfig[i]
+					break
+				}
+			}
+			// fallback to first language if matching language not found
+			if langCfg == nil && len(topic.LanguageConfig) > 0 {
+				langCfg = &topic.LanguageConfig[0]
+			}
+			if langCfg != nil {
+				for i := range langCfg.Images {
+					img := &langCfg.Images[i]
+					if img.ImageKey != "" {
+						url, err := uc.fileGateway.GetImageUrl(ctx, gw_request.GetFileUrlRequest{
+							Key:  img.ImageKey,
+							Mode: "private",
+						})
+						if err == nil && url != nil {
+							img.UploadedUrl = *url
+						}
+					}
+				}
+			}
+
 			topicResp := mapper.ToTopicResponse4App(topic, appLanguage)
 			result = append(result, mapper.ToGetTopicResourcesResponse4App(ctx, tr, resourceImageUrl, *topicResp))
 		}
