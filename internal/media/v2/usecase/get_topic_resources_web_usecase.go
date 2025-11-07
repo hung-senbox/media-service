@@ -15,7 +15,7 @@ import (
 type GetTopicResourcesWebUseCase interface {
 	GetTopicResourcesByTopicAndStudent4Web(ctx context.Context, topicID string, studentID string) ([]*response.GetTopicResourcesResponse4Web, error)
 	GetTopicResourcesByTopic4Web(ctx context.Context, topicID string) ([]*response.GetTopicResourcesResponse4Web, error)
-	GetOutputResources4Web(ctx context.Context, studentID string) ([]*response.GetTopicResourcesResponse4Web, error)
+	GetOutputResources4Web(ctx context.Context, topicID, studentID string) ([]*response.GetTopicResourcesResponse4Web, error)
 }
 
 type getTopicResourcesWebUseCase struct {
@@ -78,8 +78,8 @@ func (uc *getTopicResourcesWebUseCase) GetTopicResourcesByTopic4Web(ctx context.
 	return result, nil
 }
 
-func (uc *getTopicResourcesWebUseCase) GetOutputResources4Web(ctx context.Context, studentID string) ([]*response.GetTopicResourcesResponse4Web, error) {
-	topicResources, err := uc.topicResourceRepository.GetTopicResouresByStudentID(ctx, studentID)
+func (uc *getTopicResourcesWebUseCase) GetOutputResources4Web(ctx context.Context, topicID, studentID string) ([]*response.GetTopicResourcesResponse4Web, error) {
+	topicResources, err := uc.topicResourceRepository.GetTopicResources(ctx, topicID, studentID)
 	if err != nil {
 		return nil, err
 	}

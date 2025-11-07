@@ -142,7 +142,12 @@ func (h *TopicResourceHandler) GetOutputResources4Web(c *gin.Context) {
 		helper.SendError(c, http.StatusBadRequest, nil, helper.ErrInvalidRequest)
 		return
 	}
-	res, err := h.topicResourceService.GetOutputResources4Web(c.Request.Context(), studentID)
+	topicID := c.Param("topic_id")
+	if topicID == "" {
+		helper.SendError(c, http.StatusBadRequest, nil, helper.ErrInvalidRequest)
+		return
+	}
+	res, err := h.topicResourceService.GetOutputResources4Web(c.Request.Context(), topicID, studentID)
 	if err != nil {
 		helper.SendError(c, http.StatusInternalServerError, err, helper.ErrInvalidOperation)
 		return
