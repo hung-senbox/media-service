@@ -32,7 +32,9 @@ func (uc *getTopicResourceAppUseCase) GetOutputResources4App(ctx context.Context
 		return nil, err
 	}
 	// filter topic resources by month
-	topicResources = filterTopicResourcesByMonth(topicResources, month, year)
+	if month != 0 && year != 0 {
+		topicResources = filterTopicResourcesByMonth(topicResources, month, year)
+	}
 	result := make([]*response.GetTopicResourcesResponse4App, 0, len(topicResources))
 	for _, tr := range topicResources {
 		if tr == nil {

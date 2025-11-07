@@ -28,6 +28,7 @@ type TopicResourceService interface {
 	SetOutputTopicResource(ctx context.Context, req request.SetOutputTopicResourceRequest) error
 	GetOutputResources4Web(ctx context.Context, topicID, studentID string) ([]*response.GetTopicResourcesResponse4Web, error)
 	GetOutputResources4App(ctx context.Context, studentID string, month, year int) ([]*response.GetTopicResourcesResponse4App, error)
+	OffOutputTopicResource(ctx context.Context, topicResourceID string) error
 }
 
 type topicResourceService struct {
@@ -274,4 +275,30 @@ func (s *topicResourceService) GetOutputResources4Web(ctx context.Context, topic
 
 func (s *topicResourceService) GetOutputResources4App(ctx context.Context, studentID string, month, year int) ([]*response.GetTopicResourcesResponse4App, error) {
 	return s.getTopicResourceAppUseCase.GetOutputResources4App(ctx, studentID, month, year)
+}
+
+func (s *topicResourceService) OffOutputTopicResource(ctx context.Context, topicResourceID string) error {
+	objectID, err := primitive.ObjectIDFromHex(topicResourceID)
+	if err != nil {
+		return err
+	}
+
+	topicResource, err := s.topicResourceRepository.GetTopicResource(ctx, objectID)
+	if err != nil {
+		return err
+	}
+
+	if topicResource == nil {
+		return fmt.Errorf("topic resource not found")
+	}
+
+	topicResource.IsOutput = false
+	topicResource.UpdatedAt = time.Now()
+
+	err = s.topicResourceRepository.UpdateTopicResource(ctx, objectID, topicResource)
+	if err != nil {
+		return err
+	}
+
+	return nil
 }

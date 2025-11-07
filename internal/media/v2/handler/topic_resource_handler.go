@@ -1,6 +1,7 @@
 package handler
 
 import (
+	"fmt"
 	"media-service/helper"
 	"media-service/internal/media/v2/dto/request"
 	"media-service/internal/media/v2/service"
@@ -163,19 +164,33 @@ func (h *TopicResourceHandler) GetOutputResources4App(c *gin.Context) {
 	}
 	month := c.Query("month")
 	year := c.Query("year")
-	if month == "" || year == "" {
-		helper.SendError(c, http.StatusBadRequest, nil, helper.ErrInvalidRequest)
-		return
-	}
-	monthInt, err := strconv.Atoi(month)
-	if err != nil {
-		helper.SendError(c, http.StatusBadRequest, err, helper.ErrInvalidRequest)
-		return
-	}
-	yearInt, err := strconv.Atoi(year)
-	if err != nil {
-		helper.SendError(c, http.StatusBadRequest, err, helper.ErrInvalidRequest)
-		return
+
+	// Default: no month/year filter
+	monthInt := 0
+	yearInt := 0
+
+	// If both provided, validate and parse; otherwise skip filtering
+	if month != "" && year != "" {
+		m, err := strconv.Atoi(month)
+		if err != nil {
+			helper.SendError(c, http.StatusBadRequest, fmt.Errorf("month must be an integer"), helper.ErrInvalidRequest)
+			return
+		}
+		y, err := strconv.Atoi(year)
+		if err != nil {
+			helper.SendError(c, http.StatusBadRequest, fmt.Errorf("year must be an integer"), helper.ErrInvalidRequest)
+			return
+		}
+		if m < 1 || m > 12 {
+			helper.SendError(c, http.StatusBadRequest, fmt.Errorf("month must be between 1 and 12"), helper.ErrInvalidRequest)
+			return
+		}
+		if y < 1 {
+			helper.SendError(c, http.StatusBadRequest, fmt.Errorf("year must be greater than 0"), helper.ErrInvalidRequest)
+			return
+		}
+		monthInt = m
+		yearInt = y
 	}
 	res, err := h.topicResourceService.GetOutputResources4App(c.Request.Context(), studentID, monthInt, yearInt)
 	if err != nil {
@@ -183,4 +198,18 @@ func (h *TopicResourceHandler) GetOutputResources4App(c *gin.Context) {
 		return
 	}
 	helper.SendSuccess(c, http.StatusOK, "get output resources success", res)
+}
+
+func (h *TopicResourceHandler) OffOutputTopicResource(c *gin.Context) {
+	topicResourceID := c.Param("topic_resource_id")
+	if topicResourceID == "" {
+		helper.SendError(c, http.StatusBadRequest, nil, helper.ErrInvalidRequest)
+		return
+	}
+	err := h.topicResourceService.OffOutputTopicResource(c.Request.Context(), topicResourceID)
+	if err != nil {
+		helper.SendError(c, http.StatusInternalServerError, err, helper.ErrInvalidOperation)
+		return
+	}
+	helper.SendSuccess(c, http.StatusOK, "off output topic resource success", nil)
 }

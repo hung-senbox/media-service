@@ -27,6 +27,7 @@ func RegisterTopicResourceRoutes(r *gin.Engine, h *handler.TopicResourceHandler,
 			topicResourceAdmin.GET("/topic/:topic_id", h.GetTopicResourcesByTopic4Web)
 			topicResourceAdmin.GET("/topic/:topic_id/student/:student_id", h.GetTopicResourcesByTopicAndStudent4Web)
 			topicResourceAdmin.POST("/output", h.SetOutputTopicResource)
+			topicResourceAdmin.DELETE("/output/:topic_resource_id", h.OffOutputTopicResource)
 			topicResourceAdmin.GET("/output/topic/:topic_id/student/:student_id", h.GetOutputResources4Web)
 		}
 	}
