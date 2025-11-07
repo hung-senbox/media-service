@@ -5,6 +5,7 @@ import (
 	"media-service/internal/media/v2/dto/request"
 	"media-service/internal/media/v2/service"
 	"net/http"
+	"strconv"
 
 	"github.com/gin-gonic/gin"
 )
@@ -119,4 +120,62 @@ func (h *TopicResourceHandler) GetTopicResourcesByTopicAndStudent4Web(c *gin.Con
 		return
 	}
 	helper.SendSuccess(c, http.StatusOK, "get topic resources success", res)
+}
+
+func (h *TopicResourceHandler) SetOutputTopicResource(c *gin.Context) {
+	var req request.SetOutputTopicResourceRequest
+	if err := c.ShouldBind(&req); err != nil {
+		helper.SendError(c, http.StatusBadRequest, err, helper.ErrInvalidRequest)
+		return
+	}
+	err := h.topicResourceService.SetOutputTopicResource(c.Request.Context(), req)
+	if err != nil {
+		helper.SendError(c, http.StatusInternalServerError, err, helper.ErrInvalidOperation)
+		return
+	}
+	helper.SendSuccess(c, http.StatusOK, "set output topic resource success", nil)
+}
+
+func (h *TopicResourceHandler) GetOutputResources4Web(c *gin.Context) {
+	studentID := c.Param("student_id")
+	if studentID == "" {
+		helper.SendError(c, http.StatusBadRequest, nil, helper.ErrInvalidRequest)
+		return
+	}
+	res, err := h.topicResourceService.GetOutputResources4Web(c.Request.Context(), studentID)
+	if err != nil {
+		helper.SendError(c, http.StatusInternalServerError, err, helper.ErrInvalidOperation)
+		return
+	}
+	helper.SendSuccess(c, http.StatusOK, "get output resources success", res)
+}
+
+func (h *TopicResourceHandler) GetOutputResources4App(c *gin.Context) {
+	studentID := c.Param("student_id")
+	if studentID == "" {
+		helper.SendError(c, http.StatusBadRequest, nil, helper.ErrInvalidRequest)
+		return
+	}
+	month := c.Query("month")
+	year := c.Query("year")
+	if month == "" || year == "" {
+		helper.SendError(c, http.StatusBadRequest, nil, helper.ErrInvalidRequest)
+		return
+	}
+	monthInt, err := strconv.Atoi(month)
+	if err != nil {
+		helper.SendError(c, http.StatusBadRequest, err, helper.ErrInvalidRequest)
+		return
+	}
+	yearInt, err := strconv.Atoi(year)
+	if err != nil {
+		helper.SendError(c, http.StatusBadRequest, err, helper.ErrInvalidRequest)
+		return
+	}
+	res, err := h.topicResourceService.GetOutputResources4App(c.Request.Context(), studentID, monthInt, yearInt)
+	if err != nil {
+		helper.SendError(c, http.StatusInternalServerError, err, helper.ErrInvalidOperation)
+		return
+	}
+	helper.SendSuccess(c, http.StatusOK, "get output resources success", res)
 }

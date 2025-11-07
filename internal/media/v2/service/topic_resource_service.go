@@ -25,6 +25,9 @@ type TopicResourceService interface {
 	DeleteTopicResource(ctx context.Context, topicResourceID string) error
 	GetTopicResourcesByTopic4Web(ctx context.Context, topicID string) ([]*response.GetTopicResourcesResponse4Web, error)
 	GetTopicResourcesByTopicAndStudent4Web(ctx context.Context, topicID, studentID string) ([]*response.GetTopicResourcesResponse4Web, error)
+	SetOutputTopicResource(ctx context.Context, req request.SetOutputTopicResourceRequest) error
+	GetOutputResources4Web(ctx context.Context, studentID string) ([]*response.GetTopicResourcesResponse4Web, error)
+	GetOutputResources4App(ctx context.Context, studentID string, month, year int) ([]*response.GetTopicResourcesResponse4App, error)
 }
 
 type topicResourceService struct {
@@ -33,6 +36,7 @@ type topicResourceService struct {
 	fileGateway                 gateway.FileGateway
 	userGw                      gateway.UserGateway
 	getTopicResourcesWebUseCase usecase.GetTopicResourcesWebUseCase
+	getTopicResourceAppUseCase  usecase.GetTopicResourceAppUseCase
 }
 
 func NewTopicResourceService(
@@ -41,6 +45,7 @@ func NewTopicResourceService(
 	fileGateway gateway.FileGateway,
 	userGw gateway.UserGateway,
 	getTopicResourcesWebUseCase usecase.GetTopicResourcesWebUseCase,
+	getTopicResourceAppUseCase usecase.GetTopicResourceAppUseCase,
 ) TopicResourceService {
 	return &topicResourceService{
 		topicResourceRepository:     topicResourceRepository,
@@ -48,6 +53,7 @@ func NewTopicResourceService(
 		fileGateway:                 fileGateway,
 		userGw:                      userGw,
 		getTopicResourcesWebUseCase: getTopicResourcesWebUseCase,
+		getTopicResourceAppUseCase:  getTopicResourceAppUseCase,
 	}
 }
 
@@ -228,4 +234,44 @@ func (s *topicResourceService) GetTopicResourcesByTopic4Web(ctx context.Context,
 
 func (s *topicResourceService) GetTopicResourcesByTopicAndStudent4Web(ctx context.Context, topicID, studentID string) ([]*response.GetTopicResourcesResponse4Web, error) {
 	return s.getTopicResourcesWebUseCase.GetTopicResourcesByTopicAndStudent4Web(ctx, topicID, studentID)
+}
+
+func (s *topicResourceService) SetOutputTopicResource(ctx context.Context, req request.SetOutputTopicResourceRequest) error {
+
+	objectID, err := primitive.ObjectIDFromHex(req.TopicResourceID)
+	if err != nil {
+		return err
+	}
+
+	topicResource, err := s.topicResourceRepository.GetTopicResource(ctx, objectID)
+	if err != nil {
+		return err
+	}
+
+	// neu target student va topic khong trung voi topicResource thi khong the set output
+	if topicResource.StudentID != req.TargetStudentID || topicResource.TopicID != req.TargetTopicID {
+		return fmt.Errorf("target student and topic do not match the topic resource")
+	}
+
+	if topicResource == nil {
+		return fmt.Errorf("topic resource not found")
+	}
+
+	topicResource.IsOutput = true
+	topicResource.UpdatedAt = time.Now()
+
+	err = s.topicResourceRepository.UpdateTopicResource(ctx, objectID, topicResource)
+	if err != nil {
+		return err
+	}
+
+	return nil
+}
+
+func (s *topicResourceService) GetOutputResources4Web(ctx context.Context, studentID string) ([]*response.GetTopicResourcesResponse4Web, error) {
+	return s.getTopicResourcesWebUseCase.GetOutputResources4Web(ctx, studentID)
+}
+
+func (s *topicResourceService) GetOutputResources4App(ctx context.Context, studentID string, month, year int) ([]*response.GetTopicResourcesResponse4App, error) {
+	return s.getTopicResourceAppUseCase.GetOutputResources4App(ctx, studentID, month, year)
 }

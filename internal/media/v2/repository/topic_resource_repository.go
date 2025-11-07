@@ -2,6 +2,7 @@ package repository
 
 import (
 	"context"
+	"fmt"
 	"media-service/internal/media/model"
 
 	"go.mongodb.org/mongo-driver/bson"
@@ -18,6 +19,7 @@ type TopicResourceRepository interface {
 	GetTopicResouresByTopic(ctx context.Context, topicID string) ([]*model.TopicResource, error)
 	GetTopicResouresByStudentID(ctx context.Context, studentID string) ([]*model.TopicResource, error)
 	GetTopicResouresByTopicAndStudent(ctx context.Context, topicID, studentID string) ([]*model.TopicResource, error)
+	SetOutputTopicResource(ctx context.Context, topicResourceID string) error
 }
 
 type topicResourceRepository struct {
@@ -129,4 +131,13 @@ func (r *topicResourceRepository) GetTopicResouresByTopicAndStudent(ctx context.
 		return nil, err
 	}
 	return result, nil
+}
+
+func (r *topicResourceRepository) SetOutputTopicResource(ctx context.Context, topicResourceID string) error {
+	objectID, err := primitive.ObjectIDFromHex(topicResourceID)
+	if err != nil {
+		return fmt.Errorf("invalid topic resource id: %w", err)
+	}
+	_, err = r.topicResourceCollection.UpdateOne(ctx, bson.M{"_id": objectID}, bson.M{"$set": bson.M{"is_output": true}})
+	return err
 }

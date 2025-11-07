@@ -26,6 +26,17 @@ func RegisterTopicResourceRoutes(r *gin.Engine, h *handler.TopicResourceHandler,
 		{
 			topicResourceAdmin.GET("/topic/:topic_id", h.GetTopicResourcesByTopic4Web)
 			topicResourceAdmin.GET("/topic/:topic_id/student/:student_id", h.GetTopicResourcesByTopicAndStudent4Web)
+			topicResourceAdmin.POST("/output", h.SetOutputTopicResource)
+			topicResourceAdmin.GET("/output/student/:student_id", h.GetOutputResources4Web)
+		}
+	}
+
+	userGroup := r.Group("/api/v2/user")
+	userGroup.Use(middleware.Secured(userGw))
+	{
+		topicResourceUser := userGroup.Group("/resources")
+		{
+			topicResourceUser.GET("/output/student/:student_id", h.GetOutputResources4App)
 		}
 	}
 }

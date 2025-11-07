@@ -15,6 +15,7 @@ import (
 type GetTopicResourcesWebUseCase interface {
 	GetTopicResourcesByTopicAndStudent4Web(ctx context.Context, topicID string, studentID string) ([]*response.GetTopicResourcesResponse4Web, error)
 	GetTopicResourcesByTopic4Web(ctx context.Context, topicID string) ([]*response.GetTopicResourcesResponse4Web, error)
+	GetOutputResources4Web(ctx context.Context, studentID string) ([]*response.GetTopicResourcesResponse4Web, error)
 }
 
 type getTopicResourcesWebUseCase struct {
@@ -73,6 +74,29 @@ func (uc *getTopicResourcesWebUseCase) GetTopicResourcesByTopic4Web(ctx context.
 			}
 		}
 		result = append(result, mapper.ToGetTopicResourcesResponse4Web(ctx, tr, imageUrl))
+	}
+	return result, nil
+}
+
+func (uc *getTopicResourcesWebUseCase) GetOutputResources4Web(ctx context.Context, studentID string) ([]*response.GetTopicResourcesResponse4Web, error) {
+	topicResources, err := uc.topicResourceRepository.GetTopicResouresByStudentID(ctx, studentID)
+	if err != nil {
+		return nil, err
+	}
+	result := make([]*response.GetTopicResourcesResponse4Web, 0, len(topicResources))
+	for _, tr := range topicResources {
+		if tr == nil {
+			continue
+		}
+		var imageUrl string
+		if tr.ImageKey != "" {
+			if url, err := uc.fileGateway.GetImageUrl(ctx, gw_request.GetFileUrlRequest{Key: tr.ImageKey, Mode: "private"}); err == nil && url != nil {
+				imageUrl = *url
+			}
+		}
+		if tr.IsOutput {
+			result = append(result, mapper.ToGetTopicResourcesResponse4Web(ctx, tr, imageUrl))
+		}
 	}
 	return result, nil
 }
