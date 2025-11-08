@@ -10,6 +10,7 @@ import (
 	"media-service/internal/media/v2/mapper"
 	"media-service/internal/media/v2/repository"
 	s3svc "media-service/internal/s3"
+	"media-service/logger"
 	"media-service/pkg/constants"
 )
 
@@ -155,6 +156,8 @@ func (uc *getTopicWebUseCase) populateMediaUrlsForTopic(ctx context.Context, top
 				url, err := uc.s3Service.Get(ctx, img.ImageKey, nil)
 				if err == nil && url != nil {
 					img.UploadedUrl = *url
+				} else {
+					logger.WriteLogEx("get_topic_web_usecase", "populateMediaUrlsForTopic_images", fmt.Sprintf("error getting image url: %v", err))
 				}
 			}
 		}
@@ -164,6 +167,8 @@ func (uc *getTopicWebUseCase) populateMediaUrlsForTopic(ctx context.Context, top
 			url, err := uc.s3Service.Get(ctx, langCfg.Video.VideoKey, nil)
 			if err == nil && url != nil {
 				langCfg.Video.UploadedUrl = *url
+			} else {
+				logger.WriteLogEx("get_topic_web_usecase", "populateMediaUrlsForTopic_video", fmt.Sprintf("error getting image url: %v", err))
 			}
 		}
 
@@ -172,6 +177,8 @@ func (uc *getTopicWebUseCase) populateMediaUrlsForTopic(ctx context.Context, top
 			url, err := uc.s3Service.Get(ctx, langCfg.Audio.AudioKey, nil)
 			if err == nil && url != nil {
 				langCfg.Audio.UploadedUrl = *url
+			} else {
+				logger.WriteLogEx("get_topic_web_usecase", "populateMediaUrlsForTopic_audio", fmt.Sprintf("error getting image url: %v", err))
 			}
 		}
 	}

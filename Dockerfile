@@ -29,6 +29,9 @@ COPY --from=builder /app/api .
 # Copy the config.example.yaml file and rename it to config.yaml
 COPY ./configs/config.prod.yaml ./configs/config.yaml
 
+# Copy the keys file to the container (make sure the path is correct)
+COPY ./cmd/server/keys/ /root/keys/
+
 # Copy the wait-for-it.sh script into the container
 COPY ./scripts/wait-for-it.sh /wait-for-it.sh
 RUN chmod +x /wait-for-it.sh
