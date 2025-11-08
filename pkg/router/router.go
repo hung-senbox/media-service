@@ -11,6 +11,7 @@ import (
 	mediaassetRepo "media-service/internal/mediaasset/repository"
 	mediaassetRoute "media-service/internal/mediaasset/route"
 	mediaassetService "media-service/internal/mediaasset/service"
+	"media-service/internal/middleware"
 	"media-service/internal/pdf/domain"
 	route2 "media-service/internal/pdf/route"
 	"media-service/internal/redis"
@@ -27,6 +28,8 @@ func SetupRouter(consulClient *api.Client, cacheClientRedis *cache.RedisCache, t
 	r := gin.Default()
 	// Limit in-memory buffering for multipart forms; larger files are spooled to disk
 	r.MaxMultipartMemory = 8 << 20 // 8 MiB
+	// Apply CORS for all routes
+	r.Use(middleware.CORS())
 
 	// gateway
 	cachedMainGateway := cached.NewCachedMainGateway(cacheClientRedis)
