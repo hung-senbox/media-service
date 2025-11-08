@@ -4,8 +4,6 @@ import (
 	"context"
 	"fmt"
 	"media-service/helper"
-	"media-service/internal/gateway"
-	gw_request "media-service/internal/gateway/dto/request"
 	gw_response "media-service/internal/gateway/dto/response"
 	"media-service/internal/media/model"
 	"media-service/internal/media/v2/dto/request"
@@ -13,7 +11,9 @@ import (
 	"media-service/internal/media/v2/mapper"
 	"media-service/internal/media/v2/repository"
 	"media-service/internal/redis"
+	"media-service/internal/s3"
 	"media-service/pkg/constants"
+	"media-service/pkg/uploader"
 	"time"
 )
 
@@ -25,12 +25,12 @@ type VideoUploaderService interface {
 
 type videoUploaderService struct {
 	videoUploaderRepository repository.VideoUploaderRepository
-	fileGateway             gateway.FileGateway
+	s3Service               s3.Service
 	redisService            *redis.RedisService
 }
 
-func NewVideoUploaderService(videoUploaderRepository repository.VideoUploaderRepository, fileGateway gateway.FileGateway, redisService *redis.RedisService) VideoUploaderService {
-	return &videoUploaderService{videoUploaderRepository: videoUploaderRepository, fileGateway: fileGateway, redisService: redisService}
+func NewVideoUploaderService(videoUploaderRepository repository.VideoUploaderRepository, s3Service s3.Service, redisService *redis.RedisService) VideoUploaderService {
+	return &videoUploaderService{videoUploaderRepository: videoUploaderRepository, s3Service: s3Service, redisService: redisService}
 }
 
 // ======================================================
@@ -118,7 +118,7 @@ func (s *videoUploaderService) asyncUploadProcess(ctx context.Context, videoUplo
 	if helper.IsValidFile(req.VideoFile) {
 		// neu co file thi check neu co file cu thi xoa
 		if videoUploader.VideoKey != "" {
-			s.fileGateway.DeleteVideo(ctx, videoUploader.VideoKey)
+			_ = s.s3Service.Delete(ctx, videoUploader.VideoKey)
 		}
 		// upload moi
 		err := s.processVideoUpload(ctx, videoUploader.ID.Hex(), req)
@@ -136,7 +136,7 @@ func (s *videoUploaderService) asyncUploadProcess(ctx context.Context, videoUplo
 	if helper.IsValidFile(req.ImagePreviewFile) {
 		// neu co file thi check neu co file cu thi xoa
 		if videoUploader.ImagePreviewKey != "" {
-			s.fileGateway.DeleteImage(ctx, videoUploader.ImagePreviewKey)
+			_ = s.s3Service.Delete(ctx, videoUploader.ImagePreviewKey)
 		}
 		// upload moi
 		err := s.processImagePreviewUpload(ctx, videoUploader.ID.Hex(), req)
@@ -167,19 +167,20 @@ func (s *videoUploaderService) processVideoUpload(ctx context.Context, videoUplo
 		return fmt.Errorf("video file is required")
 	}
 
-	videoRes, err := s.fileGateway.UploadVideo(ctx, gw_request.UploadVideoRequest{
-		File:      req.VideoFile,
-		Folder:    "media_video_uploader",
-		FileName:  "video_" + req.Title,
-		VideoName: req.Title,
-		Mode:      "public",
-	})
+	key := helper.BuildObjectKeyS3("media_video_uploader", req.VideoFile.Filename, "video_"+req.Title)
+	f, openErr := req.VideoFile.Open()
+	if openErr != nil {
+		return openErr
+	}
+	defer f.Close()
+	ct := req.VideoFile.Header.Get("Content-Type")
+	url, err := s.s3Service.SaveReader(ctx, f, key, ct, uploader.UploadPublic)
 	if err != nil {
 		return err
 	}
 
 	// cập nhật metadata vào DB
-	if err := s.videoUploaderRepository.SetVideoMetadata(ctx, videoUploaderID, videoRes.Key, videoRes.URL); err != nil {
+	if err := s.videoUploaderRepository.SetVideoMetadata(ctx, videoUploaderID, key, deref(url)); err != nil {
 		return fmt.Errorf("save video metadata failed: %w", err)
 	}
 
@@ -192,22 +193,31 @@ func (s *videoUploaderService) processImagePreviewUpload(ctx context.Context, vi
 		return fmt.Errorf("image preview file is required")
 	}
 
-	imageRes, err := s.fileGateway.UploadImage(ctx, gw_request.UploadFileRequest{
-		File:     req.ImagePreviewFile,
-		Folder:   "media_video_uploader",
-		FileName: "image_preview_" + req.Title,
-		Mode:     "public",
-	})
+	key := helper.BuildObjectKeyS3("media_video_uploader", req.ImagePreviewFile.Filename, "image_preview_"+req.Title)
+	f, openErr := req.ImagePreviewFile.Open()
+	if openErr != nil {
+		return openErr
+	}
+	defer f.Close()
+	ct := req.ImagePreviewFile.Header.Get("Content-Type")
+	url, err := s.s3Service.SaveReader(ctx, f, key, ct, uploader.UploadPublic)
 	if err != nil {
 		return err
 	}
 
 	// cập nhật metadata vào DB
-	if err := s.videoUploaderRepository.SetImagePreviewMetadata(ctx, videoUploaderID, imageRes.Key, imageRes.Url); err != nil {
+	if err := s.videoUploaderRepository.SetImagePreviewMetadata(ctx, videoUploaderID, key, deref(url)); err != nil {
 		return fmt.Errorf("save image metadata failed: %w", err)
 	}
 
 	return nil
+}
+
+func deref(s *string) string {
+	if s == nil {
+		return ""
+	}
+	return *s
 }
 
 func (s *videoUploaderService) GetUploaderStatus(ctx context.Context, videoUploaderID string) (response.GetUploaderStatusResponse, error) {

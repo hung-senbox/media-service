@@ -65,7 +65,7 @@ func SetupRouter(consulClient *api.Client, cacheClientRedis *cache.RedisCache, t
 
 	// ========================  Video Uploader ======================== //
 	videoUploaderRepo := repository.NewVideoUploaderRepository(videoUploaderCollection)
-	videoUploaderService := service.NewVideoUploaderService(videoUploaderRepo, fileGateway, redisService)
+	videoUploaderService := service.NewVideoUploaderService(videoUploaderRepo, s3svc.NewFromConfig(), redisService)
 	videoUploaderHandler := handler.NewVideoUploaderHandler(videoUploaderService)
 	// ========================  Video Uploader ======================== //
 
