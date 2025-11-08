@@ -96,7 +96,6 @@ func (p *s3Provider) SaveFileUploadedReader(ctx context.Context, r io.Reader, ke
 	}
 
 	client := s3.NewFromConfig(p.config)
-
 	_, err := client.PutObject(ctx, &s3.PutObjectInput{
 		Bucket:      aws.String(p.bucketName),
 		Key:         aws.String(key),

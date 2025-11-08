@@ -11,10 +11,10 @@ import (
 	mediaassetRepo "media-service/internal/mediaasset/repository"
 	mediaassetRoute "media-service/internal/mediaasset/route"
 	mediaassetService "media-service/internal/mediaasset/service"
-	s3svc "media-service/internal/s3"
 	"media-service/internal/pdf/domain"
 	route2 "media-service/internal/pdf/route"
 	"media-service/internal/redis"
+	s3svc "media-service/internal/s3"
 
 	"github.com/gin-gonic/gin"
 	"github.com/hashicorp/consul/api"
@@ -25,6 +25,8 @@ import (
 
 func SetupRouter(consulClient *api.Client, cacheClientRedis *cache.RedisCache, topicCollection, pdfCollection, topicResourceCollection, videoUploaderCollection, mediaAssetCollection *mongo.Collection) *gin.Engine {
 	r := gin.Default()
+	// Limit in-memory buffering for multipart forms; larger files are spooled to disk
+	r.MaxMultipartMemory = 8 << 20 // 8 MiB
 
 	// gateway
 	cachedMainGateway := cached.NewCachedMainGateway(cacheClientRedis)

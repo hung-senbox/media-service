@@ -3,7 +3,6 @@ package usecase
 import (
 	"context"
 	"fmt"
-	"io"
 	"mime/multipart"
 	"time"
 
@@ -408,14 +407,4 @@ func (uc *uploadTopicUseCase) getImageKeyByLanguageAndType(topic *model.Topic, l
 		}
 	}
 	return ""
-}
-
-// helpers
-func readAllFile(fh *multipart.FileHeader) ([]byte, error) {
-	file, err := fh.Open()
-	if err != nil {
-		return nil, err
-	}
-	defer file.Close()
-	return io.ReadAll(file)
 }
