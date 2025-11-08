@@ -4,7 +4,6 @@ import (
 	"context"
 	"fmt"
 	"mime/multipart"
-	"time"
 
 	"media-service/helper"
 	gw_response "media-service/internal/gateway/dto/response"
@@ -129,7 +128,6 @@ func (uc *uploadTopicUseCase) uploadAndSaveAudio(ctx context.Context, topicID st
 	finalAudioKey := oldAudioKey
 
 	if helper.IsValidFile(req.AudioFile) {
-		time.Sleep(time.Second * 3)
 		// xóa file cũ nếu có
 		if oldAudioKey != "" {
 			_ = uc.s3Service.Delete(ctx, oldAudioKey)
@@ -174,7 +172,6 @@ func (uc *uploadTopicUseCase) uploadAndSaveVideo(ctx context.Context, topicID st
 	oldVideoKey := uc.getVideoKeyByLanguage(topic, req.LanguageID)
 	finalVideoKey := oldVideoKey
 	if helper.IsValidFile(req.VideoFile) {
-		time.Sleep(time.Second * 3)
 		// xóa file cũ nếu có
 		if oldVideoKey != "" {
 			_ = uc.s3Service.Delete(ctx, oldVideoKey)
@@ -241,7 +238,6 @@ func (uc *uploadTopicUseCase) uploadAndSaveImages(ctx context.Context, topicID s
 	for _, img := range imageFiles {
 		// 1) Nếu có file => đây là task upload (done() phải được gọi)
 		if helper.IsValidFile(img.file) {
-			time.Sleep(time.Second * 1)
 			oldKey := uc.getImageKeyByLanguageAndType(topic, req.LanguageID, img.typ)
 			if oldKey != "" {
 				// cố gắng xóa file cũ (ignore error)
