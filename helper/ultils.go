@@ -6,8 +6,10 @@ import (
 	"media-service/internal/media/model"
 	"media-service/pkg/constants"
 	"mime/multipart"
+	"path/filepath"
 	"strconv"
 	"strings"
+	"time"
 )
 
 func ParseAppLanguage(header string, defaultVal uint) uint {
@@ -98,4 +100,14 @@ func RemoveDuplicateString(slice []string) []string {
 
 func BuildVideoUploaderRedisKey(videoUploaderID, organizationID string) string {
 	return fmt.Sprintf("media:upload_status:%s:%s", videoUploaderID, organizationID)
+}
+
+func BuildObjectKeyS3(folder, originalFilename, baseName string) string {
+	ext := strings.ToLower(filepath.Ext(originalFilename))
+	name := strings.TrimSpace(baseName)
+	if name == "" {
+		name = strings.TrimSuffix(originalFilename, ext)
+	}
+	name = strings.NewReplacer(" ", "-", "/", "-", "\\", "-").Replace(name)
+	return fmt.Sprintf("%s/%d_%s%s", strings.Trim(folder, "/"), time.Now().UnixNano(), name, ext)
 }

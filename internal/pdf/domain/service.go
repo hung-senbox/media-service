@@ -5,9 +5,10 @@ import (
 	"fmt"
 	"media-service/helper"
 	"media-service/internal/gateway"
-	gw_request "media-service/internal/gateway/dto/request"
 	"media-service/internal/pdf/domain/dto"
 	"media-service/internal/pdf/model"
+	"media-service/internal/s3"
+	"media-service/pkg/uploader"
 	"time"
 
 	"go.mongodb.org/mongo-driver/bson"
@@ -26,16 +27,16 @@ type UserResourceService interface {
 
 type userResourceService struct {
 	UserResourceRepository UserResourceRepository
-	fileGateway            gateway.FileGateway
+	s3Service              s3.Service
 	userGateway            gateway.UserGateway
 }
 
 func NewUserResourceService(userResourceRepository UserResourceRepository,
-	fileGateway gateway.FileGateway,
+	s3Service s3.Service,
 	userGateway gateway.UserGateway) UserResourceService {
 	return &userResourceService{
 		UserResourceRepository: userResourceRepository,
-		fileGateway:            fileGateway,
+		s3Service:              s3Service,
 		userGateway:            userGateway,
 	}
 }
@@ -111,22 +112,22 @@ func (s *userResourceService) CreateResource(ctx context.Context, req dto.Create
 	ID := primitive.NewObjectID()
 
 	err := s.UserResourceRepository.CreateResource(ctx, &model.UserResource{
-		ID:            ID,
-		UploaderID:    uploaderData,
-		TargetID:      targetData,
-		Type:          req.Type,
-		ResourceType:  "",
-		FileName:      nil,
-		Folder:        req.Folder,
-		Color:         req.Color,
-		Status:        0, 
-		IsDownloaded:  req.IsDownloaded,
-		SignatureKey:  nil,
-		URL:           nil,
-		PDFKey:        nil,
-		CreatedBy:     helper.GetUserID(ctx),
-		CreatedAt:     time.Now(),
-		UpdatedAt:     time.Now(),
+		ID:           ID,
+		UploaderID:   uploaderData,
+		TargetID:     targetData,
+		Type:         req.Type,
+		ResourceType: "",
+		FileName:     nil,
+		Folder:       req.Folder,
+		Color:        req.Color,
+		Status:       0,
+		IsDownloaded: req.IsDownloaded,
+		SignatureKey: nil,
+		URL:          nil,
+		PDFKey:       nil,
+		CreatedBy:    helper.GetUserID(ctx),
+		CreatedAt:    time.Now(),
+		UpdatedAt:    time.Now(),
 	})
 
 	if err != nil {
@@ -175,8 +176,8 @@ func (s *userResourceService) GetResources(ctx context.Context, role, organizati
 	}
 
 	return &dto.GroupedResourceResponse{
-		SelfResources:    dto.ToResourceResponses(ctx, organizationID, selfResources, s.userGateway, s.fileGateway),
-		RelatedResources: dto.ToResourceResponses(ctx, organizationID, relatedResources, s.userGateway, s.fileGateway),
+		SelfResources:    dto.ToResourceResponses(ctx, organizationID, selfResources, s.userGateway, s.s3Service),
+		RelatedResources: dto.ToResourceResponses(ctx, organizationID, relatedResources, s.userGateway, s.s3Service),
 	}, nil
 
 }
@@ -198,7 +199,7 @@ func (s *userResourceService) UploadDocumentToResource(ctx context.Context, id s
 	}
 
 	if pdfData.PDFKey != nil {
-		err = s.fileGateway.DeletePDF(ctx, *pdfData.PDFKey)
+		err = s.s3Service.Delete(ctx, *pdfData.PDFKey)
 		if err != nil {
 			return "", err
 		}
@@ -217,19 +218,21 @@ func (s *userResourceService) UploadDocumentToResource(ctx context.Context, id s
 			return "", fmt.Errorf("resource not found")
 		}
 
-		resp, err := s.fileGateway.UploadPDF(ctx, gw_request.UploadFileRequest{
-			File:     req.File,
-			Folder:   "pdf_media",
-			FileName: *req.FileName,
-			Mode:     "private",
-		})
+		key := helper.BuildObjectKeyS3("pdf_media", req.File.Filename, *req.FileName)
+		f, openErr := req.File.Open()
+		if openErr != nil {
+			return "", openErr
+		}
+		defer f.Close()
+		ct := req.File.Header.Get("Content-Type")
+		_, err = s.s3Service.SaveReader(ctx, f, key, ct, uploader.UploadPrivate)
 		if err != nil {
 			return "", err
 		}
 
 		resource.FileName = req.FileName
 		resource.ResourceType = req.ResourceType
-		resource.PDFKey = &resp.Key
+		resource.PDFKey = &key
 		resource.URL = nil
 		resource.UpdatedAt = time.Now()
 
@@ -238,7 +241,7 @@ func (s *userResourceService) UploadDocumentToResource(ctx context.Context, id s
 			return "", err
 		}
 
-		return resp.Key, nil
+		return key, nil
 
 	} else if req.ResourceType == "url" && req.Url != nil {
 		resource, err := s.UserResourceRepository.GetResourceByID(ctx, objectID)
@@ -283,7 +286,7 @@ func (s *userResourceService) UploadSignatureToResource(ctx context.Context, id 
 	}
 
 	if pdfData.SignatureKey != nil {
-		err = s.fileGateway.DeleteImage(ctx, *pdfData.SignatureKey)
+		err = s.s3Service.Delete(ctx, *pdfData.SignatureKey)
 		if err != nil {
 			return "", err
 		}
@@ -338,8 +341,8 @@ func (s *userResourceService) UpdateResourceStatus(ctx context.Context, id strin
 	}
 
 	updateFields := bson.M{
-		"status":  req.Status,
-		"color":   color,
+		"status":     req.Status,
+		"color":      color,
 		"updated_at": time.Now(),
 	}
 
@@ -368,7 +371,7 @@ func (s *userResourceService) UpdateResourceDownloadPermission(ctx context.Conte
 
 	updateFields := bson.M{
 		"is_downloaded": req.IsDownloaded,
-		"updated_at":     time.Now(),
+		"updated_at":    time.Now(),
 	}
 
 	err = s.UserResourceRepository.UpdateResourceFields(ctx, objectID, updateFields)
@@ -396,14 +399,14 @@ func (s *userResourceService) DeleteResource(ctx context.Context, id string) err
 	}
 
 	if resource.PDFKey != nil {
-		err = s.fileGateway.DeletePDF(ctx, *resource.PDFKey)
+		err = s.s3Service.Delete(ctx, *resource.PDFKey)
 		if err != nil {
 			return err
 		}
 	}
 
 	if resource.SignatureKey != nil {
-		err = s.fileGateway.DeleteImage(ctx, *resource.SignatureKey)
+		err = s.s3Service.Delete(ctx, *resource.SignatureKey)
 		if err != nil {
 			return err
 		}

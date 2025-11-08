@@ -4,12 +4,12 @@ import (
 	"context"
 	"fmt"
 	"media-service/internal/gateway"
-	gw_request "media-service/internal/gateway/dto/request"
 	gw_response "media-service/internal/gateway/dto/response"
 	"media-service/internal/media/model"
 	"media-service/internal/media/v2/dto/response"
 	"media-service/internal/media/v2/mapper"
 	"media-service/internal/media/v2/repository"
+	s3svc "media-service/internal/s3"
 	"media-service/pkg/constants"
 )
 
@@ -24,19 +24,19 @@ type getTopicWebUseCase struct {
 	topicRepo         repository.TopicRepository
 	topicResourceRepo repository.TopicResourceRepository
 	cachedUserGw      gateway.UserGateway
-	fileGateway       gateway.FileGateway
+	s3Service         s3svc.Service
 }
 
 func NewGetTopicWebUseCase(
 	topicRepo repository.TopicRepository,
 	topicResourceRepo repository.TopicResourceRepository,
 	cachedUserGw gateway.UserGateway,
-	fileGateway gateway.FileGateway) GetTopicWebUseCase {
+	s3Service s3svc.Service) GetTopicWebUseCase {
 	return &getTopicWebUseCase{
 		topicRepo:         topicRepo,
 		topicResourceRepo: topicResourceRepo,
 		cachedUserGw:      cachedUserGw,
-		fileGateway:       fileGateway,
+		s3Service:         s3Service,
 	}
 }
 
@@ -56,10 +56,7 @@ func (uc *getTopicWebUseCase) GetTopics4Student4Web(ctx context.Context, student
 			for ii := range langCfg.Images {
 				img := &langCfg.Images[ii]
 				if img.ImageKey != "" {
-					url, err := uc.fileGateway.GetImageUrl(ctx, gw_request.GetFileUrlRequest{
-						Key:  img.ImageKey,
-						Mode: "private",
-					})
+					url, err := uc.s3Service.Get(ctx, img.ImageKey, nil)
 					if err == nil && url != nil {
 						img.UploadedUrl = *url
 					}
@@ -134,10 +131,7 @@ func (uc *getTopicWebUseCase) GetTopics2Assign4Web(ctx context.Context) ([]*resp
 			for ii := range langCfg.Images {
 				img := &langCfg.Images[ii]
 				if img.ImageKey != "" {
-					url, err := uc.fileGateway.GetImageUrl(ctx, gw_request.GetFileUrlRequest{
-						Key:  img.ImageKey,
-						Mode: "private",
-					})
+					url, err := uc.s3Service.Get(ctx, img.ImageKey, nil)
 					if err == nil && url != nil {
 						img.UploadedUrl = *url
 					}
@@ -158,10 +152,7 @@ func (uc *getTopicWebUseCase) populateMediaUrlsForTopic(ctx context.Context, top
 		for ii := range langCfg.Images {
 			img := &langCfg.Images[ii]
 			if img.ImageKey != "" {
-				url, err := uc.fileGateway.GetImageUrl(ctx, gw_request.GetFileUrlRequest{
-					Key:  img.ImageKey,
-					Mode: "private",
-				})
+				url, err := uc.s3Service.Get(ctx, img.ImageKey, nil)
 				if err == nil && url != nil {
 					img.UploadedUrl = *url
 				}
@@ -170,10 +161,7 @@ func (uc *getTopicWebUseCase) populateMediaUrlsForTopic(ctx context.Context, top
 
 		// video
 		if langCfg.Video.VideoKey != "" {
-			url, err := uc.fileGateway.GetVideoUrl(ctx, gw_request.GetFileUrlRequest{
-				Key:  langCfg.Video.VideoKey,
-				Mode: "private",
-			})
+			url, err := uc.s3Service.Get(ctx, langCfg.Video.VideoKey, nil)
 			if err == nil && url != nil {
 				langCfg.Video.UploadedUrl = *url
 			}
@@ -181,10 +169,7 @@ func (uc *getTopicWebUseCase) populateMediaUrlsForTopic(ctx context.Context, top
 
 		// audio
 		if langCfg.Audio.AudioKey != "" {
-			url, err := uc.fileGateway.GetAudioUrl(ctx, gw_request.GetFileUrlRequest{
-				Key:  langCfg.Audio.AudioKey,
-				Mode: "private",
-			})
+			url, err := uc.s3Service.Get(ctx, langCfg.Audio.AudioKey, nil)
 			if err == nil && url != nil {
 				langCfg.Audio.UploadedUrl = *url
 			}

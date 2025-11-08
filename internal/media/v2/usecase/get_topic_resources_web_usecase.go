@@ -3,12 +3,11 @@ package usecase
 import (
 	"context"
 	"fmt"
-	"media-service/internal/gateway"
-	gw_request "media-service/internal/gateway/dto/request"
 	gw_response "media-service/internal/gateway/dto/response"
 	"media-service/internal/media/v2/dto/response"
 	"media-service/internal/media/v2/mapper"
 	"media-service/internal/media/v2/repository"
+	"media-service/internal/s3"
 	"media-service/pkg/constants"
 )
 
@@ -20,11 +19,11 @@ type GetTopicResourcesWebUseCase interface {
 
 type getTopicResourcesWebUseCase struct {
 	topicResourceRepository repository.TopicResourceRepository
-	fileGateway             gateway.FileGateway
+	s3Service               s3.Service
 }
 
-func NewGetTopicResourcesWebUseCase(topicResourceRepository repository.TopicResourceRepository, fileGateway gateway.FileGateway) GetTopicResourcesWebUseCase {
-	return &getTopicResourcesWebUseCase{topicResourceRepository: topicResourceRepository, fileGateway: fileGateway}
+func NewGetTopicResourcesWebUseCase(topicResourceRepository repository.TopicResourceRepository, s3Service s3.Service) GetTopicResourcesWebUseCase {
+	return &getTopicResourcesWebUseCase{topicResourceRepository: topicResourceRepository, s3Service: s3Service}
 }
 
 func (uc *getTopicResourcesWebUseCase) GetTopicResourcesByTopicAndStudent4Web(ctx context.Context, topicID string, studentID string) ([]*response.GetTopicResourcesResponse4Web, error) {
@@ -44,7 +43,7 @@ func (uc *getTopicResourcesWebUseCase) GetTopicResourcesByTopicAndStudent4Web(ct
 		}
 		var imageUrl string
 		if tr.ImageKey != "" {
-			if url, err := uc.fileGateway.GetImageUrl(ctx, gw_request.GetFileUrlRequest{Key: tr.ImageKey, Mode: "private"}); err == nil && url != nil {
+			if url, err := uc.s3Service.Get(ctx, tr.ImageKey, nil); err == nil && url != nil {
 				imageUrl = *url
 			}
 		}
@@ -69,7 +68,7 @@ func (uc *getTopicResourcesWebUseCase) GetTopicResourcesByTopic4Web(ctx context.
 		}
 		var imageUrl string
 		if tr.ImageKey != "" {
-			if url, err := uc.fileGateway.GetImageUrl(ctx, gw_request.GetFileUrlRequest{Key: tr.ImageKey, Mode: "private"}); err == nil && url != nil {
+			if url, err := uc.s3Service.Get(ctx, tr.ImageKey, nil); err == nil && url != nil {
 				imageUrl = *url
 			}
 		}
@@ -90,7 +89,7 @@ func (uc *getTopicResourcesWebUseCase) GetOutputResources4Web(ctx context.Contex
 		}
 		var imageUrl string
 		if tr.ImageKey != "" {
-			if url, err := uc.fileGateway.GetImageUrl(ctx, gw_request.GetFileUrlRequest{Key: tr.ImageKey, Mode: "private"}); err == nil && url != nil {
+			if url, err := uc.s3Service.Get(ctx, tr.ImageKey, nil); err == nil && url != nil {
 				imageUrl = *url
 			}
 		}

@@ -4,10 +4,10 @@ import (
 	"context"
 	"media-service/helper"
 	"media-service/internal/gateway"
-	gw_request "media-service/internal/gateway/dto/request"
 	"media-service/internal/media/v2/dto/response"
 	"media-service/internal/media/v2/mapper"
 	"media-service/internal/media/v2/repository"
+	s3svc "media-service/internal/s3"
 )
 
 type GetTopicAppUseCase interface {
@@ -18,14 +18,14 @@ type GetTopicAppUseCase interface {
 type getTopicAppUseCase struct {
 	topicRepo    repository.TopicRepository
 	cachedUserGw gateway.UserGateway
-	fileGateway  gateway.FileGateway
+	s3Service    s3svc.Service
 }
 
-func NewGetTopicAppUseCase(topicRepo repository.TopicRepository, cachedUserGw gateway.UserGateway, fileGateway gateway.FileGateway) GetTopicAppUseCase {
+func NewGetTopicAppUseCase(topicRepo repository.TopicRepository, cachedUserGw gateway.UserGateway, s3Service s3svc.Service) GetTopicAppUseCase {
 	return &getTopicAppUseCase{
 		topicRepo:    topicRepo,
 		cachedUserGw: cachedUserGw,
-		fileGateway:  fileGateway,
+		s3Service:    s3Service,
 	}
 }
 
@@ -61,10 +61,7 @@ func (uc *getTopicAppUseCase) GetTopics4App(ctx context.Context, organizationID 
 			for ii := range langCfg.Images {
 				img := &langCfg.Images[ii]
 				if img.ImageKey != "" {
-					url, err := uc.fileGateway.GetImageUrl(ctx, gw_request.GetFileUrlRequest{
-						Key:  img.ImageKey,
-						Mode: "private",
-					})
+					url, err := uc.s3Service.Get(ctx, img.ImageKey, nil)
 					if err == nil && url != nil {
 						img.UploadedUrl = *url
 					}

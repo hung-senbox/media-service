@@ -16,6 +16,7 @@ var TopicCollection *mongo.Collection
 var PDFCollection *mongo.Collection
 var TopicResourceCollection *mongo.Collection
 var VideoUploaderCollection *mongo.Collection
+var MediaAssetCollection *mongo.Collection
 
 func ConnectMongoDB() {
 	d := config.AppConfig.Database.Mongo
@@ -52,5 +53,6 @@ func ConnectMongoDB() {
 	PDFCollection = MongoClient.Database(d.Name).Collection("pdf_resources")
 	TopicResourceCollection = MongoClient.Database(d.Name).Collection("topic_resources")
 	VideoUploaderCollection = MongoClient.Database(d.Name).Collection("video_uploaders")
-	log.Println("Connected to MongoDB and loaded 'topics', 'pdf_resources', 'topic_resources', 'video_uploaders' collections")
+	MediaAssetCollection = MongoClient.Database(d.Name).Collection("media_assets")
+	log.Println("Connected to MongoDB and loaded 'topics', 'pdf_resources', 'topic_resources', 'video_uploaders', 'media_assets' collections")
 }

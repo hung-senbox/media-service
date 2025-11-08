@@ -3,15 +3,17 @@ package service
 import (
 	"context"
 	"fmt"
+	"io"
 	"media-service/helper"
 	"media-service/internal/gateway"
-	gw_request "media-service/internal/gateway/dto/request"
 	"media-service/internal/media/model"
 	"media-service/internal/media/v2/dto/request"
 	"media-service/internal/media/v2/dto/response"
 	"media-service/internal/media/v2/mapper"
 	"media-service/internal/media/v2/repository"
 	"media-service/internal/media/v2/usecase"
+	"media-service/internal/s3"
+	"media-service/pkg/uploader"
 	"time"
 
 	"go.mongodb.org/mongo-driver/bson/primitive"
@@ -34,7 +36,7 @@ type TopicResourceService interface {
 type topicResourceService struct {
 	topicResourceRepository     repository.TopicResourceRepository
 	topicRepository             repository.TopicRepository
-	fileGateway                 gateway.FileGateway
+	s3Service                   s3.Service
 	userGw                      gateway.UserGateway
 	getTopicResourcesWebUseCase usecase.GetTopicResourcesWebUseCase
 	getTopicResourceAppUseCase  usecase.GetTopicResourceAppUseCase
@@ -43,7 +45,7 @@ type topicResourceService struct {
 func NewTopicResourceService(
 	topicResourceRepository repository.TopicResourceRepository,
 	topicRepository repository.TopicRepository,
-	fileGateway gateway.FileGateway,
+	s3Service s3.Service,
 	userGw gateway.UserGateway,
 	getTopicResourcesWebUseCase usecase.GetTopicResourcesWebUseCase,
 	getTopicResourceAppUseCase usecase.GetTopicResourceAppUseCase,
@@ -51,7 +53,7 @@ func NewTopicResourceService(
 	return &topicResourceService{
 		topicResourceRepository:     topicResourceRepository,
 		topicRepository:             topicRepository,
-		fileGateway:                 fileGateway,
+		s3Service:                   s3Service,
 		userGw:                      userGw,
 		getTopicResourcesWebUseCase: getTopicResourcesWebUseCase,
 		getTopicResourceAppUseCase:  getTopicResourceAppUseCase,
@@ -76,12 +78,17 @@ func (s *topicResourceService) CreateTopicResource(ctx context.Context, req requ
 		return "", fmt.Errorf("file is required")
 	}
 
-	resp, err := s.fileGateway.UploadImage(ctx, gw_request.UploadFileRequest{
-		File:     req.File,
-		Folder:   "topic_resource",
-		FileName: req.FileName,
-		Mode:     "private",
-	})
+	key := helper.BuildObjectKeyS3("topic_resource", req.File.Filename, req.FileName)
+	file, err := req.File.Open()
+	if err != nil {
+		return "", err
+	}
+	defer file.Close()
+	bytes, err := io.ReadAll(file)
+	if err != nil {
+		return "", err
+	}
+	_, err = s.s3Service.Save(ctx, bytes, key, uploader.UploadPrivate)
 	if err != nil {
 		return "", err
 	}
@@ -93,7 +100,7 @@ func (s *topicResourceService) CreateTopicResource(ctx context.Context, req requ
 		TopicID:   req.TopicID,
 		StudentID: req.StudentID,
 		FileName:  req.FileName,
-		ImageKey:  resp.Key,
+		ImageKey:  key,
 		CreatedBy: helper.GetUserID(ctx),
 		CreatedAt: time.Now(),
 		UpdatedAt: time.Now(),
@@ -118,7 +125,7 @@ func (s *topicResourceService) GetTopicResources(ctx context.Context, topicID, s
 		return nil, err
 	}
 
-	result := mapper.ToGetTopicResourceResponses(ctx, orgID, topicResources, s.topicRepository, s.userGw, s.fileGateway)
+	result := mapper.ToGetTopicResourceResponses(ctx, orgID, topicResources, s.topicRepository, s.userGw, s.s3Service)
 
 	return result, nil
 }
@@ -143,7 +150,7 @@ func (s *topicResourceService) GetTopicResource(ctx context.Context, topicResour
 		return nil, fmt.Errorf("topic resource not found")
 	}
 
-	return mapper.ToGetTopicResourceResponse(ctx, orgID, topicResource, s.topicRepository, s.userGw, s.fileGateway), nil
+	return mapper.ToGetTopicResourceResponse(ctx, orgID, topicResource, s.topicRepository, s.userGw, s.s3Service), nil
 }
 
 func (s *topicResourceService) UpdateTopicResource(ctx context.Context, topicResourceID string, req request.UpdateTopicResourceRequest) (string, error) {
@@ -172,21 +179,26 @@ func (s *topicResourceService) UpdateTopicResource(ctx context.Context, topicRes
 
 	if req.File != nil {
 		if topicResource.ImageKey != "" {
-			err = s.fileGateway.DeleteImage(ctx, topicResource.ImageKey)
+			err = s.s3Service.Delete(ctx, topicResource.ImageKey)
 			if err != nil {
 				return "", err
 			}
 		}
-		resp, err := s.fileGateway.UploadImage(ctx, gw_request.UploadFileRequest{
-			File:     req.File,
-			Folder:   "topic_resource",
-			FileName: req.FileName,
-			Mode:     "private",
-		})
+		key := helper.BuildObjectKeyS3("topic_resource", req.File.Filename, req.FileName)
+		f, err := req.File.Open()
 		if err != nil {
 			return "", err
 		}
-		topicResource.ImageKey = resp.Key
+		defer f.Close()
+		bs, err := io.ReadAll(f)
+		if err != nil {
+			return "", err
+		}
+		_, err = s.s3Service.Save(ctx, bs, key, uploader.UploadPrivate)
+		if err != nil {
+			return "", err
+		}
+		topicResource.ImageKey = key
 	}
 
 	topicResource.UpdatedAt = time.Now()
@@ -215,7 +227,7 @@ func (s *topicResourceService) DeleteTopicResource(ctx context.Context, topicRes
 	}
 
 	if topicResource.ImageKey != "" {
-		err = s.fileGateway.DeleteImage(ctx, topicResource.ImageKey)
+		err = s.s3Service.Delete(ctx, topicResource.ImageKey)
 		if err != nil {
 			return err
 		}

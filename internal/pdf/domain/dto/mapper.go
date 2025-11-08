@@ -3,8 +3,8 @@ package dto
 import (
 	"context"
 	"media-service/internal/gateway"
-	gw_request "media-service/internal/gateway/dto/request"
 	"media-service/internal/pdf/model"
+	"media-service/internal/s3"
 )
 
 func ToResourceResponses(
@@ -12,7 +12,7 @@ func ToResourceResponses(
 	organizationID string,
 	data []*model.UserResource,
 	userGw gateway.UserGateway,
-	fileGw gateway.FileGateway,
+	s3Svc s3.Service,
 ) []*ResourceResponse {
 	responses := make([]*ResourceResponse, 0, len(data))
 	for _, r := range data {
@@ -38,20 +38,14 @@ func ToResourceResponses(
 		}
 
 		if r.SignatureKey != nil {
-			url, err := fileGw.GetImageUrl(ctx, gw_request.GetFileUrlRequest{
-				Key:  *r.SignatureKey,
-				Mode: "private",
-			})
+			url, err := s3Svc.Get(ctx, *r.SignatureKey, nil)
 			if err == nil {
 				resp.SignatureUrl = url
 			}
 		}
 
 		if r.PDFKey != nil && *r.PDFKey != "" {
-			url, err := fileGw.GetPDFUrl(ctx, gw_request.GetFileUrlRequest{
-				Key:  *r.PDFKey,
-				Mode: "private",
-			})
+			url, err := s3Svc.Get(ctx, *r.PDFKey, nil)
 			if err == nil {
 				resp.PDFUrl = url
 			}

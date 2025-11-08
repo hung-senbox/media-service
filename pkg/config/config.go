@@ -94,6 +94,23 @@ type RedisConfig struct {
 	DB       int    `yaml:"db"`
 }
 
+// ---------------- S3 configuration ----------------
+type SenboxFormSubmitBucket struct {
+	Domain               string `yaml:"domain"`
+	Region               string `yaml:"region"`
+	BucketName           string `yaml:"bucket_name"`
+	AccessKey            string `yaml:"access_key"`
+	SecretKey            string `yaml:"secret_key"`
+	CloudfrontKeyGroupID string `yaml:"cloudfront_key_group_id"`
+	CloudfrontKeyPath    string `yaml:"cloudfront_key_path"`
+}
+
+type S3 struct {
+	SenboxFormSubmitBucket SenboxFormSubmitBucket `yaml:"senbox-form-submit-bucket"`
+}
+
+// ---------------- S3 configuration ----------------
+
 type AppConfigStruct struct {
 	Server   ServerConfig     `yaml:"server"`
 	Database DatabaseConfig   `yaml:"database"`
@@ -101,6 +118,7 @@ type AppConfigStruct struct {
 	Zap      ZapConfig        `mapstructure:"zap"`
 	Registry Registry         `mapstructure:"registry" validate:"required"`
 	App      AppConfiguration `mapstructure:"app"`
+	S3       S3               `yaml:"s3"`
 }
 
 var AppConfig *AppConfigStruct

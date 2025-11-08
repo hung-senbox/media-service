@@ -7,6 +7,11 @@ import (
 	"media-service/internal/media/v2/repository"
 	"media-service/internal/media/v2/service"
 	"media-service/internal/media/v2/usecase"
+	mediaassetHandler "media-service/internal/mediaasset/handler"
+	mediaassetRepo "media-service/internal/mediaasset/repository"
+	mediaassetRoute "media-service/internal/mediaasset/route"
+	mediaassetService "media-service/internal/mediaasset/service"
+	s3svc "media-service/internal/s3"
 	"media-service/internal/pdf/domain"
 	route2 "media-service/internal/pdf/route"
 	"media-service/internal/redis"
@@ -18,7 +23,7 @@ import (
 	"go.mongodb.org/mongo-driver/mongo"
 )
 
-func SetupRouter(consulClient *api.Client, cacheClientRedis *cache.RedisCache, topicCollection, pdfCollection, topicResourceCollection, videoUploaderCollection *mongo.Collection) *gin.Engine {
+func SetupRouter(consulClient *api.Client, cacheClientRedis *cache.RedisCache, topicCollection, pdfCollection, topicResourceCollection, videoUploaderCollection, mediaAssetCollection *mongo.Collection) *gin.Engine {
 	r := gin.Default()
 
 	// gateway
@@ -33,14 +38,14 @@ func SetupRouter(consulClient *api.Client, cacheClientRedis *cache.RedisCache, t
 	topicResourceRepov2 := repository.NewTopicResourceRepository(topicResourceCollection)
 
 	// --- UseCase ---
-	uploadTopicUseCasev2 := usecase.NewUploadTopicUseCase(topicRepov2, fileGateway, redisService)
-	getTopicAppUseCasev2 := usecase.NewGetTopicAppUseCase(topicRepov2, userGateway, fileGateway)
-	getTopicWebUseCasev2 := usecase.NewGetTopicWebUseCase(topicRepov2, topicResourceRepov2, userGateway, fileGateway)
-	getTopicGatewayUseCasev2 := usecase.NewGetTopicGatewayUseCase(topicRepov2, userGateway, fileGateway)
+	uploadTopicUseCasev2 := usecase.NewUploadTopicUseCase(topicRepov2, s3svc.NewFromConfig(), redisService)
+	getTopicAppUseCasev2 := usecase.NewGetTopicAppUseCase(topicRepov2, userGateway, s3svc.NewFromConfig())
+	getTopicWebUseCasev2 := usecase.NewGetTopicWebUseCase(topicRepov2, topicResourceRepov2, userGateway, s3svc.NewFromConfig())
+	getTopicGatewayUseCasev2 := usecase.NewGetTopicGatewayUseCase(topicRepov2, userGateway, s3svc.NewFromConfig())
 	getUploadProgressUseCasev2 := usecase.NewGetUploadProgressUseCase(topicRepov2, redisService)
 	deleteTopicFileUseCasev2 := usecase.NewDeleteTopicFileUseCase(topicRepov2, fileGateway)
-	getTopicResourcesWebUseCasev2 := usecase.NewGetTopicResourcesWebUseCase(topicResourceRepov2, fileGateway)
-	getTopicResourceAppUseCasev2 := usecase.NewGetTopicResourceAppUseCase(topicRepov2, topicResourceRepov2, fileGateway)
+	getTopicResourcesWebUseCasev2 := usecase.NewGetTopicResourcesWebUseCase(topicResourceRepov2, s3svc.NewFromConfig())
+	getTopicResourceAppUseCasev2 := usecase.NewGetTopicResourceAppUseCase(topicRepov2, topicResourceRepov2, s3svc.NewFromConfig())
 
 	// --- Service ---
 	topicServicev2 := service.NewTopicService(uploadTopicUseCasev2, getUploadProgressUseCasev2, getTopicAppUseCasev2, getTopicWebUseCasev2, getTopicGatewayUseCasev2, deleteTopicFileUseCasev2)
@@ -51,11 +56,11 @@ func SetupRouter(consulClient *api.Client, cacheClientRedis *cache.RedisCache, t
 
 	// ========================  PDF ======================== //
 	pdfRepov2 := domain.NewUserResourceRepository(pdfCollection)
-	pdfServicev2 := domain.NewUserResourceService(pdfRepov2, fileGateway, userGateway)
+	pdfServicev2 := domain.NewUserResourceService(pdfRepov2, s3svc.NewFromConfig(), userGateway)
 	pdfHandlerv2 := domain.NewUserResourceHandler(pdfServicev2)
 	// ========================  PDF ======================== //
 
-	topicResourceServicev2 := service.NewTopicResourceService(topicResourceRepov2, topicRepov2, fileGateway, userGateway, getTopicResourcesWebUseCasev2, getTopicResourceAppUseCasev2)
+	topicResourceServicev2 := service.NewTopicResourceService(topicResourceRepov2, topicRepov2, s3svc.NewFromConfig(), userGateway, getTopicResourcesWebUseCasev2, getTopicResourceAppUseCasev2)
 	topicResourceHandlerv2 := handler.NewTopicResourceHandler(topicResourceServicev2)
 
 	// ========================  Video Uploader ======================== //
@@ -69,5 +74,11 @@ func SetupRouter(consulClient *api.Client, cacheClientRedis *cache.RedisCache, t
 	route.RegisterTopicResourceRoutes(r, topicResourceHandlerv2, userGateway)
 	route.RegisterVideoUploaderRoutes(r, videoUploaderHandler, userGateway)
 	route2.RegisterRoutes(r, pdfHandlerv2, userGateway)
+
+	// ========================  Media Assets (direct S3) ======================== //
+	mediaRepo := mediaassetRepo.NewMediaRepository(mediaAssetCollection)
+	mediaSvc := mediaassetService.NewMediaService(mediaRepo)
+	mediaHandler := mediaassetHandler.NewMediaHandler(mediaSvc)
+	mediaassetRoute.RegisterMediaRoutes(r, mediaHandler)
 	return r
 }

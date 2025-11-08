@@ -4,11 +4,11 @@ import (
 	"context"
 	"media-service/helper"
 	"media-service/internal/gateway"
-	gw_request "media-service/internal/gateway/dto/request"
 	gw_response "media-service/internal/gateway/dto/response"
 	"media-service/internal/media/model"
 	"media-service/internal/media/v2/dto/response"
 	"media-service/internal/media/v2/repository"
+	"media-service/internal/s3"
 )
 
 func ToGetTopicResourceResponses(
@@ -17,7 +17,7 @@ func ToGetTopicResourceResponses(
 	topicResources []*model.TopicResource,
 	topicRepository repository.TopicRepository,
 	userGw gateway.UserGateway,
-	fileGateway gateway.FileGateway,
+	s3Service s3.Service,
 ) []*response.GetTopicResourceResponse {
 	if len(topicResources) == 0 {
 		return []*response.GetTopicResourceResponse{}
@@ -36,7 +36,7 @@ func ToGetTopicResourceResponses(
 		var topicResp *response.TopicResponse2Assign4Web
 
 		if tr.ImageKey != "" {
-			if url, err := fileGateway.GetImageUrl(ctx, gw_request.GetFileUrlRequest{Key: tr.ImageKey, Mode: "private"}); err == nil && url != nil {
+			if url, err := s3Service.Get(ctx, tr.ImageKey, nil); err == nil && url != nil {
 				imageUrl = *url
 			}
 		}
@@ -95,7 +95,7 @@ func ToGetTopicResourceResponse(
 	topicResource *model.TopicResource,
 	topicRepository repository.TopicRepository,
 	userGw gateway.UserGateway,
-	fileGateway gateway.FileGateway,
+	s3Service s3.Service,
 ) *response.GetTopicResourceResponse {
 
 	var imageUrl string
@@ -137,7 +137,7 @@ func ToGetTopicResourceResponse(
 	}
 
 	if topicResource.ImageKey != "" {
-		if url, err := fileGateway.GetImageUrl(ctx, gw_request.GetFileUrlRequest{Key: topicResource.ImageKey, Mode: "private"}); err == nil && url != nil {
+		if url, err := s3Service.Get(ctx, topicResource.ImageKey, nil); err == nil && url != nil {
 			imageUrl = *url
 		}
 	}

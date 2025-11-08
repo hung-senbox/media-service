@@ -4,10 +4,10 @@ import (
 	"context"
 	"media-service/helper"
 	"media-service/internal/gateway"
-	gw_request "media-service/internal/gateway/dto/request"
 	"media-service/internal/media/v2/dto/response"
 	"media-service/internal/media/v2/mapper"
 	"media-service/internal/media/v2/repository"
+	s3svc "media-service/internal/s3"
 )
 
 type GetTopicGatewayUseCase interface {
@@ -19,14 +19,14 @@ type GetTopicGatewayUseCase interface {
 type getTopicGatewayUseCase struct {
 	topicRepo    repository.TopicRepository
 	cachedUserGw gateway.UserGateway
-	fileGateway  gateway.FileGateway
+	s3Service    s3svc.Service
 }
 
-func NewGetTopicGatewayUseCase(topicRepo repository.TopicRepository, cachedUserGw gateway.UserGateway, fileGateway gateway.FileGateway) GetTopicGatewayUseCase {
+func NewGetTopicGatewayUseCase(topicRepo repository.TopicRepository, cachedUserGw gateway.UserGateway, s3Service s3svc.Service) GetTopicGatewayUseCase {
 	return &getTopicGatewayUseCase{
 		topicRepo:    topicRepo,
 		cachedUserGw: cachedUserGw,
-		fileGateway:  fileGateway,
+		s3Service:    s3Service,
 	}
 }
 
@@ -46,10 +46,7 @@ func (uc *getTopicGatewayUseCase) GetTopics4Student4Gw(ctx context.Context, stud
 			for ii := range langCfg.Images {
 				img := &langCfg.Images[ii]
 				if img.ImageKey != "" {
-					url, err := uc.fileGateway.GetImageUrl(ctx, gw_request.GetFileUrlRequest{
-						Key:  img.ImageKey,
-						Mode: "private",
-					})
+					url, err := uc.s3Service.Get(ctx, img.ImageKey, nil)
 					if err == nil && url != nil {
 						img.UploadedUrl = *url
 					}
@@ -72,10 +69,7 @@ func (uc *getTopicGatewayUseCase) GetTopic4Gw(ctx context.Context, topicID strin
 	for ii := range topic.LanguageConfig[0].Images {
 		img := &topic.LanguageConfig[0].Images[ii]
 		if img.ImageKey != "" {
-			url, err := uc.fileGateway.GetImageUrl(ctx, gw_request.GetFileUrlRequest{
-				Key:  img.ImageKey,
-				Mode: "private",
-			})
+			url, err := uc.s3Service.Get(ctx, img.ImageKey, nil)
 			if err == nil && url != nil {
 				img.UploadedUrl = *url
 			}
@@ -102,10 +96,7 @@ func (uc *getTopicGatewayUseCase) GetAllTopicsByOrganization4Gw(ctx context.Cont
 		for ii := range topic.LanguageConfig[0].Images {
 			img := &topic.LanguageConfig[0].Images[ii]
 			if img.ImageKey != "" {
-				url, err := uc.fileGateway.GetImageUrl(ctx, gw_request.GetFileUrlRequest{
-					Key:  img.ImageKey,
-					Mode: "private",
-				})
+				url, err := uc.s3Service.Get(ctx, img.ImageKey, nil)
 				if err == nil && url != nil {
 					img.UploadedUrl = *url
 				}

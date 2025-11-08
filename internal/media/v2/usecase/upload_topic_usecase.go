@@ -3,19 +3,20 @@ package usecase
 import (
 	"context"
 	"fmt"
+	"io"
 	"mime/multipart"
 	"time"
 
 	"media-service/helper"
-	"media-service/internal/gateway"
-	gw_request "media-service/internal/gateway/dto/request"
 	gw_response "media-service/internal/gateway/dto/response"
 	"media-service/internal/media/model"
 	"media-service/internal/media/v2/dto/request"
 	"media-service/internal/media/v2/repository"
 	"media-service/internal/redis"
+	"media-service/internal/s3"
 	"media-service/logger"
 	"media-service/pkg/constants"
+	"media-service/pkg/uploader"
 
 	"go.mongodb.org/mongo-driver/bson/primitive"
 )
@@ -25,16 +26,16 @@ type UploadTopicUseCase interface {
 }
 
 type uploadTopicUseCase struct {
-	fileGateway  gateway.FileGateway
 	redisService *redis.RedisService
 	topicRepo    repository.TopicRepository
+	s3Service    s3.Service
 }
 
-func NewUploadTopicUseCase(topicRepo repository.TopicRepository, fileGw gateway.FileGateway, redisService *redis.RedisService) UploadTopicUseCase {
+func NewUploadTopicUseCase(topicRepo repository.TopicRepository, s3Svc s3.Service, redisService *redis.RedisService) UploadTopicUseCase {
 	return &uploadTopicUseCase{
 		topicRepo:    topicRepo,
 		redisService: redisService,
-		fileGateway:  fileGw,
+		s3Service:    s3Svc,
 	}
 }
 
@@ -132,21 +133,23 @@ func (uc *uploadTopicUseCase) uploadAndSaveAudio(ctx context.Context, topicID st
 		time.Sleep(time.Second * 3)
 		// xóa file cũ nếu có
 		if oldAudioKey != "" {
-			_ = uc.fileGateway.DeleteAudio(ctx, oldAudioKey)
+			_ = uc.s3Service.Delete(ctx, oldAudioKey)
 		}
 
-		resp, err := uc.fileGateway.UploadAudio(ctx, gw_request.UploadAudioRequest{
-			File:      req.AudioFile,
-			Folder:    "topic_media",
-			FileName:  req.Title + "_audio",
-			Mode:      "private",
-			AudioName: req.Title,
-		})
+		key := helper.BuildObjectKeyS3("topic_media/audio", req.AudioFile.Filename, fmt.Sprintf("%s_audio", req.Title))
+		f, openErr := req.AudioFile.Open()
+		if openErr != nil {
+			_ = uc.redisService.SetUploadError(ctx, topicID, "audio_error", openErr.Error())
+			return
+		}
+		defer f.Close()
+		ct := req.AudioFile.Header.Get("Content-Type")
+		_, err := uc.s3Service.SaveReader(ctx, f, key, ct, uploader.UploadPrivate)
 		if err != nil {
 			_ = uc.redisService.SetUploadError(ctx, topicID, "audio_error", err.Error())
 			return
 		}
-		finalAudioKey = resp.Key
+		finalAudioKey = key
 		defer done()
 	}
 
@@ -175,21 +178,23 @@ func (uc *uploadTopicUseCase) uploadAndSaveVideo(ctx context.Context, topicID st
 		time.Sleep(time.Second * 3)
 		// xóa file cũ nếu có
 		if oldVideoKey != "" {
-			_ = uc.fileGateway.DeleteVideo(ctx, oldVideoKey)
+			_ = uc.s3Service.Delete(ctx, oldVideoKey)
 		}
 
-		resp, err := uc.fileGateway.UploadVideo(ctx, gw_request.UploadVideoRequest{
-			File:      req.VideoFile,
-			Folder:    "topic_media",
-			FileName:  req.Title + "_video",
-			Mode:      "private",
-			VideoName: req.Title,
-		})
+		key := helper.BuildObjectKeyS3("topic_media/video", req.VideoFile.Filename, fmt.Sprintf("%s_video", req.Title))
+		f, openErr := req.VideoFile.Open()
+		if openErr != nil {
+			_ = uc.redisService.SetUploadError(ctx, topicID, "video_error", openErr.Error())
+			return
+		}
+		defer f.Close()
+		ct := req.VideoFile.Header.Get("Content-Type")
+		_, err := uc.s3Service.SaveReader(ctx, f, key, ct, uploader.UploadPrivate)
 		if err != nil {
 			_ = uc.redisService.SetUploadError(ctx, topicID, "video_error", err.Error())
 			return
 		}
-		finalVideoKey = resp.Key
+		finalVideoKey = key
 		defer done()
 	}
 
@@ -241,26 +246,29 @@ func (uc *uploadTopicUseCase) uploadAndSaveImages(ctx context.Context, topicID s
 			oldKey := uc.getImageKeyByLanguageAndType(topic, req.LanguageID, img.typ)
 			if oldKey != "" {
 				// cố gắng xóa file cũ (ignore error)
-				_ = uc.fileGateway.DeleteImage(ctx, oldKey)
+				_ = uc.s3Service.Delete(ctx, oldKey)
 			}
 
-			resp, err := uc.fileGateway.UploadImage(ctx, gw_request.UploadFileRequest{
-				File:      img.file,
-				Folder:    "topic_media",
-				FileName:  fmt.Sprintf("%s_%s_image", req.Title, img.typ),
-				ImageName: img.typ,
-				Mode:      "private",
-			})
-			if err != nil {
+			key := helper.BuildObjectKeyS3("topic_media/image", img.file.Filename, fmt.Sprintf("%s_%s_image", req.Title, img.typ))
+			f, openErr := img.file.Open()
+			if openErr != nil {
+				_ = uc.redisService.SetUploadError(ctx, topicID, "image_"+img.typ, openErr.Error())
+				done()
+				continue
+			}
+			ct := img.file.Header.Get("Content-Type")
+			if _, err := uc.s3Service.SaveReader(ctx, f, key, ct, uploader.UploadPrivate); err != nil {
 				_ = uc.redisService.SetUploadError(ctx, topicID, "image_"+img.typ, err.Error())
+				f.Close()
 				// giảm 1 task vì đây là 1 task upload (dù lỗi)
 				done()
 				continue
 			}
+			_ = f.Close()
 
 			// Lưu key + metadata mới
 			if err := uc.topicRepo.SetImage(ctx, topicID, req.LanguageID, model.TopicImageConfig{
-				ImageKey:  resp.Key,
+				ImageKey:  key,
 				ImageType: img.typ,
 				LinkUrl:   img.link,
 			}); err != nil {
@@ -400,4 +408,14 @@ func (uc *uploadTopicUseCase) getImageKeyByLanguageAndType(topic *model.Topic, l
 		}
 	}
 	return ""
+}
+
+// helpers
+func readAllFile(fh *multipart.FileHeader) ([]byte, error) {
+	file, err := fh.Open()
+	if err != nil {
+		return nil, err
+	}
+	defer file.Close()
+	return io.ReadAll(file)
 }

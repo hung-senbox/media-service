@@ -9,3 +9,7 @@ cmd/Log
 
 # ignore debug
 __debug_bin*
+
+# keys
+keys/*
+cmd/server/keys/

@@ -3,12 +3,11 @@ package usecase
 import (
 	"context"
 	"media-service/helper"
-	"media-service/internal/gateway"
-	gw_request "media-service/internal/gateway/dto/request"
 	"media-service/internal/media/model"
 	"media-service/internal/media/v2/dto/response"
 	"media-service/internal/media/v2/mapper"
 	"media-service/internal/media/v2/repository"
+	"media-service/internal/s3"
 	"time"
 )
 
@@ -19,11 +18,11 @@ type GetTopicResourceAppUseCase interface {
 type getTopicResourceAppUseCase struct {
 	topicRepo               repository.TopicRepository
 	topicResourceRepository repository.TopicResourceRepository
-	fileGateway             gateway.FileGateway
+	s3Service               s3.Service
 }
 
-func NewGetTopicResourceAppUseCase(topicRepo repository.TopicRepository, topicResourceRepository repository.TopicResourceRepository, fileGateway gateway.FileGateway) GetTopicResourceAppUseCase {
-	return &getTopicResourceAppUseCase{topicRepo: topicRepo, topicResourceRepository: topicResourceRepository, fileGateway: fileGateway}
+func NewGetTopicResourceAppUseCase(topicRepo repository.TopicRepository, topicResourceRepository repository.TopicResourceRepository, s3Service s3.Service) GetTopicResourceAppUseCase {
+	return &getTopicResourceAppUseCase{topicRepo: topicRepo, topicResourceRepository: topicResourceRepository, s3Service: s3Service}
 }
 
 func (uc *getTopicResourceAppUseCase) GetOutputResources4App(ctx context.Context, studentID string, month, year int) ([]*response.GetTopicResourcesResponse4App, error) {
@@ -42,7 +41,7 @@ func (uc *getTopicResourceAppUseCase) GetOutputResources4App(ctx context.Context
 		}
 		resourceImageUrl := ""
 		if tr.ImageKey != "" {
-			imageUrl, _ := uc.fileGateway.GetImageUrl(ctx, gw_request.GetFileUrlRequest{Key: tr.ImageKey, Mode: "private"})
+			imageUrl, _ := uc.s3Service.Get(ctx, tr.ImageKey, nil)
 			if imageUrl != nil {
 				resourceImageUrl = *imageUrl
 			}
@@ -69,10 +68,7 @@ func (uc *getTopicResourceAppUseCase) GetOutputResources4App(ctx context.Context
 				for i := range langCfg.Images {
 					img := &langCfg.Images[i]
 					if img.ImageKey != "" {
-						url, err := uc.fileGateway.GetImageUrl(ctx, gw_request.GetFileUrlRequest{
-							Key:  img.ImageKey,
-							Mode: "private",
-						})
+						url, err := uc.s3Service.Get(ctx, img.ImageKey, nil)
 						if err == nil && url != nil {
 							img.UploadedUrl = *url
 						}
