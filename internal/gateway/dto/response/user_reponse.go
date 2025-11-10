@@ -64,3 +64,9 @@ type UserInfo struct {
 	Name   string `json:"name"`
 	Avatar Avatar `json:"avatar"`
 }
+
+type UserInfoResponse struct {
+	ID     string `json:"id"`
+	Name   string `json:"name"`
+	Avatar Avatar `json:"avatar"`
+}

@@ -267,10 +267,10 @@ func (s *videoUploaderService) GetVideosUploader4Web(ctx context.Context) ([]res
 		return nil, err
 	}
 
-	user, err := s.userGateway.GetUserByID(ctx, videoUploaders[0].CreatedBy)
-	if err != nil {
-		return nil, err
+	user, _ := s.userGateway.GetUserByID(ctx, videoUploaders[0].CreatedBy)
+	createdByName := ""
+	if user != nil {
+		createdByName = user.Name
 	}
-
-	return mapper.ToGetVideosResponse4Web(videoUploaders, user.Nickname), nil
+	return mapper.ToGetVideosResponse4Web(videoUploaders, createdByName), nil
 }
