@@ -38,7 +38,7 @@ func NewVideoUploaderService(videoUploaderRepository repository.VideoUploaderRep
 // ======================================================
 func (s *videoUploaderService) UploadVideoUploader(ctx context.Context, req request.UploadVideoUploaderRequest) (*model.VideoUploader, error) {
 	currentUser, _ := ctx.Value(constants.CurrentUserKey).(*gw_response.CurrentUser)
-	if currentUser == nil || currentUser.OrganizationAdmin.ID == "" || currentUser.IsSuperAdmin {
+	if !currentUser.IsSuperAdmin {
 		return nil, fmt.Errorf("access denied")
 	}
 	orgID := currentUser.OrganizationAdmin.ID
