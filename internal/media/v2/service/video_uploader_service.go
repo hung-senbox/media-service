@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 	"media-service/helper"
+	"media-service/internal/gateway"
 	gw_response "media-service/internal/gateway/dto/response"
 	"media-service/internal/media/model"
 	"media-service/internal/media/v2/dto/request"
@@ -27,10 +28,11 @@ type videoUploaderService struct {
 	videoUploaderRepository repository.VideoUploaderRepository
 	s3Service               s3.Service
 	redisService            *redis.RedisService
+	userGateway             gateway.UserGateway
 }
 
-func NewVideoUploaderService(videoUploaderRepository repository.VideoUploaderRepository, s3Service s3.Service, redisService *redis.RedisService) VideoUploaderService {
-	return &videoUploaderService{videoUploaderRepository: videoUploaderRepository, s3Service: s3Service, redisService: redisService}
+func NewVideoUploaderService(videoUploaderRepository repository.VideoUploaderRepository, s3Service s3.Service, redisService *redis.RedisService, userGateway gateway.UserGateway) VideoUploaderService {
+	return &videoUploaderService{videoUploaderRepository: videoUploaderRepository, s3Service: s3Service, redisService: redisService, userGateway: userGateway}
 }
 
 // ======================================================
@@ -222,7 +224,7 @@ func deref(s *string) string {
 
 func (s *videoUploaderService) GetUploaderStatus(ctx context.Context, videoUploaderID string) (response.GetUploaderStatusResponse, error) {
 	currentUser, _ := ctx.Value(constants.CurrentUserKey).(*gw_response.CurrentUser)
-	if currentUser == nil || currentUser.OrganizationAdmin.ID == "" || currentUser.IsSuperAdmin {
+	if !currentUser.IsSuperAdmin {
 		return response.GetUploaderStatusResponse{}, fmt.Errorf("access denied")
 	}
 
@@ -252,14 +254,23 @@ func (s *videoUploaderService) GetUploaderStatus(ctx context.Context, videoUploa
 
 func (s *videoUploaderService) GetVideosUploader4Web(ctx context.Context) ([]response.GetVideoUploaderResponse4Web, error) {
 	currentUser, _ := ctx.Value(constants.CurrentUserKey).(*gw_response.CurrentUser)
-	if currentUser == nil || currentUser.OrganizationAdmin.ID == "" || currentUser.IsSuperAdmin {
-		return nil, fmt.Errorf("access denied")
+	if currentUser.IsSuperAdmin {
+		videoUploaders, err := s.videoUploaderRepository.GetAllVideos(ctx)
+		if err != nil {
+			return nil, err
+		}
+		return mapper.ToGetVideosResponse4Web(videoUploaders, currentUser.Nickname), nil
 	}
 
-	videoUploaders, err := s.videoUploaderRepository.GetVideosByCreatedBy(ctx, currentUser.ID)
+	videoUploaders, err := s.videoUploaderRepository.GetVideosIsVisible(ctx)
 	if err != nil {
 		return nil, err
 	}
 
-	return mapper.ToGetVideosResponse4Web(videoUploaders, currentUser.Nickname), nil
+	user, err := s.userGateway.GetUserByID(ctx, videoUploaders[0].CreatedBy)
+	if err != nil {
+		return nil, err
+	}
+
+	return mapper.ToGetVideosResponse4Web(videoUploaders, user.Nickname), nil
 }

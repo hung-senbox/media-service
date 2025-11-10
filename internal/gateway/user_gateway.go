@@ -14,6 +14,7 @@ import (
 )
 
 type UserGateway interface {
+	GetUserByID(ctx context.Context, userID string) (*response.CurrentUser, error)
 	GetCurrentUser(ctx context.Context) (*response.CurrentUser, error)
 	GetUserByTeacher(ctx context.Context, teacherID string) (*response.CurrentUser, error)
 	GetStudentInfo(ctx context.Context, studentID string) (*response.StudentResponse, error)
@@ -78,6 +79,39 @@ func (g *userGatewayImpl) GetCurrentUser(ctx context.Context) (*response.Current
 			"status_code": gwResp.StatusCode,
 			"message":     gwResp.Message,
 		})
+		return nil, fmt.Errorf("gateway error: %s", gwResp.Message)
+	}
+
+	return &gwResp.Data, nil
+}
+
+// Get User by id
+func (g *userGatewayImpl) GetUserByID(ctx context.Context, userID string) (*response.CurrentUser, error) {
+	token, ok := ctx.Value(constants.Token).(string)
+	if !ok {
+		return nil, fmt.Errorf("token not found in context")
+	}
+
+	client, err := NewGatewayClient(g.serviceName, token, g.consul, nil)
+	if err != nil {
+		return nil, fmt.Errorf("init GatewayClient fail: %w", err)
+	}
+
+	headers := helper.GetHeaders(ctx)
+
+	resp, err := client.Call("GET", "/v1/gateway/users/"+userID, nil, headers)
+	if err != nil {
+		return nil, fmt.Errorf("call API user fail: %w", err)
+	}
+
+	// Unmarshal response theo format Gateway
+	var gwResp response.APIGateWayResponse[response.CurrentUser]
+	if err := json.Unmarshal(resp, &gwResp); err != nil {
+		return nil, fmt.Errorf("unmarshal response fail: %w", err)
+	}
+
+	// Check status_code trả về
+	if gwResp.StatusCode != 200 {
 		return nil, fmt.Errorf("gateway error: %s", gwResp.Message)
 	}
 

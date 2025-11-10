@@ -17,6 +17,8 @@ type VideoUploaderRepository interface {
 	SetImagePreviewMetadata(ctx context.Context, videoUploaderID string, imageKey, imagePublicUrl string) error
 	GetVideoUploaderByID(ctx context.Context, videoUploaderID string) (*model.VideoUploader, error)
 	GetVideosByCreatedBy(ctx context.Context, createdBy string) ([]model.VideoUploader, error)
+	GetAllVideos(ctx context.Context) ([]model.VideoUploader, error)
+	GetVideosIsVisible(ctx context.Context) ([]model.VideoUploader, error)
 }
 
 type videoUploaderRepository struct {
@@ -135,6 +137,32 @@ func (r *videoUploaderRepository) GetVideosByCreatedBy(ctx context.Context, crea
 	err = cursor.All(ctx, &videoUploaders)
 	if err != nil {
 		return nil, fmt.Errorf("failed to decode videos by created by: %w", err)
+	}
+	return videoUploaders, nil
+}
+
+func (r *videoUploaderRepository) GetAllVideos(ctx context.Context) ([]model.VideoUploader, error) {
+	var videoUploaders []model.VideoUploader
+	cursor, err := r.videoUploaderCollection.Find(ctx, bson.M{})
+	if err != nil {
+		return nil, fmt.Errorf("failed to get all videos: %w", err)
+	}
+	err = cursor.All(ctx, &videoUploaders)
+	if err != nil {
+		return nil, fmt.Errorf("failed to decode all videos: %w", err)
+	}
+	return videoUploaders, nil
+}
+
+func (r *videoUploaderRepository) GetVideosIsVisible(ctx context.Context) ([]model.VideoUploader, error) {
+	var videoUploaders []model.VideoUploader
+	cursor, err := r.videoUploaderCollection.Find(ctx, bson.M{"is_visible": true})
+	if err != nil {
+		return nil, fmt.Errorf("failed to get videos is visible: %w", err)
+	}
+	err = cursor.All(ctx, &videoUploaders)
+	if err != nil {
+		return nil, fmt.Errorf("failed to decode videos is visible: %w", err)
 	}
 	return videoUploaders, nil
 }
