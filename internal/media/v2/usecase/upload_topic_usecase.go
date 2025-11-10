@@ -125,8 +125,6 @@ func (uc *uploadTopicUseCase) uploadAndSaveAudio(ctx context.Context, topicID st
 	}
 
 	oldAudioKey := uc.getAudioKeyByLanguage(topic, req.LanguageID)
-	finalAudioKey := oldAudioKey
-
 	if helper.IsValidFile(req.AudioFile) {
 		// xóa file cũ nếu có
 		if oldAudioKey != "" {
@@ -146,20 +144,26 @@ func (uc *uploadTopicUseCase) uploadAndSaveAudio(ctx context.Context, topicID st
 			_ = uc.redisService.SetUploadError(ctx, topicID, "audio_error", err.Error())
 			return
 		}
-		finalAudioKey = key
+		// cập nhật metadata + key (mới hoặc cũ)
+		err = uc.topicRepo.SetAudio(ctx, topicID, req.LanguageID, model.TopicAudioConfig{
+			AudioKey:  key,
+			LinkUrl:   req.AudioLinkUrl,
+			StartTime: req.AudioStart,
+			EndTime:   req.AudioEnd,
+		})
+		if err != nil {
+			_ = uc.redisService.SetUploadError(ctx, topicID, "audio_error", err.Error())
+		}
 		defer done()
 	}
 
 	// cập nhật metadata + key (mới hoặc cũ)
-	err = uc.topicRepo.SetAudio(ctx, topicID, req.LanguageID, model.TopicAudioConfig{
-		AudioKey:  finalAudioKey,
+	uc.topicRepo.SetAudio(ctx, topicID, req.LanguageID, model.TopicAudioConfig{
+		AudioKey:  oldAudioKey,
 		LinkUrl:   req.AudioLinkUrl,
 		StartTime: req.AudioStart,
 		EndTime:   req.AudioEnd,
 	})
-	if err != nil {
-		_ = uc.redisService.SetUploadError(ctx, topicID, "audio_error", err.Error())
-	}
 }
 
 func (uc *uploadTopicUseCase) uploadAndSaveVideo(ctx context.Context, topicID string, req request.UploadTopicRequest, done func()) {
@@ -170,7 +174,6 @@ func (uc *uploadTopicUseCase) uploadAndSaveVideo(ctx context.Context, topicID st
 	}
 
 	oldVideoKey := uc.getVideoKeyByLanguage(topic, req.LanguageID)
-	finalVideoKey := oldVideoKey
 	if helper.IsValidFile(req.VideoFile) {
 		// xóa file cũ nếu có
 		if oldVideoKey != "" {
@@ -190,20 +193,25 @@ func (uc *uploadTopicUseCase) uploadAndSaveVideo(ctx context.Context, topicID st
 			_ = uc.redisService.SetUploadError(ctx, topicID, "video_error", err.Error())
 			return
 		}
-		finalVideoKey = key
+		err = uc.topicRepo.SetVideo(ctx, topicID, req.LanguageID, model.TopicVideoConfig{
+			VideoKey:  key,
+			LinkUrl:   req.VideoLinkUrl,
+			StartTime: req.VideoStart,
+			EndTime:   req.VideoEnd,
+		})
+		if err != nil {
+			_ = uc.redisService.SetUploadError(ctx, topicID, "video_error", err.Error())
+		}
 		defer done()
 	}
 
 	// cập nhật metadata + key (mới hoặc cũ)
-	err = uc.topicRepo.SetVideo(ctx, topicID, req.LanguageID, model.TopicVideoConfig{
-		VideoKey:  finalVideoKey,
+	uc.topicRepo.SetVideo(ctx, topicID, req.LanguageID, model.TopicVideoConfig{
+		VideoKey:  oldVideoKey,
 		LinkUrl:   req.VideoLinkUrl,
 		StartTime: req.VideoStart,
 		EndTime:   req.VideoEnd,
 	})
-	if err != nil {
-		_ = uc.redisService.SetUploadError(ctx, topicID, "video_error", err.Error())
-	}
 }
 
 func (uc *uploadTopicUseCase) uploadAndSaveImages(ctx context.Context, topicID string, req request.UploadTopicRequest, done func()) {
