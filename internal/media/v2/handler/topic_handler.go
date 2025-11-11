@@ -2,6 +2,7 @@ package handler
 
 import (
 	"media-service/helper"
+	"media-service/internal/media/v2/dto/request"
 	"media-service/internal/media/v2/service"
 	"net/http"
 	"strconv"
@@ -18,7 +19,12 @@ func NewTopicHandler(service service.TopicService) *TopicHandler {
 }
 
 func (h *TopicHandler) UploadTopic(c *gin.Context) {
-	res, err := h.service.UploadTopic(c)
+	var req request.UploadTopicRequest
+	if err := c.ShouldBind(&req); err != nil {
+		helper.SendError(c, http.StatusBadRequest, err, helper.ErrInvalidRequest)
+		return
+	}
+	res, err := h.service.UploadTopic(c.Request.Context(), req)
 	if err != nil {
 		helper.SendError(c, http.StatusInternalServerError, err, helper.ErrInvalidOperation)
 		return
