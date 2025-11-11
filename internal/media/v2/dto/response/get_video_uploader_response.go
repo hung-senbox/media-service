@@ -2,6 +2,7 @@ package response
 
 type GetVideoUploaderResponse4Web struct {
 	ID              string `json:"id"`
+	LanguageID      uint   `json:"language_id"`
 	IsVisible       bool   `json:"is_visible"`
 	CreatedByName   string `json:"created_by_name"`
 	Title           string `json:"title"`

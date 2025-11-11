@@ -13,12 +13,13 @@ import (
 
 type VideoUploaderRepository interface {
 	SetVideoUploaderWithoutFiles(ctx context.Context, videoUploader *model.VideoUploader) error
-	SetVideoMetadata(ctx context.Context, videoUploaderID string, languageID uint, videoKey, videoPublicUrl string) error
-	SetImagePreviewMetadata(ctx context.Context, videoUploaderID string, languageID uint, imageKey, imagePublicUrl string) error
+	SetVideoMetadata(ctx context.Context, videoUploaderID string, videoKey, videoPublicUrl string) error
+	SetImagePreviewMetadata(ctx context.Context, videoUploaderID string, imageKey, imagePublicUrl string) error
 	GetVideoUploaderByID(ctx context.Context, videoUploaderID string) (*model.VideoUploader, error)
 	GetVideosByCreatedBy(ctx context.Context, createdBy string) ([]model.VideoUploader, error)
 	GetAllVideos(ctx context.Context) ([]model.VideoUploader, error)
 	GetVideosIsVisible(ctx context.Context) ([]model.VideoUploader, error)
+	GetVideosByLanguageID(ctx context.Context, languageID uint) ([]model.VideoUploader, error)
 }
 
 type videoUploaderRepository struct {
@@ -52,11 +53,13 @@ func (r *videoUploaderRepository) SetVideoUploaderWithoutFiles(ctx context.Conte
 		return nil
 	}
 
-	// có rồi → chỉ update IsVisible
+	// có rồi → update basic fields
 	update := bson.M{
 		"$set": bson.M{
-			"is_visible": videoUploader.IsVisible,
-			"updated_at": time.Now(),
+			"is_visible":  videoUploader.IsVisible,
+			"title":       videoUploader.Title,
+			"language_id": videoUploader.LanguageID,
+			"updated_at":  time.Now(),
 		},
 	}
 
@@ -68,78 +71,44 @@ func (r *videoUploaderRepository) SetVideoUploaderWithoutFiles(ctx context.Conte
 	return nil
 }
 
-func (r *videoUploaderRepository) SetVideoMetadata(ctx context.Context, videoUploaderID string, languageID uint, videoKey, videoPublicUrl string) error {
+func (r *videoUploaderRepository) SetVideoMetadata(ctx context.Context, videoUploaderID string, videoKey, videoPublicUrl string) error {
 	objID, err := primitive.ObjectIDFromHex(videoUploaderID)
 	if err != nil {
 		return fmt.Errorf("invalid videoUploaderID: %w", err)
 	}
 
-	// Try update existing language config
-	filter := bson.M{"_id": objID, "language_config.language_id": languageID}
+	filter := bson.M{"_id": objID}
 	update := bson.M{
 		"$set": bson.M{
-			"language_config.$.video_key":        videoKey,
-			"language_config.$.video_public_url": videoPublicUrl,
-			"updated_at":                         time.Now(),
+			"video_key":        videoKey,
+			"video_public_url": videoPublicUrl,
+			"updated_at":       time.Now(),
 		},
 	}
-	res, err := r.videoUploaderCollection.UpdateOne(ctx, filter, update)
+	_, err = r.videoUploaderCollection.UpdateOne(ctx, filter, update)
 	if err != nil {
 		return fmt.Errorf("failed to set video metadata: %w", err)
-	}
-	// If language config not exist, push new
-	if res.MatchedCount == 0 {
-		pushUpdate := bson.M{
-			"$push": bson.M{
-				"language_config": model.VideoLanguageConfig{
-					LanguageID:     languageID,
-					VideoKey:       videoKey,
-					VideoPublicUrl: videoPublicUrl,
-				},
-			},
-			"$set": bson.M{"updated_at": time.Now()},
-		}
-		_, err = r.videoUploaderCollection.UpdateOne(ctx, bson.M{"_id": objID}, pushUpdate)
-		if err != nil {
-			return fmt.Errorf("failed to push language video metadata: %w", err)
-		}
 	}
 	return nil
 }
 
-func (r *videoUploaderRepository) SetImagePreviewMetadata(ctx context.Context, videoUploaderID string, languageID uint, imageKey, imagePublicUrl string) error {
+func (r *videoUploaderRepository) SetImagePreviewMetadata(ctx context.Context, videoUploaderID string, imageKey, imagePublicUrl string) error {
 	objID, err := primitive.ObjectIDFromHex(videoUploaderID)
 	if err != nil {
 		return fmt.Errorf("invalid videoUploaderID: %w", err)
 	}
 
-	filter := bson.M{"_id": objID, "language_config.language_id": languageID}
+	filter := bson.M{"_id": objID}
 	update := bson.M{
 		"$set": bson.M{
-			"language_config.$.image_preview_key":        imageKey,
-			"language_config.$.image_preview_public_url": imagePublicUrl,
-			"updated_at": time.Now(),
+			"image_preview_key":        imageKey,
+			"image_preview_public_url": imagePublicUrl,
+			"updated_at":               time.Now(),
 		},
 	}
-	res, err := r.videoUploaderCollection.UpdateOne(ctx, filter, update)
+	_, err = r.videoUploaderCollection.UpdateOne(ctx, filter, update)
 	if err != nil {
 		return fmt.Errorf("failed to set image preview metadata: %w", err)
-	}
-	if res.MatchedCount == 0 {
-		pushUpdate := bson.M{
-			"$push": bson.M{
-				"language_config": model.VideoLanguageConfig{
-					LanguageID:            languageID,
-					ImagePreviewKey:       imageKey,
-					ImagePreviewPublicUrl: imagePublicUrl,
-				},
-			},
-			"$set": bson.M{"updated_at": time.Now()},
-		}
-		_, err = r.videoUploaderCollection.UpdateOne(ctx, bson.M{"_id": objID}, pushUpdate)
-		if err != nil {
-			return fmt.Errorf("failed to push language image metadata: %w", err)
-		}
 	}
 	return nil
 }
@@ -194,6 +163,19 @@ func (r *videoUploaderRepository) GetVideosIsVisible(ctx context.Context) ([]mod
 	err = cursor.All(ctx, &videoUploaders)
 	if err != nil {
 		return nil, fmt.Errorf("failed to decode videos is visible: %w", err)
+	}
+	return videoUploaders, nil
+}
+
+func (r *videoUploaderRepository) GetVideosByLanguageID(ctx context.Context, languageID uint) ([]model.VideoUploader, error) {
+	var videoUploaders []model.VideoUploader
+	cursor, err := r.videoUploaderCollection.Find(ctx, bson.M{"language_id": languageID})
+	if err != nil {
+		return nil, fmt.Errorf("failed to get videos by language id: %w", err)
+	}
+	err = cursor.All(ctx, &videoUploaders)
+	if err != nil {
+		return nil, fmt.Errorf("failed to decode videos by language id: %w", err)
 	}
 	return videoUploaders, nil
 }
