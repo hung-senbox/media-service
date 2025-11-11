@@ -21,7 +21,7 @@ import (
 type VideoUploaderService interface {
 	UploadVideoUploader(ctx context.Context, req request.UploadVideoUploaderRequest) (*model.VideoUploader, error)
 	GetUploaderStatus(ctx context.Context, videoUploaderID string) (response.GetUploaderStatusResponse, error)
-	GetVideosUploader4Web(ctx context.Context) ([]response.GetVideoUploaderResponse4Web, error)
+	GetVideosUploader4Web(ctx context.Context, languageID uint) ([]response.GetVideoUploaderResponse4Web, error)
 }
 
 type videoUploaderService struct {
@@ -92,7 +92,7 @@ func (s *videoUploaderService) UploadVideoUploader(ctx context.Context, req requ
 	}
 
 	// Step 3: chạy upload async (fire-and-forget)
-	ctxUpload, cancel := context.WithTimeout(context.Background(), 15*time.Minute)
+	ctxUpload, cancel := context.WithTimeout(context.Background(), 5*time.Minute)
 
 	if token, ok := ctx.Value(constants.Token).(string); ok {
 		ctxUpload = context.WithValue(ctxUpload, constants.Token, token)
@@ -268,25 +268,16 @@ func (s *videoUploaderService) GetUploaderStatus(ctx context.Context, videoUploa
 	}, nil
 }
 
-func (s *videoUploaderService) GetVideosUploader4Web(ctx context.Context) ([]response.GetVideoUploaderResponse4Web, error) {
+func (s *videoUploaderService) GetVideosUploader4Web(ctx context.Context, languageID uint) ([]response.GetVideoUploaderResponse4Web, error) {
 	currentUser, _ := ctx.Value(constants.CurrentUserKey).(*gw_response.CurrentUser)
-	if currentUser.IsSuperAdmin {
-		videoUploaders, err := s.videoUploaderRepository.GetAllVideos(ctx)
-		if err != nil {
-			return nil, err
-		}
-		return mapper.ToGetVideosResponse4Web(videoUploaders, currentUser.Nickname), nil
+	if !currentUser.IsSuperAdmin {
+		return nil, fmt.Errorf("access denied")
 	}
 
-	videoUploaders, err := s.videoUploaderRepository.GetVideosIsVisible(ctx)
+	videoUploaders, err := s.videoUploaderRepository.GetAllVideos(ctx)
 	if err != nil {
 		return nil, err
 	}
+	return mapper.ToGetVideosResponse4Web(videoUploaders, currentUser.Nickname, languageID), nil
 
-	user, _ := s.userGateway.GetUserByID(ctx, videoUploaders[0].CreatedBy)
-	createdByName := ""
-	if user != nil {
-		createdByName = user.Name
-	}
-	return mapper.ToGetVideosResponse4Web(videoUploaders, createdByName), nil
 }
