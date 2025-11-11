@@ -40,7 +40,7 @@ func NewUploadTopicUseCase(topicRepo repository.TopicRepository, s3Svc s3.Servic
 
 // ------------------- UploadTopic main flow -------------------
 func (uc *uploadTopicUseCase) UploadTopic(ctx *gin.Context) (*model.Topic, error) {
-	currentUser, _ := ctx.Value(constants.CurrentUserKey).(*gw_response.CurrentUser)
+	currentUser, _ := ctx.Request.Context().Value(constants.CurrentUserKey).(*gw_response.CurrentUser)
 	if currentUser == nil || !currentUser.IsSuperAdmin {
 		return nil, fmt.Errorf("access denied")
 	}
