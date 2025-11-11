@@ -234,7 +234,9 @@ func (s *videoUploaderService) GetUploaderStatus(ctx context.Context, videoUploa
 	key := helper.BuildVideoUploaderRedisKey(videoUploaderID)
 	status, err := s.redisService.GetUploaderStatus(ctx, key)
 	if err != nil {
-		return response.GetUploaderStatusResponse{}, err
+		return response.GetUploaderStatusResponse{
+			Status: "done",
+		}, err
 	}
 	if len(status) == 0 {
 		return response.GetUploaderStatusResponse{}, nil
