@@ -15,6 +15,7 @@ import (
 	"media-service/internal/s3"
 	"media-service/pkg/constants"
 	"media-service/pkg/uploader"
+	"strings"
 	"time"
 )
 
@@ -258,20 +259,26 @@ func (s *videoUploaderService) GetVideosUploader4Web(ctx context.Context, langua
 		return nil, fmt.Errorf("access denied")
 	}
 
-	if languageID != "" {
+	// Default: fetch all
+	var (
+		videoUploaders []model.VideoUploader
+		err            error
+	)
+	if langStr := strings.TrimSpace(languageID); langStr != "" {
 		var langID uint
-		fmt.Sscan(languageID, &langID)
-		videoUploaders, err := s.videoUploaderRepository.GetVideosByLanguageID(ctx, langID)
+		if _, scanErr := fmt.Sscan(langStr, &langID); scanErr == nil && langID > 0 {
+			videoUploaders, err = s.videoUploaderRepository.GetVideosByLanguageID(ctx, langID)
+			if err != nil {
+				return nil, err
+			}
+		}
+	}
+	if videoUploaders == nil {
+		videoUploaders, err = s.videoUploaderRepository.GetAllVideos(ctx)
 		if err != nil {
 			return nil, err
 		}
-		return mapper.ToGetVideosResponse4Web(videoUploaders, currentUser.Nickname), nil
 	}
-	videoUploaders, err := s.videoUploaderRepository.GetAllVideos(ctx)
-	if err != nil {
-		return nil, err
-	}
-
 	return mapper.ToGetVideosResponse4Web(videoUploaders, currentUser.Nickname), nil
 
 }
