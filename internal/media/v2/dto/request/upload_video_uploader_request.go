@@ -8,4 +8,5 @@ type UploadVideoUploaderRequest struct {
 	VideoFile        *multipart.FileHeader `form:"video_file"`
 	ImagePreviewFile *multipart.FileHeader `form:"image_preview_file"`
 	IsVisible        bool                  `form:"is_visible"`
+	LanguageID       uint                  `form:"language_id"`
 }

@@ -21,7 +21,7 @@ import (
 type VideoUploaderService interface {
 	UploadVideoUploader(ctx context.Context, req request.UploadVideoUploaderRequest) (*model.VideoUploader, error)
 	GetUploaderStatus(ctx context.Context, videoUploaderID string) (response.GetUploaderStatusResponse, error)
-	GetVideosUploader4Web(ctx context.Context) ([]response.GetVideoUploaderResponse4Web, error)
+	GetVideosUploader4Web(ctx context.Context, languageID uint) ([]response.GetVideoUploaderResponse4Web, error)
 }
 
 type videoUploaderService struct {
@@ -43,7 +43,6 @@ func (s *videoUploaderService) UploadVideoUploader(ctx context.Context, req requ
 	if !currentUser.IsSuperAdmin {
 		return nil, fmt.Errorf("access denied")
 	}
-	orgID := currentUser.OrganizationAdmin.ID
 
 	var videoUploader *model.VideoUploader
 
@@ -53,7 +52,6 @@ func (s *videoUploaderService) UploadVideoUploader(ctx context.Context, req requ
 		if err != nil {
 			return nil, fmt.Errorf("get video uploader failed: %w", err)
 		}
-		existing.Title = req.Title
 		existing.IsVisible = req.IsVisible
 		existing.UpdatedAt = time.Now()
 
@@ -63,12 +61,16 @@ func (s *videoUploaderService) UploadVideoUploader(ctx context.Context, req requ
 		videoUploader = existing
 	} else {
 		newVideo := &model.VideoUploader{
-			Title:          req.Title,
-			OrganizationID: orgID,
-			CreatedBy:      currentUser.ID,
-			IsVisible:      req.IsVisible,
-			CreatedAt:      time.Now(),
-			UpdatedAt:      time.Now(),
+			CreatedBy: currentUser.ID,
+			IsVisible: req.IsVisible,
+			LanguageConfig: []model.VideoLanguageConfig{
+				{
+					LanguageID: req.LanguageID,
+					Title:      req.Title,
+				},
+			},
+			CreatedAt: time.Now(),
+			UpdatedAt: time.Now(),
 		}
 		if err := s.videoUploaderRepository.SetVideoUploaderWithoutFiles(ctx, newVideo); err != nil {
 			return nil, fmt.Errorf("save video uploader failed: %w", err)
@@ -77,7 +79,7 @@ func (s *videoUploaderService) UploadVideoUploader(ctx context.Context, req requ
 	}
 
 	// Step 2: tạo Redis key mới (có orgID)
-	key := helper.BuildVideoUploaderRedisKey(videoUploader.ID.Hex(), orgID)
+	key := helper.BuildVideoUploaderRedisKey(videoUploader.ID.Hex())
 
 	// Ghi trạng thái pending
 	status := map[string]interface{}{
@@ -90,7 +92,7 @@ func (s *videoUploaderService) UploadVideoUploader(ctx context.Context, req requ
 	}
 
 	// Step 3: chạy upload async (fire-and-forget)
-	ctxUpload, cancel := context.WithTimeout(context.Background(), 15*time.Minute)
+	ctxUpload, cancel := context.WithTimeout(context.Background(), 5*time.Minute)
 
 	if token, ok := ctx.Value(constants.Token).(string); ok {
 		ctxUpload = context.WithValue(ctxUpload, constants.Token, token)
@@ -119,8 +121,15 @@ func (s *videoUploaderService) asyncUploadProcess(ctx context.Context, videoUplo
 	// upload video
 	if helper.IsValidFile(req.VideoFile) {
 		// neu co file thi check neu co file cu thi xoa
-		if videoUploader.VideoKey != "" {
-			_ = s.s3Service.Delete(ctx, videoUploader.VideoKey)
+		oldVideoKey := ""
+		for _, lc := range videoUploader.LanguageConfig {
+			if lc.LanguageID == req.LanguageID {
+				oldVideoKey = lc.VideoKey
+				break
+			}
+		}
+		if oldVideoKey != "" {
+			_ = s.s3Service.Delete(ctx, oldVideoKey)
 		}
 		// upload moi
 		err := s.processVideoUpload(ctx, videoUploader.ID.Hex(), req)
@@ -137,8 +146,15 @@ func (s *videoUploaderService) asyncUploadProcess(ctx context.Context, videoUplo
 	// upload ảnh preview
 	if helper.IsValidFile(req.ImagePreviewFile) {
 		// neu co file thi check neu co file cu thi xoa
-		if videoUploader.ImagePreviewKey != "" {
-			_ = s.s3Service.Delete(ctx, videoUploader.ImagePreviewKey)
+		oldImageKey := ""
+		for _, lc := range videoUploader.LanguageConfig {
+			if lc.LanguageID == req.LanguageID {
+				oldImageKey = lc.ImagePreviewKey
+				break
+			}
+		}
+		if oldImageKey != "" {
+			_ = s.s3Service.Delete(ctx, oldImageKey)
 		}
 		// upload moi
 		err := s.processImagePreviewUpload(ctx, videoUploader.ID.Hex(), req)
@@ -182,7 +198,8 @@ func (s *videoUploaderService) processVideoUpload(ctx context.Context, videoUplo
 	}
 
 	// cập nhật metadata vào DB
-	if err := s.videoUploaderRepository.SetVideoMetadata(ctx, videoUploaderID, key, deref(url)); err != nil {
+	lang := helper.GetAppLanguage(ctx, 1)
+	if err := s.videoUploaderRepository.SetVideoMetadata(ctx, videoUploaderID, lang, key, deref(url)); err != nil {
 		return fmt.Errorf("save video metadata failed: %w", err)
 	}
 
@@ -208,7 +225,8 @@ func (s *videoUploaderService) processImagePreviewUpload(ctx context.Context, vi
 	}
 
 	// cập nhật metadata vào DB
-	if err := s.videoUploaderRepository.SetImagePreviewMetadata(ctx, videoUploaderID, key, deref(url)); err != nil {
+	lang := helper.GetAppLanguage(ctx, 1)
+	if err := s.videoUploaderRepository.SetImagePreviewMetadata(ctx, videoUploaderID, lang, key, deref(url)); err != nil {
 		return fmt.Errorf("save image metadata failed: %w", err)
 	}
 
@@ -228,9 +246,7 @@ func (s *videoUploaderService) GetUploaderStatus(ctx context.Context, videoUploa
 		return response.GetUploaderStatusResponse{}, fmt.Errorf("access denied")
 	}
 
-	organizationID := currentUser.OrganizationAdmin.ID
-
-	key := helper.BuildVideoUploaderRedisKey(videoUploaderID, organizationID)
+	key := helper.BuildVideoUploaderRedisKey(videoUploaderID)
 	status, err := s.redisService.GetUploaderStatus(ctx, key)
 	if err != nil {
 		return response.GetUploaderStatusResponse{}, err
@@ -252,25 +268,16 @@ func (s *videoUploaderService) GetUploaderStatus(ctx context.Context, videoUploa
 	}, nil
 }
 
-func (s *videoUploaderService) GetVideosUploader4Web(ctx context.Context) ([]response.GetVideoUploaderResponse4Web, error) {
+func (s *videoUploaderService) GetVideosUploader4Web(ctx context.Context, languageID uint) ([]response.GetVideoUploaderResponse4Web, error) {
 	currentUser, _ := ctx.Value(constants.CurrentUserKey).(*gw_response.CurrentUser)
-	if currentUser.IsSuperAdmin {
-		videoUploaders, err := s.videoUploaderRepository.GetAllVideos(ctx)
-		if err != nil {
-			return nil, err
-		}
-		return mapper.ToGetVideosResponse4Web(videoUploaders, currentUser.Nickname), nil
+	if !currentUser.IsSuperAdmin {
+		return nil, fmt.Errorf("access denied")
 	}
 
-	videoUploaders, err := s.videoUploaderRepository.GetVideosIsVisible(ctx)
+	videoUploaders, err := s.videoUploaderRepository.GetAllVideos(ctx)
 	if err != nil {
 		return nil, err
 	}
+	return mapper.ToGetVideosResponse4Web(videoUploaders, currentUser.Nickname, languageID), nil
 
-	user, _ := s.userGateway.GetUserByID(ctx, videoUploaders[0].CreatedBy)
-	createdByName := ""
-	if user != nil {
-		createdByName = user.Name
-	}
-	return mapper.ToGetVideosResponse4Web(videoUploaders, createdByName), nil
 }

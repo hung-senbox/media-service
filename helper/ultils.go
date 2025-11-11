@@ -98,8 +98,8 @@ func RemoveDuplicateString(slice []string) []string {
 	return list
 }
 
-func BuildVideoUploaderRedisKey(videoUploaderID, organizationID string) string {
-	return fmt.Sprintf("media:upload_status:%s:%s", videoUploaderID, organizationID)
+func BuildVideoUploaderRedisKey(videoUploaderID string) string {
+	return fmt.Sprintf("media_video:upload_status:%s", videoUploaderID)
 }
 
 func BuildObjectKeyS3(folder, originalFilename, baseName string) string {

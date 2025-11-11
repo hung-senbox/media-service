@@ -1,6 +1,7 @@
 package handler
 
 import (
+	"fmt"
 	"media-service/helper"
 	"media-service/internal/media/v2/dto/request"
 	"media-service/internal/media/v2/service"
@@ -50,7 +51,14 @@ func (h *VideoUploaderHandler) GetUploaderStatus(c *gin.Context) {
 }
 
 func (h *VideoUploaderHandler) GetVideosUploader4Web(c *gin.Context) {
-	res, err := h.service.GetVideosUploader4Web(c.Request.Context())
+	languageID := c.Query("language_id")
+	if languageID == "" {
+		helper.SendError(c, http.StatusBadRequest, nil, helper.ErrInvalidRequest)
+		return
+	}
+	var langID uint
+	fmt.Sscan(languageID, &langID)
+	res, err := h.service.GetVideosUploader4Web(c.Request.Context(), langID)
 	if err != nil {
 		helper.SendError(c, http.StatusInternalServerError, err, helper.ErrInvalidOperation)
 		return
