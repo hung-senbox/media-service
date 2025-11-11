@@ -16,11 +16,12 @@ import (
 	"media-service/pkg/constants"
 	"media-service/pkg/uploader"
 
+	"github.com/gin-gonic/gin"
 	"go.mongodb.org/mongo-driver/bson/primitive"
 )
 
 type UploadTopicUseCase interface {
-	UploadTopic(ctx context.Context, req request.UploadTopicRequest) (*model.Topic, error)
+	UploadTopic(ctx *gin.Context) (*model.Topic, error)
 }
 
 type uploadTopicUseCase struct {
@@ -38,67 +39,116 @@ func NewUploadTopicUseCase(topicRepo repository.TopicRepository, s3Svc s3.Servic
 }
 
 // ------------------- UploadTopic main flow -------------------
-func (uc *uploadTopicUseCase) UploadTopic(ctx context.Context, req request.UploadTopicRequest) (*model.Topic, error) {
+func (uc *uploadTopicUseCase) UploadTopic(ctx *gin.Context) (*model.Topic, error) {
 	currentUser, _ := ctx.Value(constants.CurrentUserKey).(*gw_response.CurrentUser)
 	if currentUser == nil || !currentUser.IsSuperAdmin {
 		return nil, fmt.Errorf("access denied")
 	}
 
-	// Check upload in progress (toàn cục, không phụ thuộc organization)
-	inProgress, err := uc.redisService.HasAnyUploadInProgress(ctx)
+	inProgress, err := uc.redisService.HasAnyUploadInProgress(ctx.Request.Context())
 	if err == nil && inProgress {
 		return nil, fmt.Errorf("please wait until the previous upload is completed")
 	}
 
+	// --- đọc metadata (non-file fields) ---
+	var req request.UploadTopicRequest
+	req.TopicID = ctx.PostForm("topic_id")
+
+	langIDStr := ctx.PostForm("language_id")
+	fmt.Sscan(langIDStr, &req.LanguageID)
+
+	req.FileName = ctx.PostForm("file_name")
+	req.Title = ctx.PostForm("title")
+	req.Note = ctx.PostForm("note")
+	req.Description = ctx.PostForm("description")
+	req.IsPublished = ctx.PostForm("is_published") == "true"
+
+	// --- tạo hoặc cập nhật topic ---
 	var topic *model.Topic
-
 	if req.TopicID != "" {
-		// Case update existing topic
 		topic, err = uc.updateTopicLanguage(ctx, req)
-		if err != nil {
-			return nil, err
-		}
 	} else {
-		// Case create new topic
 		topic, err = uc.createTopicLanguage(ctx, req)
-		if err != nil {
-			return nil, err
+	}
+	if err != nil {
+		return nil, err
+	}
+
+	// --- chạy upload async ---
+	topicID := topic.ID.Hex()
+	reqCopy := req // copy an toàn
+
+	go func(c *gin.Context, topicID string, req request.UploadTopicRequest) {
+		defer func() {
+			if r := recover(); r != nil {
+				logger.WriteLogData("[UploadTopic] panic in async upload", fmt.Errorf("%v", r))
+			}
+		}()
+
+		// tạo context độc lập cho goroutine
+		ctxUpload := context.Background()
+		if token, ok := c.Value(constants.Token).(string); ok {
+			ctxUpload = context.WithValue(ctxUpload, constants.Token, token)
 		}
-	}
 
-	// Count valid upload files
-	files := []*multipart.FileHeader{
-		req.AudioFile, req.VideoFile, req.FullBackgroundFile,
-		req.ClearBackgroundFile, req.ClipPartFile,
-		req.DrawingFile, req.IconFile, req.BMFile,
-	}
+		// --- đọc file từ form (1 lần duy nhất) ---
+		req.AudioFile, _ = c.FormFile("audio_file")
+		req.VideoFile, _ = c.FormFile("video_file")
+		req.FullBackgroundFile, _ = c.FormFile("full_background_file")
+		req.ClearBackgroundFile, _ = c.FormFile("clear_background_file")
+		req.ClipPartFile, _ = c.FormFile("clip_part_file")
+		req.DrawingFile, _ = c.FormFile("drawing_file")
+		req.IconFile, _ = c.FormFile("icon_file")
+		req.BMFile, _ = c.FormFile("bm_file")
 
-	totalTasks := 0
-	for _, f := range files {
-		if helper.IsValidFile(f) {
-			totalTasks++
+		req.AudioLinkUrl = c.PostForm("audio_link_url")
+		req.VideoLinkUrl = c.PostForm("video_link_url")
+		req.FullBackgroundLink = c.PostForm("full_background_link_url")
+		req.ClearBackgroundLink = c.PostForm("clear_background_link_url")
+		req.ClipPartLink = c.PostForm("clip_part_link_url")
+		req.DrawingLink = c.PostForm("drawing_link_url")
+		req.IconLink = c.PostForm("icon_link_url")
+		req.BMLink = c.PostForm("bm_link_url")
+		req.AudioStart = c.PostForm("audio_start_time")
+		req.AudioEnd = c.PostForm("audio_end_time")
+		req.VideoStart = c.PostForm("video_start_time")
+		req.VideoEnd = c.PostForm("video_end_time")
+
+		// --- đếm file hợp lệ ---
+		files := []*multipart.FileHeader{
+			req.AudioFile, req.VideoFile, req.FullBackgroundFile,
+			req.ClearBackgroundFile, req.ClipPartFile,
+			req.DrawingFile, req.IconFile, req.BMFile,
 		}
-	}
 
-	if totalTasks > 0 {
-		_ = uc.redisService.InitUploadProgress(ctx, topic.ID.Hex(), totalTasks)
-		go uc.uploadFilesAsyncWithContext(ctx, topic.ID.Hex(), req)
-	} else {
-		go uc.uploadFilesAsyncWithContext(ctx, topic.ID.Hex(), req)
-	}
+		totalTasks := 0
+		for _, f := range files {
+			if helper.IsValidFile(f) {
+				totalTasks++
+			}
+		}
+
+		if totalTasks > 0 {
+			if err := uc.redisService.InitUploadProgress(ctxUpload, topicID, totalTasks); err != nil {
+				logger.WriteLogData("[UploadTopic] init upload progress failed", err)
+			}
+		}
+
+		uc.uploadFilesAsyncWithContext(ctxUpload, topicID, req)
+
+	}(ctx.Copy(), topicID, reqCopy)
 
 	return topic, nil
 }
 
 // ------------------- Upload async -------------------
 func (uc *uploadTopicUseCase) uploadFilesAsyncWithContext(ctx context.Context, topicID string, req request.UploadTopicRequest) {
-	ctxUpload := context.Background()
 
 	if token, ok := ctx.Value(constants.Token).(string); ok {
-		ctxUpload = context.WithValue(ctxUpload, constants.Token, token)
+		ctx = context.WithValue(ctx, constants.Token, token)
 	}
 
-	uc.uploadFilesAsync(ctxUpload, topicID, req)
+	uc.uploadFilesAsync(ctx, topicID, req)
 }
 
 func (uc *uploadTopicUseCase) uploadFilesAsync(ctx context.Context, topicID string, req request.UploadTopicRequest) {
@@ -142,6 +192,7 @@ func (uc *uploadTopicUseCase) uploadAndSaveAudio(ctx context.Context, topicID st
 		_, err := uc.s3Service.SaveReader(ctx, f, key, ct, uploader.UploadPrivate)
 		if err != nil {
 			_ = uc.redisService.SetUploadError(ctx, topicID, "audio_error", err.Error())
+			defer f.Close()
 			return
 		}
 		// cập nhật metadata + key (mới hoặc cũ)
@@ -155,15 +206,14 @@ func (uc *uploadTopicUseCase) uploadAndSaveAudio(ctx context.Context, topicID st
 			_ = uc.redisService.SetUploadError(ctx, topicID, "audio_error", err.Error())
 		}
 		defer done()
+	} else {
+		uc.topicRepo.SetAudio(ctx, topicID, req.LanguageID, model.TopicAudioConfig{
+			AudioKey:  oldAudioKey,
+			LinkUrl:   req.AudioLinkUrl,
+			StartTime: req.AudioStart,
+			EndTime:   req.AudioEnd,
+		})
 	}
-
-	// cập nhật metadata + key (mới hoặc cũ)
-	uc.topicRepo.SetAudio(ctx, topicID, req.LanguageID, model.TopicAudioConfig{
-		AudioKey:  oldAudioKey,
-		LinkUrl:   req.AudioLinkUrl,
-		StartTime: req.AudioStart,
-		EndTime:   req.AudioEnd,
-	})
 }
 
 func (uc *uploadTopicUseCase) uploadAndSaveVideo(ctx context.Context, topicID string, req request.UploadTopicRequest, done func()) {
@@ -184,6 +234,7 @@ func (uc *uploadTopicUseCase) uploadAndSaveVideo(ctx context.Context, topicID st
 		f, openErr := req.VideoFile.Open()
 		if openErr != nil {
 			_ = uc.redisService.SetUploadError(ctx, topicID, "video_error", openErr.Error())
+			defer f.Close()
 			return
 		}
 		defer f.Close()
@@ -203,15 +254,14 @@ func (uc *uploadTopicUseCase) uploadAndSaveVideo(ctx context.Context, topicID st
 			_ = uc.redisService.SetUploadError(ctx, topicID, "video_error", err.Error())
 		}
 		defer done()
+	} else {
+		uc.topicRepo.SetVideo(ctx, topicID, req.LanguageID, model.TopicVideoConfig{
+			VideoKey:  oldVideoKey,
+			LinkUrl:   req.VideoLinkUrl,
+			StartTime: req.VideoStart,
+			EndTime:   req.VideoEnd,
+		})
 	}
-
-	// cập nhật metadata + key (mới hoặc cũ)
-	uc.topicRepo.SetVideo(ctx, topicID, req.LanguageID, model.TopicVideoConfig{
-		VideoKey:  oldVideoKey,
-		LinkUrl:   req.VideoLinkUrl,
-		StartTime: req.VideoStart,
-		EndTime:   req.VideoEnd,
-	})
 }
 
 func (uc *uploadTopicUseCase) uploadAndSaveImages(ctx context.Context, topicID string, req request.UploadTopicRequest, done func()) {
