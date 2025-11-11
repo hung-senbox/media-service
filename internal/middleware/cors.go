@@ -6,18 +6,13 @@ func CORS() gin.HandlerFunc {
 	return func(c *gin.Context) {
 		origin := c.Request.Header.Get("Origin")
 		c.Writer.Header().Set("Vary", "Origin")
-		// allow-list specific origins
-		allowedOrigins := map[string]bool{
-			"https://main.d3snrh9uwyhkta.amplifyapp.com": true,
-		}
-		if origin != "" && allowedOrigins[origin] {
+		if origin != "" {
 			c.Writer.Header().Set("Access-Control-Allow-Origin", origin)
-			c.Writer.Header().Set("Access-Control-Allow-Credentials", "true")
-		} else if origin == "" {
-			// non-browser or curl; allow all without credentials
+		} else {
 			c.Writer.Header().Set("Access-Control-Allow-Origin", "*")
 		}
 
+		c.Writer.Header().Set("Access-Control-Allow-Credentials", "true")
 		c.Writer.Header().Set("Access-Control-Expose-Headers", "Content-Disposition")
 		reqHeaders := c.Request.Header.Get("Access-Control-Request-Headers")
 		if reqHeaders != "" {
