@@ -21,6 +21,7 @@ func ToGetVideosResponse4Web(videoUploaders []model.VideoUploader, createdByName
 			Title:           videoUploader.Title,
 			VideoUrl:        videoUploader.VideoPublicUrl,
 			ImagePreviewUrl: videoUploader.ImagePreviewPublicUrl,
+			CreatedAt:       videoUploader.CreatedAt,
 		})
 	}
 	return result
