@@ -60,3 +60,17 @@ func (h *VideoUploaderHandler) GetVideosUploader4Web(c *gin.Context) {
 
 	helper.SendSuccess(c, http.StatusOK, "get videos uploader success", res)
 }
+
+func (h *VideoUploaderHandler) DeleteVideoUploader(c *gin.Context) {
+	videoUploaderID := c.Param("video_uploader_id")
+	if videoUploaderID == "" {
+		helper.SendError(c, http.StatusBadRequest, nil, helper.ErrInvalidRequest)
+		return
+	}
+	err := h.service.DeleteVideoUploader(c.Request.Context(), videoUploaderID)
+	if err != nil {
+		helper.SendError(c, http.StatusInternalServerError, err, helper.ErrInvalidOperation)
+		return
+	}
+	helper.SendSuccess(c, http.StatusOK, "success", nil)
+}

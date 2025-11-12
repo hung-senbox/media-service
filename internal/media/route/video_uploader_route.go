@@ -20,6 +20,7 @@ func RegisterVideoUploaderRoutes(r *gin.Engine, h *handler.VideoUploaderHandler,
 				videoUploaderAdmin.POST("", h.UploadVideoUploader)
 				videoUploaderAdmin.GET("/progress/:video_uploader_id", h.GetUploaderStatus)
 				videoUploaderAdmin.GET("", h.GetVideosUploader4Web)
+				videoUploaderAdmin.DELETE("/:video_uploader_id", h.DeleteVideoUploader)
 			}
 		}
 	}

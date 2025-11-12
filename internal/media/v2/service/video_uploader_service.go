@@ -23,6 +23,7 @@ type VideoUploaderService interface {
 	UploadVideoUploader(ctx context.Context, req request.UploadVideoUploaderRequest) (*model.VideoUploader, error)
 	GetUploaderStatus(ctx context.Context, videoUploaderID string) (response.GetUploaderStatusResponse, error)
 	GetVideosUploader4Web(ctx context.Context, languageID string) ([]response.GetVideoUploaderResponse4Web, error)
+	DeleteVideoUploader(ctx context.Context, videoUploaderID string) error
 }
 
 type videoUploaderService struct {
@@ -285,4 +286,34 @@ func (s *videoUploaderService) GetVideosUploader4Web(ctx context.Context, langua
 	}
 	return mapper.ToGetVideosResponse4Web(videoUploaders, currentUser.Nickname), nil
 
+}
+
+func (s *videoUploaderService) DeleteVideoUploader(ctx context.Context, videoUploaderID string) error {
+	currentUser, _ := ctx.Value(constants.CurrentUserKey).(*gw_response.CurrentUser)
+	if !currentUser.IsSuperAdmin {
+		return fmt.Errorf("access denied")
+	}
+
+	videoUploader, err := s.videoUploaderRepository.GetVideoUploaderByID(ctx, videoUploaderID)
+	if err != nil {
+		return err
+	}
+	if videoUploader == nil {
+		return fmt.Errorf("video uploader not found")
+	}
+
+	if videoUploader.VideoKey != "" {
+		err = s.s3Service.Delete(ctx, videoUploader.VideoKey)
+		if err != nil {
+			return err
+		}
+	}
+	if videoUploader.ImagePreviewKey != "" {
+		err = s.s3Service.Delete(ctx, videoUploader.ImagePreviewKey)
+		if err != nil {
+			return err
+		}
+	}
+
+	return s.videoUploaderRepository.DeleteVideoUploader(ctx, videoUploaderID)
 }

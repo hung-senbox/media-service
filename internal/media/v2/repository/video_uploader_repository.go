@@ -20,6 +20,7 @@ type VideoUploaderRepository interface {
 	GetAllVideos(ctx context.Context) ([]model.VideoUploader, error)
 	GetVideosIsVisible(ctx context.Context) ([]model.VideoUploader, error)
 	GetVideosByLanguageID(ctx context.Context, languageID uint) ([]model.VideoUploader, error)
+	DeleteVideoUploader(ctx context.Context, videoUploaderID string) error
 }
 
 type videoUploaderRepository struct {
@@ -178,4 +179,16 @@ func (r *videoUploaderRepository) GetVideosByLanguageID(ctx context.Context, lan
 		return nil, fmt.Errorf("failed to decode videos by language id: %w", err)
 	}
 	return videoUploaders, nil
+}
+
+func (r *videoUploaderRepository) DeleteVideoUploader(ctx context.Context, videoUploaderID string) error {
+	objID, err := primitive.ObjectIDFromHex(videoUploaderID)
+	if err != nil {
+		return fmt.Errorf("invalid videoUploaderID: %w", err)
+	}
+	_, err = r.videoUploaderCollection.DeleteOne(ctx, bson.M{"_id": objID})
+	if err != nil {
+		return fmt.Errorf("failed to delete video uploader: %w", err)
+	}
+	return nil
 }
