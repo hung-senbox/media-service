@@ -272,6 +272,8 @@ func (s *videoUploaderService) GetVideosUploader4Web(ctx context.Context, langua
 		videoUploaders []model.VideoUploader
 		err            error
 	)
+
+	// case co languageID thi lay theo languageID
 	if langStr := strings.TrimSpace(languageID); langStr != "" {
 		var langID uint
 		if _, scanErr := fmt.Sscan(langStr, &langID); scanErr == nil && langID > 0 {
@@ -279,13 +281,14 @@ func (s *videoUploaderService) GetVideosUploader4Web(ctx context.Context, langua
 			if err != nil {
 				return nil, err
 			}
+			return mapper.ToGetVideosResponse4Web(videoUploaders, currentUser.Nickname), nil
 		}
 	}
-	if videoUploaders == nil {
-		videoUploaders, err = s.videoUploaderRepository.GetAllVideos(ctx)
-		if err != nil {
-			return nil, err
-		}
+
+	// neu khong co languageID hoac languageID = 0 thi lay tat ca
+	videoUploaders, err = s.videoUploaderRepository.GetAllVideos(ctx)
+	if err != nil {
+		return nil, err
 	}
 	return mapper.ToGetVideosResponse4Web(videoUploaders, currentUser.Nickname), nil
 
