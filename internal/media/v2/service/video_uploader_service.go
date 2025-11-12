@@ -239,7 +239,9 @@ func (s *videoUploaderService) GetUploaderStatus(ctx context.Context, videoUploa
 		}, err
 	}
 	if len(status) == 0 {
-		return response.GetUploaderStatusResponse{}, nil
+		return response.GetUploaderStatusResponse{
+			Status: "done",
+		}, nil
 	}
 
 	s.redisService.DeleteUploaderStatusKey(ctx, key)
