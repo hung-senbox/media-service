@@ -58,7 +58,12 @@ func (s *videoUploaderService) UploadVideoUploader(ctx context.Context, req requ
 		existing.Title = req.Title
 		existing.LanguageID = req.LanguageID
 		existing.UpdatedAt = time.Now()
-
+		if req.IsDeletedVideo {
+			s.videoUploaderRepository.DeleteVideoMetadata(ctx, req.VideoUploaderID)
+		}
+		if req.IsDeletedImagePreview {
+			s.videoUploaderRepository.DeleteImagePreviewMetadata(ctx, req.VideoUploaderID)
+		}
 		if err := s.videoUploaderRepository.SetVideoUploaderWithoutFiles(ctx, existing); err != nil {
 			return nil, fmt.Errorf("save video uploader failed: %w", err)
 		}
@@ -235,9 +240,7 @@ func (s *videoUploaderService) GetUploaderStatus(ctx context.Context, videoUploa
 	key := helper.BuildVideoUploaderRedisKey(videoUploaderID)
 	status, err := s.redisService.GetUploaderStatus(ctx, key)
 	if err != nil {
-		return response.GetUploaderStatusResponse{
-			Status: "done",
-		}, err
+		return response.GetUploaderStatusResponse{}, err
 	}
 	if len(status) == 0 {
 		return response.GetUploaderStatusResponse{

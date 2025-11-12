@@ -21,6 +21,8 @@ type VideoUploaderRepository interface {
 	GetVideosIsVisible(ctx context.Context) ([]model.VideoUploader, error)
 	GetVideosByLanguageID(ctx context.Context, languageID uint) ([]model.VideoUploader, error)
 	DeleteVideoUploader(ctx context.Context, videoUploaderID string) error
+	DeleteVideoMetadata(ctx context.Context, videoUploaderID string) error
+	DeleteImagePreviewMetadata(ctx context.Context, videoUploaderID string) error
 }
 
 type videoUploaderRepository struct {
@@ -189,6 +191,30 @@ func (r *videoUploaderRepository) DeleteVideoUploader(ctx context.Context, video
 	_, err = r.videoUploaderCollection.DeleteOne(ctx, bson.M{"_id": objID})
 	if err != nil {
 		return fmt.Errorf("failed to delete video uploader: %w", err)
+	}
+	return nil
+}
+
+func (r *videoUploaderRepository) DeleteVideoMetadata(ctx context.Context, videoUploaderID string) error {
+	objID, err := primitive.ObjectIDFromHex(videoUploaderID)
+	if err != nil {
+		return fmt.Errorf("invalid videoUploaderID: %w", err)
+	}
+	_, err = r.videoUploaderCollection.UpdateOne(ctx, bson.M{"_id": objID}, bson.M{"$set": bson.M{"video_key": "", "video_public_url": "", "updated_at": time.Now()}})
+	if err != nil {
+		return fmt.Errorf("failed to delete video metadata: %w", err)
+	}
+	return nil
+}
+
+func (r *videoUploaderRepository) DeleteImagePreviewMetadata(ctx context.Context, videoUploaderID string) error {
+	objID, err := primitive.ObjectIDFromHex(videoUploaderID)
+	if err != nil {
+		return fmt.Errorf("invalid videoUploaderID: %w", err)
+	}
+	_, err = r.videoUploaderCollection.UpdateOne(ctx, bson.M{"_id": objID}, bson.M{"$set": bson.M{"image_preview_key": "", "image_preview_public_url": "", "updated_at": time.Now()}})
+	if err != nil {
+		return fmt.Errorf("failed to delete image preview metadata: %w", err)
 	}
 	return nil
 }
