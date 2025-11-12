@@ -12,7 +12,7 @@ import (
 )
 
 type GetTopicResourceAppUseCase interface {
-	GetOutputResources4App(ctx context.Context, studentID string, month, year int) ([]*response.GetTopicResourcesResponse4App, error)
+	GetOutputResources4App(ctx context.Context, studentID string, day, month, year int, topicID string) ([]*response.GetTopicResourcesResponse4App, error)
 }
 
 type getTopicResourceAppUseCase struct {
@@ -25,15 +25,24 @@ func NewGetTopicResourceAppUseCase(topicRepo repository.TopicRepository, topicRe
 	return &getTopicResourceAppUseCase{topicRepo: topicRepo, topicResourceRepository: topicResourceRepository, s3Service: s3Service}
 }
 
-func (uc *getTopicResourceAppUseCase) GetOutputResources4App(ctx context.Context, studentID string, month, year int) ([]*response.GetTopicResourcesResponse4App, error) {
+func (uc *getTopicResourceAppUseCase) GetOutputResources4App(ctx context.Context, studentID string, day, month, year int, topicID string) ([]*response.GetTopicResourcesResponse4App, error) {
 	topicResources, err := uc.topicResourceRepository.GetTopicResouresByStudentID(ctx, studentID)
 	if err != nil {
 		return nil, err
 	}
 	// filter topic resources by month
-	if month != 0 && year != 0 {
-		topicResources = filterTopicResourcesByMonth(topicResources, month, year)
+	if day != 0 && month != 0 && year != 0 {
+		topicResources = filterTopicResourcesByDayAndMonthAndYear(topicResources, day, month, year)
+	} else if month != 0 && year != 0 {
+		topicResources = filterTopicResourcesByMonthAndYear(topicResources, month, year)
+	} else if year != 0 {
+		topicResources = filterTopicResourcesByYear(topicResources, year)
 	}
+
+	if topicID != "" {
+		topicResources = filterTopicResourcesByTopicID(topicResources, topicID)
+	}
+
 	result := make([]*response.GetTopicResourcesResponse4App, 0, len(topicResources))
 	for _, tr := range topicResources {
 		if tr == nil {
@@ -83,13 +92,52 @@ func (uc *getTopicResourceAppUseCase) GetOutputResources4App(ctx context.Context
 	return result, nil
 }
 
-func filterTopicResourcesByMonth(topicResources []*model.TopicResource, month, year int) []*model.TopicResource {
+func filterTopicResourcesByMonthAndYear(topicResources []*model.TopicResource, month, year int) []*model.TopicResource {
 	result := make([]*model.TopicResource, 0, len(topicResources))
 	for _, tr := range topicResources {
 		if tr == nil {
 			continue
 		}
 		if tr.CreatedAt.Month() == time.Month(month) && tr.CreatedAt.Year() == year {
+			result = append(result, tr)
+		}
+	}
+	return result
+}
+
+func filterTopicResourcesByTopicID(topicResources []*model.TopicResource, topicID string) []*model.TopicResource {
+	result := make([]*model.TopicResource, 0, len(topicResources))
+	for _, tr := range topicResources {
+		if tr == nil {
+			continue
+		}
+		if tr.TopicID == topicID {
+			result = append(result, tr)
+		}
+	}
+	return result
+}
+
+func filterTopicResourcesByDayAndMonthAndYear(topicResources []*model.TopicResource, day, month, year int) []*model.TopicResource {
+	result := make([]*model.TopicResource, 0, len(topicResources))
+	for _, tr := range topicResources {
+		if tr == nil {
+			continue
+		}
+		if tr.CreatedAt.Day() == day && tr.CreatedAt.Month() == time.Month(month) && tr.CreatedAt.Year() == year {
+			result = append(result, tr)
+		}
+	}
+	return result
+}
+
+func filterTopicResourcesByYear(topicResources []*model.TopicResource, year int) []*model.TopicResource {
+	result := make([]*model.TopicResource, 0, len(topicResources))
+	for _, tr := range topicResources {
+		if tr == nil {
+			continue
+		}
+		if tr.CreatedAt.Year() == year {
 			result = append(result, tr)
 		}
 	}

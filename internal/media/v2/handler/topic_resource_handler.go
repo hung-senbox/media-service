@@ -162,14 +162,41 @@ func (h *TopicResourceHandler) GetOutputResources4App(c *gin.Context) {
 		helper.SendError(c, http.StatusBadRequest, nil, helper.ErrInvalidRequest)
 		return
 	}
+	day := c.Query("day")
 	month := c.Query("month")
 	year := c.Query("year")
 
+	if day != "" && month == "" && year == "" {
+		helper.SendError(c, http.StatusBadRequest, fmt.Errorf("month and year are required"), helper.ErrInvalidRequest)
+		return
+	}
+
+	if month != "" && year == "" {
+		helper.SendError(c, http.StatusBadRequest, fmt.Errorf("year is required"), helper.ErrInvalidRequest)
+		return
+	}
+
+	// topicID
+	topicID := c.Query("topic_id")
+
 	// Default: no month/year filter
+	dayInt := 0
 	monthInt := 0
 	yearInt := 0
 
 	// If both provided, validate and parse; otherwise skip filtering
+	if day != "" {
+		d, err := strconv.Atoi(day)
+		if err != nil {
+			helper.SendError(c, http.StatusBadRequest, fmt.Errorf("day must be an integer"), helper.ErrInvalidRequest)
+			return
+		}
+		if d < 1 || d > 31 {
+			helper.SendError(c, http.StatusBadRequest, fmt.Errorf("day must be between 1 and 31"), helper.ErrInvalidRequest)
+			return
+		}
+		dayInt = d
+	}
 	if month != "" && year != "" {
 		m, err := strconv.Atoi(month)
 		if err != nil {
@@ -192,7 +219,21 @@ func (h *TopicResourceHandler) GetOutputResources4App(c *gin.Context) {
 		monthInt = m
 		yearInt = y
 	}
-	res, err := h.topicResourceService.GetOutputResources4App(c.Request.Context(), studentID, monthInt, yearInt)
+
+	if year != "" {
+		y, err := strconv.Atoi(year)
+		if err != nil {
+			helper.SendError(c, http.StatusBadRequest, fmt.Errorf("year must be an integer"), helper.ErrInvalidRequest)
+			return
+		}
+		if y < 1 {
+			helper.SendError(c, http.StatusBadRequest, fmt.Errorf("year must be greater than 0"), helper.ErrInvalidRequest)
+			return
+		}
+		yearInt = y
+	}
+
+	res, err := h.topicResourceService.GetOutputResources4App(c.Request.Context(), studentID, dayInt, monthInt, yearInt, topicID)
 	if err != nil {
 		helper.SendError(c, http.StatusInternalServerError, err, helper.ErrInvalidOperation)
 		return
