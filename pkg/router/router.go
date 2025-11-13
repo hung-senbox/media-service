@@ -32,7 +32,6 @@ func SetupRouter(consulClient *api.Client, cacheClientRedis *cache.RedisCache, t
 	// gateway
 	cachedMainGateway := cached.NewCachedMainGateway(cacheClientRedis)
 	userGateway := gateway.NewUserGateway("go-main-service", consulClient, cachedMainGateway)
-	fileGateway := gateway.NewFileGateway("go-main-service", consulClient)
 	redisService := redis.NewRedisService()
 
 	// ========================  Topic ======================== //
@@ -46,7 +45,7 @@ func SetupRouter(consulClient *api.Client, cacheClientRedis *cache.RedisCache, t
 	getTopicWebUseCasev2 := usecase.NewGetTopicWebUseCase(topicRepov2, topicResourceRepov2, userGateway, s3svc.NewFromConfig())
 	getTopicGatewayUseCasev2 := usecase.NewGetTopicGatewayUseCase(topicRepov2, userGateway, s3svc.NewFromConfig())
 	getUploadProgressUseCasev2 := usecase.NewGetUploadProgressUseCase(topicRepov2, redisService)
-	deleteTopicFileUseCasev2 := usecase.NewDeleteTopicFileUseCase(topicRepov2, fileGateway)
+	deleteTopicFileUseCasev2 := usecase.NewDeleteTopicFileUseCase(topicRepov2, s3svc.NewFromConfig())
 	getTopicResourcesWebUseCasev2 := usecase.NewGetTopicResourcesWebUseCase(topicResourceRepov2, s3svc.NewFromConfig())
 	getTopicResourceAppUseCasev2 := usecase.NewGetTopicResourceAppUseCase(topicRepov2, topicResourceRepov2, s3svc.NewFromConfig())
 
