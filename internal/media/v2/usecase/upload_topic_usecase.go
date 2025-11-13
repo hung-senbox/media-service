@@ -262,6 +262,17 @@ func (uc *uploadTopicUseCase) updateTopicLanguage(ctx context.Context, req reque
 					return nil, fmt.Errorf("init images fail: %w", err)
 				}
 			}
+			if len(lc.Images) < 8 {
+				err = uc.topicRepo.InitImages(ctx, oldTopic.ID.Hex(), req.LanguageID)
+				if err != nil {
+					return nil, fmt.Errorf("init images fail: %w", err)
+				}
+			}
+
+			// them 3 images type moi
+			if len(lc.Images) == 5 {
+
+			}
 			break
 		}
 	}

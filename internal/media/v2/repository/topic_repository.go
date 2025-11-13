@@ -369,7 +369,7 @@ func (r *topicRepository) InitImages(ctx context.Context, topicID string, langua
 		return fmt.Errorf("[InitImages] invalid topicID=%s: %w", topicID, err)
 	}
 
-	// Danh sách 6 loại hình mặc định
+	// Danh sách 9 loại hình mặc định
 	defaultImageTypes := []string{
 		"full_background",
 		"clear_background",
@@ -377,38 +377,39 @@ func (r *topicRepository) InitImages(ctx context.Context, topicID string, langua
 		"drawing",
 		"icon",
 		"bm",
+		"sign_lang",
+		"gif",
+		"order",
 	}
 
-	// Tạo danh sách hình mặc định
-	var images []model.TopicImageConfig
-	for _, t := range defaultImageTypes {
-		images = append(images, model.TopicImageConfig{
-			ImageType: t,
-			ImageKey:  "",
-			LinkUrl:   "",
-		})
+	// Lấy language_config hiện tại cho languageID
+	var topic model.Topic
+	if err := r.topicCollection.FindOne(ctx, bson.M{"_id": objID}).Decode(&topic); err != nil {
+		return fmt.Errorf("[InitImages] get topic failed: %w", err)
 	}
 
-	// Cập nhật images vào language_config có language_id tương ứng
-	filter := bson.M{
-		"_id":                         objID,
-		"language_config.language_id": languageID,
+	var (
+		existsLang    = false
+		currentImages []model.TopicImageConfig
+	)
+	for _, lc := range topic.LanguageConfig {
+		if lc.LanguageID == languageID {
+			existsLang = true
+			currentImages = lc.Images
+			break
+		}
 	}
 
-	update := bson.M{
-		"$set": bson.M{
-			"language_config.$.images": images,
-			"updated_at":               time.Now(),
-		},
-	}
-
-	res, err := r.topicCollection.UpdateOne(ctx, filter, update)
-	if err != nil {
-		return fmt.Errorf("[InitImages] update failed: %w", err)
-	}
-
-	// Nếu chưa tồn tại language_id thì thêm mới
-	if res.MatchedCount == 0 {
+	// Nếu chưa có language_config -> push mới với full defaults
+	if !existsLang {
+		var images []model.TopicImageConfig
+		for _, t := range defaultImageTypes {
+			images = append(images, model.TopicImageConfig{
+				ImageType: t,
+				ImageKey:  "",
+				LinkUrl:   "",
+			})
+		}
 		newLang := model.TopicLanguageConfig{
 			LanguageID: languageID,
 			Images:     images,
@@ -420,6 +421,59 @@ func (r *topicRepository) InitImages(ctx context.Context, topicID string, langua
 		if err != nil {
 			return fmt.Errorf("[InitImages] push new language_config failed: %w", err)
 		}
+		return nil
+	}
+
+	// Nếu đã có images:
+	// - length == 0 => set default list
+	// - length < 8 => đảm bảo thêm 3 type mới: sign_lang, gif, order
+	// - else => không thay đổi
+	var updatedImages []model.TopicImageConfig
+	if len(currentImages) == 0 {
+		for _, t := range defaultImageTypes {
+			updatedImages = append(updatedImages, model.TopicImageConfig{
+				ImageType: t,
+				ImageKey:  "",
+				LinkUrl:   "",
+			})
+		}
+	} else {
+		// copy hiện có
+		updatedImages = append(updatedImages, currentImages...)
+		if len(currentImages) < 8 {
+			// map để check tồn tại
+			exists := map[string]bool{}
+			for _, img := range currentImages {
+				exists[strings.ToLower(img.ImageType)] = true
+			}
+			for _, t := range []string{"sign_lang", "gif", "order"} {
+				if !exists[t] {
+					updatedImages = append(updatedImages, model.TopicImageConfig{
+						ImageType: t,
+						ImageKey:  "",
+						LinkUrl:   "",
+					})
+				}
+			}
+		} else {
+			// Không cần cập nhật nếu đã đủ (>=8)
+			return nil
+		}
+	}
+
+	filter := bson.M{
+		"_id":                         objID,
+		"language_config.language_id": languageID,
+	}
+	update := bson.M{
+		"$set": bson.M{
+			"language_config.$.images": updatedImages,
+			"updated_at":               time.Now(),
+		},
+	}
+
+	if _, err := r.topicCollection.UpdateOne(ctx, filter, update); err != nil {
+		return fmt.Errorf("[InitImages] update images failed: %w", err)
 	}
 
 	return nil
