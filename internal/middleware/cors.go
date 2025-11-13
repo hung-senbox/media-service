@@ -6,13 +6,15 @@ func CORS() gin.HandlerFunc {
 	return func(c *gin.Context) {
 		origin := c.Request.Header.Get("Origin")
 		c.Writer.Header().Set("Vary", "Origin")
+		// Accept all domains:
+		// - If Origin present: echo it and allow credentials
+		// - If no Origin (curl/server-to-server): return "*", no credentials
 		if origin != "" {
 			c.Writer.Header().Set("Access-Control-Allow-Origin", origin)
+			c.Writer.Header().Set("Access-Control-Allow-Credentials", "true")
 		} else {
 			c.Writer.Header().Set("Access-Control-Allow-Origin", "*")
 		}
-
-		c.Writer.Header().Set("Access-Control-Allow-Credentials", "true")
 		c.Writer.Header().Set("Access-Control-Expose-Headers", "Content-Disposition")
 		reqHeaders := c.Request.Header.Get("Access-Control-Request-Headers")
 		if reqHeaders != "" {
