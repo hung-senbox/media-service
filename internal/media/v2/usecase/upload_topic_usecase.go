@@ -98,6 +98,17 @@ func (uc *uploadTopicUseCase) uploadAndSaveAudio(ctx context.Context, topicID st
 		if err != nil {
 			logger.WriteLogData("[Time: "+time.Now().Format("2006-01-02 15:04:05")+"] [uploadAndSaveAudio] Failed to delete audio key", err)
 		}
+
+		// Nếu không có file mới, giữ trạng thái xóa (key rỗng) và chỉ cập nhật metadata
+		if !helper.IsValidFile(req.AudioFile) {
+			err = uc.topicRepo.SetAudio(ctx, topicID, req.LanguageID, model.TopicAudioConfig{
+				AudioKey:  "",
+				LinkUrl:   req.VideoLinkUrl,
+				StartTime: req.VideoStart,
+				EndTime:   req.VideoEnd,
+			})
+			return err
+		}
 	}
 
 	oldAudioKey := uc.getAudioKeyByLanguage(topic, req.LanguageID)
@@ -158,6 +169,16 @@ func (uc *uploadTopicUseCase) uploadAndSaveVideo(ctx context.Context, topicID st
 		err = uc.topicRepo.DeleteVideoKey(ctx, topicID, req.LanguageID)
 		if err != nil {
 			logger.WriteLogData("[Time: "+time.Now().Format("2006-01-02 15:04:05")+"] [uploadAndSaveVideo] Failed to delete video key", err)
+		}
+		// Nếu không có file mới, giữ trạng thái xóa (key rỗng) và chỉ cập nhật metadata
+		if !helper.IsValidFile(req.VideoFile) {
+			err = uc.topicRepo.SetVideo(ctx, topicID, req.LanguageID, model.TopicVideoConfig{
+				VideoKey:  "",
+				LinkUrl:   req.VideoLinkUrl,
+				StartTime: req.VideoStart,
+				EndTime:   req.VideoEnd,
+			})
+			return err
 		}
 	}
 
