@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 	"mime/multipart"
+	"time"
 
 	"media-service/helper"
 	gw_response "media-service/internal/gateway/dto/response"
@@ -60,12 +61,18 @@ func (uc *uploadTopicUseCase) UploadTopic(ctx context.Context, req request.Uploa
 
 	// Thực thi upload đồng bộ, không dùng Redis
 	if err := uc.uploadAndSaveAudio(ctx, topic.ID.Hex(), req); err != nil {
+		logger.WriteLogMsg("error", "Failed to upload and save audio")
+		logger.WriteLogEx("error", "Failed to upload and save audio", err)
 		return err
 	}
 	if err := uc.uploadAndSaveVideo(ctx, topic.ID.Hex(), req); err != nil {
+		logger.WriteLogMsg("error", "Failed to upload and save video")
+		logger.WriteLogEx("error", "Failed to upload and save video", err)
 		return err
 	}
 	if err := uc.uploadAndSaveImages(ctx, topic.ID.Hex(), req); err != nil {
+		logger.WriteLogMsg("error", "Failed to upload and save images")
+		logger.WriteLogEx("error", "Failed to upload and save images", err)
 		return err
 	}
 	return nil
@@ -79,12 +86,22 @@ func (uc *uploadTopicUseCase) uploadAndSaveAudio(ctx context.Context, topicID st
 		return err
 	}
 
+	if req.IsDeletedAudio {
+		videoKey := helper.GetVideoKeyByLanguage(topic, req.LanguageID)
+		if videoKey == "" {
+			return fmt.Errorf("video key not found")
+		}
+		_ = uc.s3Service.Delete(ctx, videoKey)
+
+		// goi repo xoa video key
+		err = uc.topicRepo.DeleteVideoKey(ctx, topicID, req.LanguageID)
+		if err != nil {
+			logger.WriteLogData("[Time: "+time.Now().Format("2006-01-02 15:04:05")+"] [uploadAndSaveAudio] Failed to delete audio key", err)
+		}
+	}
+
 	oldAudioKey := uc.getAudioKeyByLanguage(topic, req.LanguageID)
 	if helper.IsValidFile(req.AudioFile) {
-		// xóa file cũ nếu có
-		if oldAudioKey != "" {
-			_ = uc.s3Service.Delete(ctx, oldAudioKey)
-		}
 
 		key := helper.BuildObjectKeyS3("topic_media/audio", req.AudioFile.Filename, fmt.Sprintf("%s_audio", req.Title))
 		f, openErr := req.AudioFile.Open()
@@ -129,12 +146,23 @@ func (uc *uploadTopicUseCase) uploadAndSaveVideo(ctx context.Context, topicID st
 		return err
 	}
 
+	if req.IsDeletedVideo {
+		videoKey := helper.GetVideoKeyByLanguage(topic, req.LanguageID)
+		if videoKey == "" {
+			return fmt.Errorf("video key not found")
+		}
+		_ = uc.s3Service.Delete(ctx, videoKey)
+
+		// goi repo xoa video key
+		// ignore error -> chi ra log
+		err = uc.topicRepo.DeleteVideoKey(ctx, topicID, req.LanguageID)
+		if err != nil {
+			logger.WriteLogData("[Time: "+time.Now().Format("2006-01-02 15:04:05")+"] [uploadAndSaveVideo] Failed to delete video key", err)
+		}
+	}
+
 	oldVideoKey := uc.getVideoKeyByLanguage(topic, req.LanguageID)
 	if helper.IsValidFile(req.VideoFile) {
-		// xóa file cũ nếu có
-		if oldVideoKey != "" {
-			_ = uc.s3Service.Delete(ctx, oldVideoKey)
-		}
 
 		key := helper.BuildObjectKeyS3("topic_media/video", req.VideoFile.Filename, fmt.Sprintf("%s_video", req.Title))
 		f, openErr := req.VideoFile.Open()
@@ -194,14 +222,66 @@ func (uc *uploadTopicUseCase) uploadAndSaveImages(ctx context.Context, topicID s
 		return err
 	}
 
+	// ================================ DELETE IMAGES ================================
+	// khong handle error khi xoa image -> chi ra log
+	if req.IsDeletedFullBackground {
+		err = uc.deleteImageKeyByLanguageAndType(ctx, topicID, req.LanguageID, "full_background")
+		if err != nil {
+			logger.WriteLogData("[Time: "+time.Now().Format("2006-01-02 15:04:05")+"] [uploadAndSaveImages] Failed to delete full background image", err)
+		}
+	}
+	if req.IsDeletedClearBackground {
+		err = uc.deleteImageKeyByLanguageAndType(ctx, topicID, req.LanguageID, "clear_background")
+		if err != nil {
+			logger.WriteLogData("[Time: "+time.Now().Format("2006-01-02 15:04:05")+"] [uploadAndSaveImages] Failed to delete clear background image", err)
+		}
+	}
+	if req.IsDeletedClipPart {
+		err = uc.deleteImageKeyByLanguageAndType(ctx, topicID, req.LanguageID, "clip_part")
+		if err != nil {
+			logger.WriteLogData("[Time: "+time.Now().Format("2006-01-02 15:04:05")+"] [uploadAndSaveImages] Failed to delete clip part image", err)
+		}
+	}
+	if req.IsDeletedDrawing {
+		err = uc.deleteImageKeyByLanguageAndType(ctx, topicID, req.LanguageID, "drawing")
+		if err != nil {
+			logger.WriteLogData("[Time: "+time.Now().Format("2006-01-02 15:04:05")+"] [uploadAndSaveImages] Failed to delete drawing image", err)
+		}
+	}
+	if req.IsDeletedIcon {
+		err = uc.deleteImageKeyByLanguageAndType(ctx, topicID, req.LanguageID, "icon")
+		if err != nil {
+			logger.WriteLogData("[Time: "+time.Now().Format("2006-01-02 15:04:05")+"] [uploadAndSaveImages] Failed to delete icon image", err)
+		}
+	}
+	if req.IsDeletedBM {
+		err = uc.deleteImageKeyByLanguageAndType(ctx, topicID, req.LanguageID, "bm")
+		if err != nil {
+			logger.WriteLogData("[Time: "+time.Now().Format("2006-01-02 15:04:05")+"] [uploadAndSaveImages] Failed to delete bm image", err)
+		}
+	}
+	if req.IsDeletedSignLang {
+		err = uc.deleteImageKeyByLanguageAndType(ctx, topicID, req.LanguageID, "sign_lang")
+		if err != nil {
+			logger.WriteLogData("[Time: "+time.Now().Format("2006-01-02 15:04:05")+"] [uploadAndSaveImages] Failed to delete sign lang image", err)
+		}
+	}
+	if req.IsDeletedGif {
+		err = uc.deleteImageKeyByLanguageAndType(ctx, topicID, req.LanguageID, "gif")
+		if err != nil {
+			logger.WriteLogData("[Time: "+time.Now().Format("2006-01-02 15:04:05")+"] [uploadAndSaveImages] Failed to delete gif image", err)
+		}
+	}
+	if req.IsDeletedOrder {
+		err = uc.deleteImageKeyByLanguageAndType(ctx, topicID, req.LanguageID, "order")
+		if err != nil {
+			logger.WriteLogData("[Time: "+time.Now().Format("2006-01-02 15:04:05")+"] [uploadAndSaveImages] Failed to delete order image", err)
+		}
+	}
+	// ================================ DELETE IMAGES ================================
+
 	for _, img := range imageFiles {
-		// 1) Nếu có file => đây là task upload (done() phải được gọi)
 		if helper.IsValidFile(img.file) {
-			oldKey := uc.getImageKeyByLanguageAndType(topic, req.LanguageID, img.typ)
-			if oldKey != "" {
-				// cố gắng xóa file cũ (ignore error)
-				_ = uc.s3Service.Delete(ctx, oldKey)
-			}
 
 			key := helper.BuildObjectKeyS3("topic_media/image", img.file.Filename, fmt.Sprintf("%s_%s_image", req.Title, img.typ))
 			f, openErr := img.file.Open()
@@ -362,4 +442,25 @@ func (uc *uploadTopicUseCase) getImageKeyByLanguageAndType(topic *model.Topic, l
 		}
 	}
 	return ""
+}
+
+func (uc *uploadTopicUseCase) deleteImageKeyByLanguageAndType(ctx context.Context, topicID string, languageID uint, imageType string) error {
+	topic, err := uc.topicRepo.GetByID(ctx, topicID)
+	if err != nil {
+		return err
+	}
+	oldKey := uc.getImageKeyByLanguageAndType(topic, languageID, imageType)
+	if oldKey != "" {
+		err = uc.s3Service.Delete(ctx, oldKey)
+		if err != nil {
+			return err
+		}
+	}
+	// goi repo xoa image key
+	err = uc.topicRepo.DeleteImageKey(ctx, topicID, languageID, imageType)
+	if err != nil {
+		return err
+	}
+	return nil
+
 }
