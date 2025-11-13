@@ -11,7 +11,6 @@ import (
 	"media-service/internal/media/v2/dto/response"
 	"media-service/internal/media/v2/mapper"
 	"media-service/internal/media/v2/repository"
-	"media-service/internal/redis"
 	"media-service/internal/s3"
 	"media-service/pkg/constants"
 	"media-service/pkg/uploader"
@@ -20,7 +19,7 @@ import (
 )
 
 type VideoUploaderService interface {
-	UploadVideoUploader(ctx context.Context, req request.UploadVideoUploaderRequest) (*model.VideoUploader, error)
+	UploadVideoUploader(ctx context.Context, req request.UploadVideoUploaderRequest) error
 	GetUploaderStatus(ctx context.Context, videoUploaderID string) (response.GetUploaderStatusResponse, error)
 	GetVideosUploader4Web(ctx context.Context, languageID string) ([]response.GetVideoUploaderResponse4Web, error)
 	DeleteVideoUploader(ctx context.Context, videoUploaderID string) error
@@ -29,21 +28,20 @@ type VideoUploaderService interface {
 type videoUploaderService struct {
 	videoUploaderRepository repository.VideoUploaderRepository
 	s3Service               s3.Service
-	redisService            *redis.RedisService
 	userGateway             gateway.UserGateway
 }
 
-func NewVideoUploaderService(videoUploaderRepository repository.VideoUploaderRepository, s3Service s3.Service, redisService *redis.RedisService, userGateway gateway.UserGateway) VideoUploaderService {
-	return &videoUploaderService{videoUploaderRepository: videoUploaderRepository, s3Service: s3Service, redisService: redisService, userGateway: userGateway}
+func NewVideoUploaderService(videoUploaderRepository repository.VideoUploaderRepository, s3Service s3.Service, userGateway gateway.UserGateway) VideoUploaderService {
+	return &videoUploaderService{videoUploaderRepository: videoUploaderRepository, s3Service: s3Service, userGateway: userGateway}
 }
 
 // ======================================================
 // =============== PUBLIC FUNCTION ======================
 // ======================================================
-func (s *videoUploaderService) UploadVideoUploader(ctx context.Context, req request.UploadVideoUploaderRequest) (*model.VideoUploader, error) {
+func (s *videoUploaderService) UploadVideoUploader(ctx context.Context, req request.UploadVideoUploaderRequest) error {
 	currentUser, _ := ctx.Value(constants.CurrentUserKey).(*gw_response.CurrentUser)
 	if !currentUser.IsSuperAdmin {
-		return nil, fmt.Errorf("access denied")
+		return fmt.Errorf("access denied")
 	}
 
 	var videoUploader *model.VideoUploader
@@ -52,7 +50,7 @@ func (s *videoUploaderService) UploadVideoUploader(ctx context.Context, req requ
 	if req.VideoUploaderID != "" {
 		existing, err := s.videoUploaderRepository.GetVideoUploaderByID(ctx, req.VideoUploaderID)
 		if err != nil {
-			return nil, fmt.Errorf("get video uploader failed: %w", err)
+			return fmt.Errorf("get video uploader failed: %w", err)
 		}
 		existing.IsVisible = req.IsVisible
 		existing.Title = req.Title
@@ -65,7 +63,7 @@ func (s *videoUploaderService) UploadVideoUploader(ctx context.Context, req requ
 			s.videoUploaderRepository.DeleteImagePreviewMetadata(ctx, req.VideoUploaderID)
 		}
 		if err := s.videoUploaderRepository.SetVideoUploaderWithoutFiles(ctx, existing); err != nil {
-			return nil, fmt.Errorf("save video uploader failed: %w", err)
+			return fmt.Errorf("save video uploader failed: %w", err)
 		}
 		videoUploader = existing
 	} else {
@@ -78,94 +76,34 @@ func (s *videoUploaderService) UploadVideoUploader(ctx context.Context, req requ
 			UpdatedAt:  time.Now(),
 		}
 		if err := s.videoUploaderRepository.SetVideoUploaderWithoutFiles(ctx, newVideo); err != nil {
-			return nil, fmt.Errorf("save video uploader failed: %w", err)
+			return fmt.Errorf("save video uploader failed: %w", err)
 		}
 		videoUploader = newVideo
 	}
 
-	// Step 2: tạo Redis key mới (có orgID)
-	key := helper.BuildVideoUploaderRedisKey(videoUploader.ID.Hex())
-
-	// Ghi trạng thái pending
-	status := map[string]interface{}{
-		"status":     "pending",
-		"message":    "upload started",
-		"updated_at": time.Now().UTC().Format(time.RFC3339),
-	}
-	if err := s.redisService.SetUploaderStatus(ctx, key, status); err != nil {
-		fmt.Printf("[UploadVideoUploader] failed to set redis pending status: %v\n", err)
-	}
-
-	// Step 3: chạy upload async (fire-and-forget)
-	ctxUpload, cancel := context.WithTimeout(context.Background(), 5*time.Minute)
-
-	if token, ok := ctx.Value(constants.Token).(string); ok {
-		ctxUpload = context.WithValue(ctxUpload, constants.Token, token)
-	}
-
-	go func() {
-		defer cancel()
-		s.asyncUploadProcess(ctxUpload, videoUploader, req, key)
-	}()
-
-	// Step 4: trả về response ngay lập tức
-	return videoUploader, nil
-}
-
-func (s *videoUploaderService) asyncUploadProcess(ctx context.Context, videoUploader *model.VideoUploader, req request.UploadVideoUploaderRequest, redisKey string) {
-	defer func() {
-		if r := recover(); r != nil {
-			s.redisService.SetUploaderStatus(ctx, redisKey, map[string]interface{}{
-				"status":     "failed",
-				"message":    fmt.Sprintf("panic: %v", r),
-				"updated_at": time.Now().UTC().Format(time.RFC3339),
-			})
-		}
-	}()
-
-	// upload video
+	// Step 2: Upload đồng bộ, không dùng Redis
+	// Upload video nếu có
 	if helper.IsValidFile(req.VideoFile) {
-		// neu co file thi check neu co file cu thi xoa
 		oldVideoKey := videoUploader.VideoKey
 		if oldVideoKey != "" {
 			_ = s.s3Service.Delete(ctx, oldVideoKey)
 		}
-		// upload moi
-		err := s.processVideoUpload(ctx, videoUploader.ID.Hex(), req)
-		if err != nil {
-			s.redisService.SetUploaderStatus(ctx, redisKey, map[string]interface{}{
-				"status":     "failed",
-				"message":    fmt.Sprintf("video upload failed: %v", err),
-				"updated_at": time.Now().UTC().Format(time.RFC3339),
-			})
-			return
+		if err := s.processVideoUpload(ctx, videoUploader.ID.Hex(), req); err != nil {
+			return fmt.Errorf("video upload failed: %w", err)
 		}
 	}
-
-	// upload ảnh preview
+	// Upload ảnh preview nếu có
 	if helper.IsValidFile(req.ImagePreviewFile) {
-		// neu co file thi check neu co file cu thi xoa
 		oldImageKey := videoUploader.ImagePreviewKey
 		if oldImageKey != "" {
 			_ = s.s3Service.Delete(ctx, oldImageKey)
 		}
-		// upload moi
-		err := s.processImagePreviewUpload(ctx, videoUploader.ID.Hex(), req)
-		if err != nil {
-			s.redisService.SetUploaderStatus(ctx, redisKey, map[string]interface{}{
-				"status":     "failed",
-				"message":    fmt.Sprintf("image upload failed: %v", err),
-				"updated_at": time.Now().UTC().Format(time.RFC3339),
-			})
+		if err := s.processImagePreviewUpload(ctx, videoUploader.ID.Hex(), req); err != nil {
+			return fmt.Errorf("image upload failed: %w", err)
 		}
 	}
 
-	// thành công
-	s.redisService.SetUploaderStatus(ctx, redisKey, map[string]interface{}{
-		"status":     "success",
-		"message":    "upload completed successfully",
-		"updated_at": time.Now().UTC().Format(time.RFC3339),
-	})
+	return nil
 }
 
 // ======================================================
@@ -237,27 +175,10 @@ func (s *videoUploaderService) GetUploaderStatus(ctx context.Context, videoUploa
 		return response.GetUploaderStatusResponse{}, fmt.Errorf("access denied")
 	}
 
-	key := helper.BuildVideoUploaderRedisKey(videoUploaderID)
-	status, err := s.redisService.GetUploaderStatus(ctx, key)
-	if err != nil {
-		return response.GetUploaderStatusResponse{}, err
-	}
-	if len(status) == 0 {
-		return response.GetUploaderStatusResponse{
-			Status: "done",
-		}, nil
-	}
-
-	s.redisService.DeleteUploaderStatusKey(ctx, key)
-
-	statusVal, _ := status["status"].(string)
-	messageVal, _ := status["message"].(string)
-	updatedAtVal, _ := status["updated_at"].(string)
-
 	return response.GetUploaderStatusResponse{
-		Status:    statusVal,
-		Message:   messageVal,
-		UpdatedAt: updatedAtVal,
+		Status:    "done",
+		Message:   "upload completed",
+		UpdatedAt: time.Now().UTC().Format(time.RFC3339),
 	}, nil
 }
 

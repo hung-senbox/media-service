@@ -41,4 +41,13 @@ type UploadTopicRequest struct {
 
 	BMFile *multipart.FileHeader `form:"bm_file"`
 	BMLink string                `form:"bm_link_url"`
+
+	SignLangFile *multipart.FileHeader `form:"sign_lang_file"`
+	SignLangLink string                `form:"sign_lang_link_url"`
+
+	GifFile *multipart.FileHeader `form:"gif_file"`
+	GifLink string                `form:"gif_link_url"`
+
+	OrderFile *multipart.FileHeader `form:"order_file"`
+	OrderLink string                `form:"order_link_url"`
 }

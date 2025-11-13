@@ -10,7 +10,6 @@ import (
 	"media-service/internal/media/model"
 	"media-service/internal/media/v2/dto/request"
 	"media-service/internal/media/v2/repository"
-	"media-service/internal/redis"
 	"media-service/internal/s3"
 	"media-service/logger"
 	"media-service/pkg/constants"
@@ -20,108 +19,64 @@ import (
 )
 
 type UploadTopicUseCase interface {
-	UploadTopic(ctx context.Context, req request.UploadTopicRequest) (*model.Topic, error)
+	UploadTopic(ctx context.Context, req request.UploadTopicRequest) error
 }
 
 type uploadTopicUseCase struct {
-	redisService *redis.RedisService
-	topicRepo    repository.TopicRepository
-	s3Service    s3.Service
+	topicRepo repository.TopicRepository
+	s3Service s3.Service
 }
 
-func NewUploadTopicUseCase(topicRepo repository.TopicRepository, s3Svc s3.Service, redisService *redis.RedisService) UploadTopicUseCase {
+func NewUploadTopicUseCase(topicRepo repository.TopicRepository, s3Svc s3.Service) UploadTopicUseCase {
 	return &uploadTopicUseCase{
-		topicRepo:    topicRepo,
-		redisService: redisService,
-		s3Service:    s3Svc,
+		topicRepo: topicRepo,
+		s3Service: s3Svc,
 	}
 }
 
 // ------------------- UploadTopic main flow -------------------
-func (uc *uploadTopicUseCase) UploadTopic(ctx context.Context, req request.UploadTopicRequest) (*model.Topic, error) {
+func (uc *uploadTopicUseCase) UploadTopic(ctx context.Context, req request.UploadTopicRequest) error {
 	currentUser, _ := ctx.Value(constants.CurrentUserKey).(*gw_response.CurrentUser)
 	if currentUser == nil || !currentUser.IsSuperAdmin {
-		return nil, fmt.Errorf("access denied")
-	}
-
-	// Check upload in progress (toàn cục, không phụ thuộc organization)
-	inProgress, err := uc.redisService.HasAnyUploadInProgress(ctx)
-	if err == nil && inProgress {
-		return nil, fmt.Errorf("please wait until the previous upload is completed")
+		return fmt.Errorf("access denied")
 	}
 
 	var topic *model.Topic
+	var err error
 
 	if req.TopicID != "" {
 		// Case update existing topic
 		topic, err = uc.updateTopicLanguage(ctx, req)
 		if err != nil {
-			return nil, err
+			return err
 		}
 	} else {
 		// Case create new topic
 		topic, err = uc.createTopicLanguage(ctx, req)
 		if err != nil {
-			return nil, err
+			return err
 		}
 	}
 
-	// Count valid upload files
-	files := []*multipart.FileHeader{
-		req.AudioFile, req.VideoFile, req.FullBackgroundFile,
-		req.ClearBackgroundFile, req.ClipPartFile,
-		req.DrawingFile, req.IconFile, req.BMFile,
+	// Thực thi upload đồng bộ, không dùng Redis
+	if err := uc.uploadAndSaveAudio(ctx, topic.ID.Hex(), req); err != nil {
+		return err
 	}
-
-	totalTasks := 0
-	for _, f := range files {
-		if helper.IsValidFile(f) {
-			totalTasks++
-		}
+	if err := uc.uploadAndSaveVideo(ctx, topic.ID.Hex(), req); err != nil {
+		return err
 	}
-
-	if totalTasks > 0 {
-		_ = uc.redisService.InitUploadProgress(ctx, topic.ID.Hex(), totalTasks)
-		go uc.uploadFilesAsyncWithContext(ctx, topic.ID.Hex(), req)
-	} else {
-		go uc.uploadFilesAsyncWithContext(ctx, topic.ID.Hex(), req)
+	if err := uc.uploadAndSaveImages(ctx, topic.ID.Hex(), req); err != nil {
+		return err
 	}
-
-	return topic, nil
-}
-
-// ------------------- Upload async -------------------
-func (uc *uploadTopicUseCase) uploadFilesAsyncWithContext(ctx context.Context, topicID string, req request.UploadTopicRequest) {
-	ctxUpload := context.Background()
-
-	if token, ok := ctx.Value(constants.Token).(string); ok {
-		ctxUpload = context.WithValue(ctxUpload, constants.Token, token)
-	}
-
-	uc.uploadFilesAsync(ctxUpload, topicID, req)
-}
-
-func (uc *uploadTopicUseCase) uploadFilesAsync(ctx context.Context, topicID string, req request.UploadTopicRequest) {
-	decrementTask := func() {
-		remaining, _ := uc.redisService.DecrementUploadTask(ctx, topicID)
-		if remaining <= 0 {
-			_ = uc.redisService.SetUploadProgress(ctx, topicID, 0)
-		}
-	}
-
-	uc.uploadAndSaveAudio(ctx, topicID, req, decrementTask)
-
-	uc.uploadAndSaveVideo(ctx, topicID, req, decrementTask)
-
-	uc.uploadAndSaveImages(ctx, topicID, req, decrementTask)
+	return nil
 }
 
 // ------------------- Upload handlers -------------------
-func (uc *uploadTopicUseCase) uploadAndSaveAudio(ctx context.Context, topicID string, req request.UploadTopicRequest, done func()) {
+func (uc *uploadTopicUseCase) uploadAndSaveAudio(ctx context.Context, topicID string, req request.UploadTopicRequest) error {
 
 	topic, err := uc.topicRepo.GetByID(ctx, topicID)
 	if err != nil {
-		return
+		return err
 	}
 
 	oldAudioKey := uc.getAudioKeyByLanguage(topic, req.LanguageID)
@@ -134,15 +89,13 @@ func (uc *uploadTopicUseCase) uploadAndSaveAudio(ctx context.Context, topicID st
 		key := helper.BuildObjectKeyS3("topic_media/audio", req.AudioFile.Filename, fmt.Sprintf("%s_audio", req.Title))
 		f, openErr := req.AudioFile.Open()
 		if openErr != nil {
-			_ = uc.redisService.SetUploadError(ctx, topicID, "audio_error", openErr.Error())
-			return
+			return openErr
 		}
 		defer f.Close()
 		ct := req.AudioFile.Header.Get("Content-Type")
 		_, err := uc.s3Service.SaveReader(ctx, f, key, ct, uploader.UploadPrivate)
 		if err != nil {
-			_ = uc.redisService.SetUploadError(ctx, topicID, "audio_error", err.Error())
-			return
+			return err
 		}
 		// cập nhật metadata + key (mới hoặc cũ)
 		err = uc.topicRepo.SetAudio(ctx, topicID, req.LanguageID, model.TopicAudioConfig{
@@ -152,25 +105,28 @@ func (uc *uploadTopicUseCase) uploadAndSaveAudio(ctx context.Context, topicID st
 			EndTime:   req.AudioEnd,
 		})
 		if err != nil {
-			_ = uc.redisService.SetUploadError(ctx, topicID, "audio_error", err.Error())
+			return err
 		}
-		defer done()
 	} else {
 		// cập nhật metadata + key (mới hoặc cũ)
-		uc.topicRepo.SetAudio(ctx, topicID, req.LanguageID, model.TopicAudioConfig{
+		err := uc.topicRepo.SetAudio(ctx, topicID, req.LanguageID, model.TopicAudioConfig{
 			AudioKey:  oldAudioKey,
 			LinkUrl:   req.AudioLinkUrl,
 			StartTime: req.AudioStart,
 			EndTime:   req.AudioEnd,
 		})
+		if err != nil {
+			return err
+		}
 	}
+	return nil
 }
 
-func (uc *uploadTopicUseCase) uploadAndSaveVideo(ctx context.Context, topicID string, req request.UploadTopicRequest, done func()) {
+func (uc *uploadTopicUseCase) uploadAndSaveVideo(ctx context.Context, topicID string, req request.UploadTopicRequest) error {
 
 	topic, err := uc.topicRepo.GetByID(ctx, topicID)
 	if err != nil {
-		return
+		return err
 	}
 
 	oldVideoKey := uc.getVideoKeyByLanguage(topic, req.LanguageID)
@@ -183,15 +139,13 @@ func (uc *uploadTopicUseCase) uploadAndSaveVideo(ctx context.Context, topicID st
 		key := helper.BuildObjectKeyS3("topic_media/video", req.VideoFile.Filename, fmt.Sprintf("%s_video", req.Title))
 		f, openErr := req.VideoFile.Open()
 		if openErr != nil {
-			_ = uc.redisService.SetUploadError(ctx, topicID, "video_error", openErr.Error())
-			return
+			return openErr
 		}
 		defer f.Close()
 		ct := req.VideoFile.Header.Get("Content-Type")
 		_, err := uc.s3Service.SaveReader(ctx, f, key, ct, uploader.UploadPrivate)
 		if err != nil {
-			_ = uc.redisService.SetUploadError(ctx, topicID, "video_error", err.Error())
-			return
+			return err
 		}
 		err = uc.topicRepo.SetVideo(ctx, topicID, req.LanguageID, model.TopicVideoConfig{
 			VideoKey:  key,
@@ -200,21 +154,24 @@ func (uc *uploadTopicUseCase) uploadAndSaveVideo(ctx context.Context, topicID st
 			EndTime:   req.VideoEnd,
 		})
 		if err != nil {
-			_ = uc.redisService.SetUploadError(ctx, topicID, "video_error", err.Error())
+			return err
 		}
-		defer done()
 	} else {
 		// cập nhật metadata + key (mới hoặc cũ)
-		uc.topicRepo.SetVideo(ctx, topicID, req.LanguageID, model.TopicVideoConfig{
+		err := uc.topicRepo.SetVideo(ctx, topicID, req.LanguageID, model.TopicVideoConfig{
 			VideoKey:  oldVideoKey,
 			LinkUrl:   req.VideoLinkUrl,
 			StartTime: req.VideoStart,
 			EndTime:   req.VideoEnd,
 		})
+		if err != nil {
+			return err
+		}
 	}
+	return nil
 }
 
-func (uc *uploadTopicUseCase) uploadAndSaveImages(ctx context.Context, topicID string, req request.UploadTopicRequest, done func()) {
+func (uc *uploadTopicUseCase) uploadAndSaveImages(ctx context.Context, topicID string, req request.UploadTopicRequest) error {
 	imageFiles := []struct {
 		file *multipart.FileHeader
 		link string
@@ -226,21 +183,15 @@ func (uc *uploadTopicUseCase) uploadAndSaveImages(ctx context.Context, topicID s
 		{req.DrawingFile, req.DrawingLink, "drawing"},
 		{req.IconFile, req.IconLink, "icon"},
 		{req.BMFile, req.BMLink, "bm"},
+		{req.SignLangFile, req.SignLangLink, "sign_lang"},
+		{req.GifFile, req.GifLink, "gif"},
+		{req.OrderFile, req.OrderLink, "order"},
 	}
 
 	// Lấy topic 1 lần để lấy các key cũ.
 	topic, err := uc.topicRepo.GetByID(ctx, topicID)
 	if err != nil {
-		// Nếu không lấy được topic, vẫn phải gọi done() tương ứng với
-		// số file hợp lệ để giảm đúng totalTasks đã khởi tạo.
-		for _, img := range imageFiles {
-			if !helper.IsValidFile(img.file) {
-				continue
-			}
-			_ = uc.redisService.SetUploadError(ctx, topicID, "image_"+img.typ, err.Error())
-			done()
-		}
-		return
+		return err
 	}
 
 	for _, img := range imageFiles {
@@ -255,17 +206,12 @@ func (uc *uploadTopicUseCase) uploadAndSaveImages(ctx context.Context, topicID s
 			key := helper.BuildObjectKeyS3("topic_media/image", img.file.Filename, fmt.Sprintf("%s_%s_image", req.Title, img.typ))
 			f, openErr := img.file.Open()
 			if openErr != nil {
-				_ = uc.redisService.SetUploadError(ctx, topicID, "image_"+img.typ, openErr.Error())
-				done()
-				continue
+				return openErr
 			}
 			ct := img.file.Header.Get("Content-Type")
 			if _, err := uc.s3Service.SaveReader(ctx, f, key, ct, uploader.UploadPrivate); err != nil {
-				_ = uc.redisService.SetUploadError(ctx, topicID, "image_"+img.typ, err.Error())
-				f.Close()
-				// giảm 1 task vì đây là 1 task upload (dù lỗi)
-				done()
-				continue
+				_ = f.Close()
+				return err
 			}
 			_ = f.Close()
 
@@ -275,11 +221,9 @@ func (uc *uploadTopicUseCase) uploadAndSaveImages(ctx context.Context, topicID s
 				ImageType: img.typ,
 				LinkUrl:   img.link,
 			}); err != nil {
-				_ = uc.redisService.SetUploadError(ctx, topicID, "image_"+img.typ, err.Error())
+				return err
 			}
 
-			// task upload xong -> giảm 1 task
-			done()
 			continue
 		} else {
 			oldKey := uc.getImageKeyByLanguageAndType(topic, req.LanguageID, img.typ)
@@ -294,6 +238,7 @@ func (uc *uploadTopicUseCase) uploadAndSaveImages(ctx context.Context, topicID s
 		}
 	}
 
+	return nil
 }
 
 // ------------------- Topic helpers -------------------

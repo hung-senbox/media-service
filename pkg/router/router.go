@@ -41,7 +41,7 @@ func SetupRouter(consulClient *api.Client, cacheClientRedis *cache.RedisCache, t
 	topicResourceRepov2 := repository.NewTopicResourceRepository(topicResourceCollection)
 
 	// --- UseCase ---
-	uploadTopicUseCasev2 := usecase.NewUploadTopicUseCase(topicRepov2, s3svc.NewFromConfig(), redisService)
+	uploadTopicUseCasev2 := usecase.NewUploadTopicUseCase(topicRepov2, s3svc.NewFromConfig())
 	getTopicAppUseCasev2 := usecase.NewGetTopicAppUseCase(topicRepov2, userGateway, s3svc.NewFromConfig())
 	getTopicWebUseCasev2 := usecase.NewGetTopicWebUseCase(topicRepov2, topicResourceRepov2, userGateway, s3svc.NewFromConfig())
 	getTopicGatewayUseCasev2 := usecase.NewGetTopicGatewayUseCase(topicRepov2, userGateway, s3svc.NewFromConfig())
@@ -68,7 +68,7 @@ func SetupRouter(consulClient *api.Client, cacheClientRedis *cache.RedisCache, t
 
 	// ========================  Video Uploader ======================== //
 	videoUploaderRepo := repository.NewVideoUploaderRepository(videoUploaderCollection)
-	videoUploaderService := service.NewVideoUploaderService(videoUploaderRepo, s3svc.NewFromConfig(), redisService, userGateway)
+	videoUploaderService := service.NewVideoUploaderService(videoUploaderRepo, s3svc.NewFromConfig(), userGateway)
 	videoUploaderHandler := handler.NewVideoUploaderHandler(videoUploaderService)
 	// ========================  Video Uploader ======================== //
 

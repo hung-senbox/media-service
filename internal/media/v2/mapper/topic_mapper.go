@@ -63,7 +63,7 @@ func ToTopicResponses4Web(topics []model.Topic) []response.TopicResponse4Web {
 			for _, lc := range t.LanguageConfig {
 				if lc.LanguageID == 1 {
 					for _, img := range lc.Images {
-						if img.ImageType == "full_background" && img.UploadedUrl != "" {
+						if img.ImageType == "bm" && img.UploadedUrl != "" {
 							mainImageUrl = img.UploadedUrl
 							break
 						}
@@ -171,7 +171,7 @@ func ToTopic4StudentResponses4App(topics []model.Topic, appLanguage uint) []*res
 		mainImageUrl := ""
 		if len(langConfig.Images) > 0 {
 			for _, img := range langConfig.Images {
-				if img.ImageType == "full_background" {
+				if img.ImageType == "bm" {
 					mainImageUrl = img.UploadedUrl
 					break
 				}
@@ -212,7 +212,7 @@ func ToTopic4StudentResponses4Web(topics []model.Topic, appLanguage uint) []*res
 		mainImageUrl := ""
 		if len(langConfig.Images) > 0 {
 			for _, img := range langConfig.Images {
-				if img.ImageType == "full_background" {
+				if img.ImageType == "bm" {
 					mainImageUrl = img.UploadedUrl
 					break
 				}
@@ -253,7 +253,7 @@ func ToTopic4StudentResponses4Gw(topics []model.Topic, appLanguage uint) []*resp
 		mainImageUrl := ""
 		if len(langConfig.Images) > 0 {
 			for _, img := range langConfig.Images {
-				if img.ImageType == "full_background" {
+				if img.ImageType == "bm" {
 					mainImageUrl = img.UploadedUrl
 					break
 				}
@@ -296,7 +296,7 @@ func ToTopicResponses4GW(topic *model.Topic, appLanguage uint) *response.TopicRe
 	mainImageUrl := ""
 	if len(langConfig.Images) > 0 {
 		for _, img := range langConfig.Images {
-			if img.ImageType == "full_background" {
+			if img.ImageType == "bm" {
 				mainImageUrl = img.UploadedUrl
 				break
 			}
@@ -333,7 +333,7 @@ func ToTopic2Assign4Web(topics []model.Topic, appLanguage uint) []*response.Topi
 		mainImageUrl := ""
 		if len(langConfig.Images) > 0 {
 			for _, img := range langConfig.Images {
-				if img.ImageType == "full_background" {
+				if img.ImageType == "bm" {
 					mainImageUrl = img.UploadedUrl
 					break
 				}
@@ -372,7 +372,7 @@ func ToTopicResponse4App(t *model.Topic, appLanguage uint) *response.GetTopicRes
 	// Lấy ảnh full_background (nếu có)
 	mainImageUrl := ""
 	for _, img := range langConfig.Images {
-		if img.ImageType == "full_background" {
+		if img.ImageType == "bm" {
 			mainImageUrl = img.UploadedUrl
 			break
 		}

@@ -114,10 +114,9 @@ func (r *topicRepository) SetImage(ctx context.Context, topicID string, language
 		pushUpdate := bson.M{
 			"$push": bson.M{
 				"language_config.$[lang].images": bson.M{
-					"image_type":   img.ImageType,
-					"image_key":    img.ImageKey,
-					"link_url":     img.LinkUrl,
-					"uploaded_url": img.UploadedUrl,
+					"image_type": img.ImageType,
+					"image_key":  img.ImageKey,
+					"link_url":   img.LinkUrl,
 				},
 			},
 		}

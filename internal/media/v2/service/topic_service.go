@@ -2,14 +2,13 @@ package service
 
 import (
 	"context"
-	"media-service/internal/media/model"
 	"media-service/internal/media/v2/dto/request"
 	"media-service/internal/media/v2/dto/response"
 	"media-service/internal/media/v2/usecase"
 )
 
 type TopicService interface {
-	UploadTopic(ctx context.Context, req request.UploadTopicRequest) (*model.Topic, error)
+	UploadTopic(ctx context.Context, req request.UploadTopicRequest) error
 	GetUploadProgress(ctx context.Context, topicID string) (*response.GetUploadProgressResponse, error)
 	GetTopics4Web(ctx context.Context, studentID string) ([]response.TopicResponse4Web, error)
 	GetTopic4Web(ctx context.Context, topicID string) (*response.TopicResponse4Web, error)
@@ -53,7 +52,7 @@ func NewTopicService(
 }
 
 // ------------------- Upload Topic -------------------
-func (s *topicService) UploadTopic(ctx context.Context, req request.UploadTopicRequest) (*model.Topic, error) {
+func (s *topicService) UploadTopic(ctx context.Context, req request.UploadTopicRequest) error {
 	return s.uploadTopicUseCase.UploadTopic(ctx, req)
 }
 

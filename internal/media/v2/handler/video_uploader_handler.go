@@ -24,13 +24,13 @@ func (h *VideoUploaderHandler) UploadVideoUploader(c *gin.Context) {
 		return
 	}
 
-	res, err := h.service.UploadVideoUploader(c.Request.Context(), req)
+	err := h.service.UploadVideoUploader(c.Request.Context(), req)
 	if err != nil {
 		helper.SendError(c, http.StatusInternalServerError, err, helper.ErrInvalidOperation)
 		return
 	}
 
-	helper.SendSuccess(c, http.StatusOK, "upload video uploader success", res)
+	helper.SendSuccess(c, http.StatusOK, "upload video uploader success", nil)
 }
 
 func (h *VideoUploaderHandler) GetUploaderStatus(c *gin.Context) {
