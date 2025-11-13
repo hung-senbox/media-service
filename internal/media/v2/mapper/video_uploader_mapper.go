@@ -15,12 +15,12 @@ func ToGetVideosResponse4Web(videoUploaders []model.VideoUploader, createdByName
 		}
 		result = append(result, response.GetVideoUploaderResponse4Web{
 			ID:              videoUploader.ID.Hex(),
-			LanguageID:      videoUploader.LanguageID,
+			LanguageID:      0,
 			IsVisible:       videoUploader.IsVisible,
 			CreatedByName:   creatorName,
-			Title:           videoUploader.Title,
-			VideoUrl:        videoUploader.VideoPublicUrl,
-			ImagePreviewUrl: videoUploader.ImagePreviewPublicUrl,
+			Title:           "",
+			VideoUrl:        "",
+			ImagePreviewUrl: "",
 			CreatedAt:       videoUploader.CreatedAt,
 		})
 	}

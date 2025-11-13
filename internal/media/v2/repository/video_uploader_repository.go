@@ -59,10 +59,8 @@ func (r *videoUploaderRepository) SetVideoUploaderWithoutFiles(ctx context.Conte
 	// có rồi → update basic fields
 	update := bson.M{
 		"$set": bson.M{
-			"is_visible":  videoUploader.IsVisible,
-			"title":       videoUploader.Title,
-			"language_id": videoUploader.LanguageID,
-			"updated_at":  time.Now(),
+			"is_visible": videoUploader.IsVisible,
+			"updated_at": time.Now(),
 		},
 	}
 
