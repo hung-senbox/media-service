@@ -23,7 +23,6 @@ type MediaAsset struct {
 	FileName    string             `bson:"file_name" json:"file_name"`
 	ContentType string             `bson:"content_type" json:"content_type"`
 	Size        int64              `bson:"size" json:"size"`
-	Folder      string             `bson:"folder" json:"folder"`
 	Mode        string             `bson:"mode" json:"mode"` // public | private
 	CreatedAt   time.Time          `bson:"created_at" json:"created_at"`
 	UpdatedAt   time.Time          `bson:"updated_at" json:"updated_at"`

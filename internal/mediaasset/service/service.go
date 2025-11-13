@@ -80,7 +80,6 @@ func (s *mediaService) Upload(ctx context.Context, fileHeader *multipart.FileHea
 		FileName:    fileHeader.Filename,
 		ContentType: ct,
 		Size:        fileHeader.Size,
-		Folder:      folder,
 		Mode:        strings.ToLower(mode),
 		CreatedAt:   now,
 		UpdatedAt:   now,
