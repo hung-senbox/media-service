@@ -27,7 +27,7 @@ import (
 func SetupRouter(consulClient *api.Client, cacheClientRedis *cache.RedisCache, topicCollection, pdfCollection, topicResourceCollection, videoUploaderCollection, mediaAssetCollection *mongo.Collection) *gin.Engine {
 	r := gin.Default()
 	// Limit in-memory buffering for multipart forms; larger files are spooled to disk
-	r.MaxMultipartMemory = 8 << 20 // 8 MiB
+	r.MaxMultipartMemory = 100 << 20 // 100 MiB
 	// Apply CORS for all routes
 	r.Use(middleware.CORS())
 
