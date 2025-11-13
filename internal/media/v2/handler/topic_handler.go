@@ -4,6 +4,7 @@ import (
 	"media-service/helper"
 	"media-service/internal/media/v2/dto/request"
 	"media-service/internal/media/v2/service"
+	"media-service/logger"
 	"net/http"
 	"strconv"
 
@@ -24,12 +25,14 @@ func (h *TopicHandler) UploadTopic(c *gin.Context) {
 		helper.SendError(c, http.StatusBadRequest, err, helper.ErrInvalidRequest)
 		return
 	}
+	logger.WriteLogData("request payload accepted", req)
 	res, err := h.service.UploadTopic(c.Request.Context(), req)
 	if err != nil {
 		helper.SendError(c, http.StatusInternalServerError, err, helper.ErrInvalidOperation)
 		return
 	}
 
+	logger.WriteLogData("response passed", res)
 	helper.SendSuccess(c, http.StatusOK, "waiting for upload file", res)
 }
 
