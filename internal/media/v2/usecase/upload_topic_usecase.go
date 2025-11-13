@@ -201,19 +201,20 @@ func (uc *uploadTopicUseCase) uploadAndSaveVideo(ctx context.Context, topicID st
 
 func (uc *uploadTopicUseCase) uploadAndSaveImages(ctx context.Context, topicID string, req request.UploadTopicRequest) error {
 	imageFiles := []struct {
-		file *multipart.FileHeader
-		link string
-		typ  string
+		file      *multipart.FileHeader
+		link      string
+		typ       string
+		isDeleted bool
 	}{
-		{req.FullBackgroundFile, req.FullBackgroundLink, "full_background"},
-		{req.ClearBackgroundFile, req.ClearBackgroundLink, "clear_background"},
-		{req.ClipPartFile, req.ClipPartLink, "clip_part"},
-		{req.DrawingFile, req.DrawingLink, "drawing"},
-		{req.IconFile, req.IconLink, "icon"},
-		{req.BMFile, req.BMLink, "bm"},
-		{req.SignLangFile, req.SignLangLink, "sign_lang"},
-		{req.GifFile, req.GifLink, "gif"},
-		{req.OrderFile, req.OrderLink, "order"},
+		{req.FullBackgroundFile, req.FullBackgroundLink, "full_background", req.IsDeletedFullBackground},
+		{req.ClearBackgroundFile, req.ClearBackgroundLink, "clear_background", req.IsDeletedClearBackground},
+		{req.ClipPartFile, req.ClipPartLink, "clip_part", req.IsDeletedClipPart},
+		{req.DrawingFile, req.DrawingLink, "drawing", req.IsDeletedDrawing},
+		{req.IconFile, req.IconLink, "icon", req.IsDeletedIcon},
+		{req.BMFile, req.BMLink, "bm", req.IsDeletedBM},
+		{req.SignLangFile, req.SignLangLink, "sign_lang", req.IsDeletedSignLang},
+		{req.GifFile, req.GifLink, "gif", req.IsDeletedGif},
+		{req.OrderFile, req.OrderLink, "order", req.IsDeletedOrder},
 	}
 
 	// Lấy topic 1 lần để lấy các key cũ.
@@ -281,6 +282,18 @@ func (uc *uploadTopicUseCase) uploadAndSaveImages(ctx context.Context, topicID s
 	// ================================ DELETE IMAGES ================================
 
 	for _, img := range imageFiles {
+		// Nếu có cờ xóa và không upload file mới → giữ trạng thái xóa (key rỗng), chỉ cập nhật link nếu cần
+		if img.isDeleted && !helper.IsValidFile(img.file) {
+			if err := uc.topicRepo.SetImage(ctx, topicID, req.LanguageID, model.TopicImageConfig{
+				ImageType: img.typ,
+				ImageKey:  "",
+				LinkUrl:   img.link,
+			}); err != nil {
+				return err
+			}
+			continue
+		}
+
 		if helper.IsValidFile(img.file) {
 
 			key := helper.BuildObjectKeyS3("topic_media/image", img.file.Filename, fmt.Sprintf("%s_%s_image", req.Title, img.typ))
@@ -453,7 +466,7 @@ func (uc *uploadTopicUseCase) deleteImageKeyByLanguageAndType(ctx context.Contex
 	if oldKey != "" {
 		err = uc.s3Service.Delete(ctx, oldKey)
 		if err != nil {
-			return err
+			logger.WriteLogEx("error", "Failed to delete s3 service image", err)
 		}
 	}
 	// goi repo xoa image key
