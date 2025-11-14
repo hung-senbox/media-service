@@ -14,6 +14,7 @@ import (
 	"media-service/internal/s3"
 	"media-service/pkg/constants"
 	"media-service/pkg/uploader"
+	"sort"
 	"strings"
 	"time"
 )
@@ -21,7 +22,7 @@ import (
 type VideoUploaderService interface {
 	UploadVideoUploader(ctx context.Context, req request.UploadVideoUploaderRequest) error
 	GetUploaderStatus(ctx context.Context, videoUploaderID string) (response.GetUploaderStatusResponse, error)
-	GetVideosUploader4Web(ctx context.Context, languageID string) ([]response.GetVideoUploaderResponse4Web, error)
+	GetVideosUploader4Web(ctx context.Context, languageID string, title string, sortBy []request.GetVideoUploaderSortBy) ([]response.GetVideoUploaderResponse4Web, error)
 	DeleteVideoUploader(ctx context.Context, videoUploaderID string) error
 }
 
@@ -55,6 +56,8 @@ func (s *videoUploaderService) UploadVideoUploader(ctx context.Context, req requ
 		existing.IsVisible = req.IsVisible
 		existing.Title = req.Title
 		existing.LanguageID = req.LanguageID
+		existing.Note = req.Note
+		existing.Transcript = req.Transcript
 		existing.UpdatedAt = time.Now()
 		if req.IsDeletedVideo {
 			s.videoUploaderRepository.DeleteVideoMetadata(ctx, req.VideoUploaderID)
@@ -72,6 +75,8 @@ func (s *videoUploaderService) UploadVideoUploader(ctx context.Context, req requ
 			IsVisible:  req.IsVisible,
 			LanguageID: req.LanguageID,
 			Title:      req.Title,
+			Note:       req.Note,
+			Transcript: req.Transcript,
 			CreatedAt:  time.Now(),
 			UpdatedAt:  time.Now(),
 		}
@@ -182,7 +187,7 @@ func (s *videoUploaderService) GetUploaderStatus(ctx context.Context, videoUploa
 	}, nil
 }
 
-func (s *videoUploaderService) GetVideosUploader4Web(ctx context.Context, languageID string) ([]response.GetVideoUploaderResponse4Web, error) {
+func (s *videoUploaderService) GetVideosUploader4Web(ctx context.Context, languageID, title string, sortBy []request.GetVideoUploaderSortBy) ([]response.GetVideoUploaderResponse4Web, error) {
 	currentUser, _ := ctx.Value(constants.CurrentUserKey).(*gw_response.CurrentUser)
 	if !currentUser.IsSuperAdmin {
 		return nil, fmt.Errorf("access denied")
@@ -202,6 +207,8 @@ func (s *videoUploaderService) GetVideosUploader4Web(ctx context.Context, langua
 			if err != nil {
 				return nil, err
 			}
+			videoUploaders = filterVideosByTitle(videoUploaders, strings.TrimSpace(title))
+			videoUploaders = sortVideos(videoUploaders, sortBy)
 			return mapper.ToGetVideosResponse4Web(videoUploaders, currentUser.Nickname), nil
 		}
 	}
@@ -211,6 +218,8 @@ func (s *videoUploaderService) GetVideosUploader4Web(ctx context.Context, langua
 	if err != nil {
 		return nil, err
 	}
+	videoUploaders = filterVideosByTitle(videoUploaders, strings.TrimSpace(title))
+	videoUploaders = sortVideos(videoUploaders, sortBy)
 	return mapper.ToGetVideosResponse4Web(videoUploaders, currentUser.Nickname), nil
 
 }
@@ -243,4 +252,62 @@ func (s *videoUploaderService) DeleteVideoUploader(ctx context.Context, videoUpl
 	}
 
 	return s.videoUploaderRepository.DeleteVideoUploader(ctx, videoUploaderID)
+}
+
+func filterVideosByTitle(videoUploaders []model.VideoUploader, title string) []model.VideoUploader {
+	var result []model.VideoUploader
+	for _, videoUploader := range videoUploaders {
+		if title == "" || strings.Contains(strings.ToLower(videoUploader.Title), strings.ToLower(title)) {
+			result = append(result, videoUploader)
+		}
+	}
+	return result
+}
+
+func sortVideos(vs []model.VideoUploader, sortBy []request.GetVideoUploaderSortBy) []model.VideoUploader {
+	if len(sortBy) == 0 {
+		return vs
+	}
+
+	sort.Slice(vs, func(i, j int) bool {
+		for _, sb := range sortBy {
+			field := strings.ToLower(sb.Field)
+			asc := strings.ToLower(sb.Order) != request.GetVideoUploaderSortByOrderDesc
+
+			switch field {
+			case "title":
+				if vs[i].Title != vs[j].Title {
+					if asc {
+						return strings.ToLower(vs[i].Title) < strings.ToLower(vs[j].Title)
+					}
+					return strings.ToLower(vs[i].Title) > strings.ToLower(vs[j].Title)
+				}
+			case "language_id":
+				if vs[i].LanguageID != vs[j].LanguageID {
+					if asc {
+						return vs[i].LanguageID < vs[j].LanguageID
+					}
+					return vs[i].LanguageID > vs[j].LanguageID
+				}
+			case "updated_at":
+				if !vs[i].UpdatedAt.Equal(vs[j].UpdatedAt) {
+					if asc {
+						return vs[i].UpdatedAt.Before(vs[j].UpdatedAt)
+					}
+					return vs[i].UpdatedAt.After(vs[j].UpdatedAt)
+				}
+			case "created_at":
+				if !vs[i].CreatedAt.Equal(vs[j].CreatedAt) {
+					if asc {
+						return vs[i].CreatedAt.Before(vs[j].CreatedAt)
+					}
+					return vs[i].CreatedAt.After(vs[j].CreatedAt)
+				}
+			}
+			// nếu bằng nhau → chuyển sang sort field tiếp theo
+		}
+		return false
+	})
+
+	return vs
 }

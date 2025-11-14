@@ -62,6 +62,8 @@ func (r *videoUploaderRepository) SetVideoUploaderWithoutFiles(ctx context.Conte
 			"is_visible":  videoUploader.IsVisible,
 			"title":       videoUploader.Title,
 			"language_id": videoUploader.LanguageID,
+			"note":        videoUploader.Note,
+			"transcript":  videoUploader.Transcript,
 			"updated_at":  time.Now(),
 		},
 	}

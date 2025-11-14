@@ -10,5 +10,7 @@ type GetVideoUploaderResponse4Web struct {
 	Title           string    `json:"title"`
 	VideoUrl        string    `json:"video_url"`
 	ImagePreviewUrl string    `json:"image_preview_url"`
+	Note            string    `json:"note"`
+	Transcript      string    `json:"transcript"`
 	CreatedAt       time.Time `json:"created_at"`
 }

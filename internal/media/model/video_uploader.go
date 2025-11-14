@@ -16,6 +16,8 @@ type VideoUploader struct {
 	VideoPublicUrl        string             `bson:"video_public_url" json:"video_public_url"`
 	ImagePreviewKey       string             `bson:"image_preview_key" json:"image_preview_key"`
 	ImagePreviewPublicUrl string             `bson:"image_preview_public_url" json:"image_preview_public_url"`
+	Transcript            string             `bson:"transcript" json:"transcript"`
+	Note                  string             `bson:"note" json:"note"`
 	CreatedAt             time.Time          `bson:"created_at" json:"created_at"`
 	UpdatedAt             time.Time          `bson:"updated_at" json:"updated_at"`
 }

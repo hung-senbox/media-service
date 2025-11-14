@@ -5,6 +5,7 @@ import (
 	"media-service/internal/media/v2/dto/request"
 	"media-service/internal/media/v2/service"
 	"net/http"
+	"strings"
 
 	"github.com/gin-gonic/gin"
 )
@@ -51,8 +52,39 @@ func (h *VideoUploaderHandler) GetUploaderStatus(c *gin.Context) {
 
 func (h *VideoUploaderHandler) GetVideosUploader4Web(c *gin.Context) {
 	languageID := c.Query("language_id")
+	title := c.Query("title")
 
-	res, err := h.service.GetVideosUploader4Web(c.Request.Context(), languageID)
+	var sortBy []request.GetVideoUploaderSortBy
+
+	sortParam := strings.TrimSpace(c.Query("sort_by"))
+	if sortParam != "" {
+		items := strings.Split(sortParam, ",")
+		for _, item := range items {
+			item = strings.TrimSpace(item)
+			if item == "" {
+				continue
+			}
+
+			order := request.GetVideoUploaderSortByOrderAsc
+			field := item
+
+			// Detect prefix + or -
+			if strings.HasPrefix(item, "-") {
+				order = request.GetVideoUploaderSortByOrderDesc
+				field = strings.TrimPrefix(item, "-")
+			} else if strings.HasPrefix(item, "+") {
+				order = request.GetVideoUploaderSortByOrderAsc
+				field = strings.TrimPrefix(item, "+")
+			}
+
+			sortBy = append(sortBy, request.GetVideoUploaderSortBy{
+				Field: field,
+				Order: order,
+			})
+		}
+	}
+
+	res, err := h.service.GetVideosUploader4Web(c.Request.Context(), languageID, title, sortBy)
 	if err != nil {
 		helper.SendError(c, http.StatusInternalServerError, err, helper.ErrInvalidOperation)
 		return
