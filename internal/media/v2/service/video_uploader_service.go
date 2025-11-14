@@ -19,7 +19,8 @@ import (
 )
 
 type VideoUploaderService interface {
-	UploadVideoUploader(ctx context.Context, req request.UploadVideoUploaderRequest) (*model.VideoUploader, error)
+	UploadVideoUploader(ctx context.Context, req request.UploadVideoUploaderRequest) error
+	GetUploaderStatus(ctx context.Context, videoUploaderID string) (response.GetUploaderStatusResponse, error)
 	GetVideosUploader4Web(ctx context.Context, languageID string) ([]response.GetVideoUploaderResponse4Web, error)
 	DeleteVideoUploader(ctx context.Context, videoUploaderID string) error
 }
@@ -37,10 +38,10 @@ func NewVideoUploaderService(videoUploaderRepository repository.VideoUploaderRep
 // ======================================================
 // =============== PUBLIC FUNCTION ======================
 // ======================================================
-func (s *videoUploaderService) UploadVideoUploader(ctx context.Context, req request.UploadVideoUploaderRequest) (*model.VideoUploader, error) {
+func (s *videoUploaderService) UploadVideoUploader(ctx context.Context, req request.UploadVideoUploaderRequest) error {
 	currentUser, _ := ctx.Value(constants.CurrentUserKey).(*gw_response.CurrentUser)
 	if !currentUser.IsSuperAdmin {
-		return nil, fmt.Errorf("access denied")
+		return fmt.Errorf("access denied")
 	}
 
 	var videoUploader *model.VideoUploader
@@ -49,7 +50,7 @@ func (s *videoUploaderService) UploadVideoUploader(ctx context.Context, req requ
 	if req.VideoUploaderID != "" {
 		existing, err := s.videoUploaderRepository.GetVideoUploaderByID(ctx, req.VideoUploaderID)
 		if err != nil {
-			return nil, fmt.Errorf("get video uploader failed: %w", err)
+			return fmt.Errorf("get video uploader failed: %w", err)
 		}
 		existing.IsVisible = req.IsVisible
 		existing.UpdatedAt = time.Now()
@@ -60,7 +61,7 @@ func (s *videoUploaderService) UploadVideoUploader(ctx context.Context, req requ
 			s.videoUploaderRepository.DeleteImagePreviewMetadata(ctx, req.VideoUploaderID)
 		}
 		if err := s.videoUploaderRepository.SetVideoUploaderWithoutFiles(ctx, existing); err != nil {
-			return nil, fmt.Errorf("save video uploader failed: %w", err)
+			return fmt.Errorf("save video uploader failed: %w", err)
 		}
 		videoUploader = existing
 	} else {
@@ -71,25 +72,34 @@ func (s *videoUploaderService) UploadVideoUploader(ctx context.Context, req requ
 			UpdatedAt: time.Now(),
 		}
 		if err := s.videoUploaderRepository.SetVideoUploaderWithoutFiles(ctx, newVideo); err != nil {
-			return nil, fmt.Errorf("save video uploader failed: %w", err)
+			return fmt.Errorf("save video uploader failed: %w", err)
 		}
 		videoUploader = newVideo
 	}
 
-	// Step 2: xử lý upload đồng bộ
+	// Step 2: Upload đồng bộ, không dùng Redis
+	// Upload video nếu có
 	if helper.IsValidFile(req.VideoFile) {
+		oldVideoKey := videoUploader.VideoKey
+		if oldVideoKey != "" {
+			_ = s.s3Service.Delete(ctx, oldVideoKey)
+		}
 		if err := s.processVideoUpload(ctx, videoUploader.ID.Hex(), req); err != nil {
-			return nil, fmt.Errorf("video upload failed: %w", err)
+			return fmt.Errorf("video upload failed: %w", err)
 		}
 	}
+	// Upload ảnh preview nếu có
 	if helper.IsValidFile(req.ImagePreviewFile) {
+		oldImageKey := videoUploader.ImagePreviewKey
+		if oldImageKey != "" {
+			_ = s.s3Service.Delete(ctx, oldImageKey)
+		}
 		if err := s.processImagePreviewUpload(ctx, videoUploader.ID.Hex(), req); err != nil {
-			return nil, fmt.Errorf("image upload failed: %w", err)
+			return fmt.Errorf("image upload failed: %w", err)
 		}
 	}
 
-	// Step 3: trả về sau khi hoàn tất
-	return videoUploader, nil
+	return nil
 }
 
 // ======================================================
@@ -153,7 +163,18 @@ func deref(s *string) string {
 	return *s
 }
 
-// removed GetUploaderStatus (no Redis tracking)
+func (s *videoUploaderService) GetUploaderStatus(ctx context.Context, videoUploaderID string) (response.GetUploaderStatusResponse, error) {
+	currentUser, _ := ctx.Value(constants.CurrentUserKey).(*gw_response.CurrentUser)
+	if !currentUser.IsSuperAdmin {
+		return response.GetUploaderStatusResponse{}, fmt.Errorf("access denied")
+	}
+
+	return response.GetUploaderStatusResponse{
+		Status:    "done",
+		Message:   "upload completed",
+		UpdatedAt: time.Now().UTC().Format(time.RFC3339),
+	}, nil
+}
 
 func (s *videoUploaderService) GetVideosUploader4Web(ctx context.Context, languageID string) ([]response.GetVideoUploaderResponse4Web, error) {
 	currentUser, _ := ctx.Value(constants.CurrentUserKey).(*gw_response.CurrentUser)

@@ -4,8 +4,8 @@ import (
 	"context"
 	"fmt"
 	"media-service/helper"
-	"media-service/internal/gateway"
 	"media-service/internal/media/v2/repository"
+	"media-service/internal/s3"
 )
 
 type DeleteTopicFileUseCase interface {
@@ -15,12 +15,12 @@ type DeleteTopicFileUseCase interface {
 }
 
 type deleteTopicFileUseCase struct {
-	topicRepo   repository.TopicRepository
-	fileGateway gateway.FileGateway
+	topicRepo repository.TopicRepository
+	s3Service s3.Service
 }
 
-func NewDeleteTopicFileUseCase(topicRepo repository.TopicRepository, fileGateway gateway.FileGateway) DeleteTopicFileUseCase {
-	return &deleteTopicFileUseCase{topicRepo: topicRepo, fileGateway: fileGateway}
+func NewDeleteTopicFileUseCase(topicRepo repository.TopicRepository, s3Service s3.Service) DeleteTopicFileUseCase {
+	return &deleteTopicFileUseCase{topicRepo: topicRepo, s3Service: s3Service}
 }
 
 func (uc *deleteTopicFileUseCase) DeleteTopicAudioKey(ctx context.Context, topicID string, languageID uint) error {
@@ -38,7 +38,7 @@ func (uc *deleteTopicFileUseCase) DeleteTopicAudioKey(ctx context.Context, topic
 		return fmt.Errorf("audio key not found")
 	}
 
-	err = uc.fileGateway.DeleteAudio(ctx, audioKey)
+	err = uc.s3Service.Delete(ctx, audioKey)
 	if err != nil {
 		return err
 	}
@@ -67,7 +67,7 @@ func (uc *deleteTopicFileUseCase) DeleteTopicVideoKey(ctx context.Context, topic
 		return fmt.Errorf("video key not found")
 	}
 
-	err = uc.fileGateway.DeleteVideo(ctx, videoKey)
+	err = uc.s3Service.Delete(ctx, videoKey)
 	if err != nil {
 		return err
 	}
@@ -96,7 +96,7 @@ func (uc *deleteTopicFileUseCase) DeleteTopicImageKey(ctx context.Context, topic
 		return fmt.Errorf("image key not found")
 	}
 
-	err = uc.fileGateway.DeleteImage(ctx, imageKey)
+	err = uc.s3Service.Delete(ctx, imageKey)
 	if err != nil {
 		return err
 	}
