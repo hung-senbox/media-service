@@ -3,6 +3,7 @@ package mapper
 import (
 	"media-service/internal/media/model"
 	"media-service/internal/media/v2/dto/response"
+	"media-service/pkg/constants"
 	"strings"
 )
 
@@ -63,7 +64,7 @@ func ToTopicResponses4Web(topics []model.Topic) []response.TopicResponse4Web {
 			for _, lc := range t.LanguageConfig {
 				if lc.LanguageID == 1 {
 					for _, img := range lc.Images {
-						if img.ImageType == "bm" && img.UploadedUrl != "" {
+						if img.ImageType == string(constants.TopicImageTypeBM) && img.UploadedUrl != "" {
 							mainImageUrl = img.UploadedUrl
 							break
 						}
@@ -171,7 +172,7 @@ func ToTopic4StudentResponses4App(topics []model.Topic, appLanguage uint) []*res
 		mainImageUrl := ""
 		if len(langConfig.Images) > 0 {
 			for _, img := range langConfig.Images {
-				if img.ImageType == "bm" {
+				if img.ImageType == string(constants.TopicImageTypeBM) {
 					mainImageUrl = img.UploadedUrl
 					break
 				}
@@ -212,7 +213,7 @@ func ToTopic4StudentResponses4Web(topics []model.Topic, appLanguage uint) []*res
 		mainImageUrl := ""
 		if len(langConfig.Images) > 0 {
 			for _, img := range langConfig.Images {
-				if img.ImageType == "bm" {
+				if img.ImageType == string(constants.TopicImageTypeBM) {
 					mainImageUrl = img.UploadedUrl
 					break
 				}
@@ -253,7 +254,7 @@ func ToTopic4StudentResponses4Gw(topics []model.Topic, appLanguage uint) []*resp
 		mainImageUrl := ""
 		if len(langConfig.Images) > 0 {
 			for _, img := range langConfig.Images {
-				if img.ImageType == "bm" {
+				if img.ImageType == string(constants.TopicImageTypeBM) {
 					mainImageUrl = img.UploadedUrl
 					break
 				}
@@ -296,7 +297,7 @@ func ToTopicResponses4GW(topic *model.Topic, appLanguage uint) *response.TopicRe
 	mainImageUrl := ""
 	if len(langConfig.Images) > 0 {
 		for _, img := range langConfig.Images {
-			if img.ImageType == "bm" {
+			if img.ImageType == string(constants.TopicImageTypeBM) {
 				mainImageUrl = img.UploadedUrl
 				break
 			}
@@ -333,7 +334,7 @@ func ToTopic2Assign4Web(topics []model.Topic, appLanguage uint) []*response.Topi
 		mainImageUrl := ""
 		if len(langConfig.Images) > 0 {
 			for _, img := range langConfig.Images {
-				if img.ImageType == "bm" {
+				if img.ImageType == string(constants.TopicImageTypeBM) {
 					mainImageUrl = img.UploadedUrl
 					break
 				}
@@ -372,7 +373,7 @@ func ToTopicResponse4App(t *model.Topic, appLanguage uint) *response.GetTopicRes
 	// Lấy ảnh full_background (nếu có)
 	mainImageUrl := ""
 	for _, img := range langConfig.Images {
-		if img.ImageType == "bm" {
+		if img.ImageType == string(constants.TopicImageTypeBM) {
 			mainImageUrl = img.UploadedUrl
 			break
 		}
