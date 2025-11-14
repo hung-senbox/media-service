@@ -165,3 +165,17 @@ const (
 
 const MainCachePrefix = "main-service:"
 const MediaCachePrefix = "media-service:"
+
+type TopicImageType string
+
+const (
+	TopicImageTypeFullBackground  TopicImageType = "full_background"
+	TopicImageTypeClearBackground TopicImageType = "clear_background"
+	TopicImageTypeClipPart        TopicImageType = "clip_part"
+	TopicImageTypeDrawing         TopicImageType = "drawing"
+	TopicImageTypeIcon            TopicImageType = "icon"
+	TopicImageTypeBM              TopicImageType = "bm"
+	TopicImageTypeSignLang        TopicImageType = "sign_lang"
+	TopicImageTypeGif             TopicImageType = "gif"
+	TopicImageTypeOrder           TopicImageType = "order"
+)

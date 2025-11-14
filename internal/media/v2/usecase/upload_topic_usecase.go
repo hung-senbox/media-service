@@ -60,17 +60,17 @@ func (uc *uploadTopicUseCase) UploadTopic(ctx context.Context, req request.Uploa
 	}
 
 	// Thực thi upload đồng bộ, không dùng Redis
-	if err := uc.uploadAndSaveAudio(ctx, topic.ID.Hex(), req); err != nil {
+	if err := uc.uploadAndSaveAudio(ctx, topic, req); err != nil {
 		logger.WriteLogMsg("error", "Failed to upload and save audio")
 		logger.WriteLogEx("error", "Failed to upload and save audio", err)
 		return err
 	}
-	if err := uc.uploadAndSaveVideo(ctx, topic.ID.Hex(), req); err != nil {
+	if err := uc.uploadAndSaveVideo(ctx, topic, req); err != nil {
 		logger.WriteLogMsg("error", "Failed to upload and save video")
 		logger.WriteLogEx("error", "Failed to upload and save video", err)
 		return err
 	}
-	if err := uc.uploadAndSaveImages(ctx, topic.ID.Hex(), req); err != nil {
+	if err := uc.uploadAndSaveImages(ctx, topic, req); err != nil {
 		logger.WriteLogMsg("error", "Failed to upload and save images")
 		logger.WriteLogEx("error", "Failed to upload and save images", err)
 		return err
@@ -79,39 +79,30 @@ func (uc *uploadTopicUseCase) UploadTopic(ctx context.Context, req request.Uploa
 }
 
 // ------------------- Upload handlers -------------------
-func (uc *uploadTopicUseCase) uploadAndSaveAudio(ctx context.Context, topicID string, req request.UploadTopicRequest) error {
-
-	topic, err := uc.topicRepo.GetByID(ctx, topicID)
-	if err != nil {
-		return err
-	}
+func (uc *uploadTopicUseCase) uploadAndSaveAudio(ctx context.Context, topic *model.Topic, req request.UploadTopicRequest) error {
+	topicID := topic.ID.Hex()
 
 	if req.IsDeletedAudio {
-		videoKey := helper.GetVideoKeyByLanguage(topic, req.LanguageID)
-		if videoKey == "" {
-			return fmt.Errorf("video key not found")
+		audioKey := helper.GetAudioKeyByLanguage(topic, req.LanguageID)
+		if audioKey != "" {
+			_ = uc.s3Service.Delete(ctx, audioKey)
 		}
-		_ = uc.s3Service.Delete(ctx, videoKey)
-
-		// goi repo xoa video key
-		err = uc.topicRepo.DeleteVideoKey(ctx, topicID, req.LanguageID)
-		if err != nil {
+		// goi repo xoa audio key
+		if err := uc.topicRepo.DeleteAudioKey(ctx, topicID, req.LanguageID); err != nil {
 			logger.WriteLogData("[Time: "+time.Now().Format("2006-01-02 15:04:05")+"] [uploadAndSaveAudio] Failed to delete audio key", err)
 		}
-
 		// Nếu không có file mới, giữ trạng thái xóa (key rỗng) và chỉ cập nhật metadata
 		if !helper.IsValidFile(req.AudioFile) {
-			err = uc.topicRepo.SetAudio(ctx, topicID, req.LanguageID, model.TopicAudioConfig{
+			return uc.topicRepo.SetAudio(ctx, topicID, req.LanguageID, model.TopicAudioConfig{
 				AudioKey:  "",
-				LinkUrl:   req.VideoLinkUrl,
-				StartTime: req.VideoStart,
-				EndTime:   req.VideoEnd,
+				LinkUrl:   req.AudioLinkUrl,
+				StartTime: req.AudioStart,
+				EndTime:   req.AudioEnd,
 			})
-			return err
 		}
 	}
 
-	oldAudioKey := uc.getAudioKeyByLanguage(topic, req.LanguageID)
+	oldAudioKey := helper.GetAudioKeyByLanguage(topic, req.LanguageID)
 	if helper.IsValidFile(req.AudioFile) {
 
 		key := helper.BuildObjectKeyS3("topic_media/audio", req.AudioFile.Filename, fmt.Sprintf("%s_audio", req.Title))
@@ -150,12 +141,8 @@ func (uc *uploadTopicUseCase) uploadAndSaveAudio(ctx context.Context, topicID st
 	return nil
 }
 
-func (uc *uploadTopicUseCase) uploadAndSaveVideo(ctx context.Context, topicID string, req request.UploadTopicRequest) error {
-
-	topic, err := uc.topicRepo.GetByID(ctx, topicID)
-	if err != nil {
-		return err
-	}
+func (uc *uploadTopicUseCase) uploadAndSaveVideo(ctx context.Context, topic *model.Topic, req request.UploadTopicRequest) error {
+	topicID := topic.ID.Hex()
 
 	if req.IsDeletedVideo {
 		videoKey := helper.GetVideoKeyByLanguage(topic, req.LanguageID)
@@ -164,25 +151,22 @@ func (uc *uploadTopicUseCase) uploadAndSaveVideo(ctx context.Context, topicID st
 		}
 		_ = uc.s3Service.Delete(ctx, videoKey)
 
-		// goi repo xoa video key
-		// ignore error -> chi ra log
-		err = uc.topicRepo.DeleteVideoKey(ctx, topicID, req.LanguageID)
-		if err != nil {
+		// goi repo xoa video key (ignore error -> chi ra log)
+		if err := uc.topicRepo.DeleteVideoKey(ctx, topicID, req.LanguageID); err != nil {
 			logger.WriteLogData("[Time: "+time.Now().Format("2006-01-02 15:04:05")+"] [uploadAndSaveVideo] Failed to delete video key", err)
 		}
 		// Nếu không có file mới, giữ trạng thái xóa (key rỗng) và chỉ cập nhật metadata
 		if !helper.IsValidFile(req.VideoFile) {
-			err = uc.topicRepo.SetVideo(ctx, topicID, req.LanguageID, model.TopicVideoConfig{
+			return uc.topicRepo.SetVideo(ctx, topicID, req.LanguageID, model.TopicVideoConfig{
 				VideoKey:  "",
 				LinkUrl:   req.VideoLinkUrl,
 				StartTime: req.VideoStart,
 				EndTime:   req.VideoEnd,
 			})
-			return err
 		}
 	}
 
-	oldVideoKey := uc.getVideoKeyByLanguage(topic, req.LanguageID)
+	oldVideoKey := helper.GetVideoKeyByLanguage(topic, req.LanguageID)
 	if helper.IsValidFile(req.VideoFile) {
 
 		key := helper.BuildObjectKeyS3("topic_media/video", req.VideoFile.Filename, fmt.Sprintf("%s_video", req.Title))
@@ -220,83 +204,71 @@ func (uc *uploadTopicUseCase) uploadAndSaveVideo(ctx context.Context, topicID st
 	return nil
 }
 
-func (uc *uploadTopicUseCase) uploadAndSaveImages(ctx context.Context, topicID string, req request.UploadTopicRequest) error {
+func (uc *uploadTopicUseCase) uploadAndSaveImages(ctx context.Context, topic *model.Topic, req request.UploadTopicRequest) error {
+	topicID := topic.ID.Hex()
 	imageFiles := []struct {
 		file      *multipart.FileHeader
 		link      string
 		typ       string
 		isDeleted bool
 	}{
-		{req.FullBackgroundFile, req.FullBackgroundLink, "full_background", req.IsDeletedFullBackground},
-		{req.ClearBackgroundFile, req.ClearBackgroundLink, "clear_background", req.IsDeletedClearBackground},
-		{req.ClipPartFile, req.ClipPartLink, "clip_part", req.IsDeletedClipPart},
-		{req.DrawingFile, req.DrawingLink, "drawing", req.IsDeletedDrawing},
-		{req.IconFile, req.IconLink, "icon", req.IsDeletedIcon},
-		{req.BMFile, req.BMLink, "bm", req.IsDeletedBM},
-		{req.SignLangFile, req.SignLangLink, "sign_lang", req.IsDeletedSignLang},
-		{req.GifFile, req.GifLink, "gif", req.IsDeletedGif},
-		{req.OrderFile, req.OrderLink, "order", req.IsDeletedOrder},
+		{req.FullBackgroundFile, req.FullBackgroundLink, string(constants.TopicImageTypeFullBackground), req.IsDeletedFullBackground},
+		{req.ClearBackgroundFile, req.ClearBackgroundLink, string(constants.TopicImageTypeClearBackground), req.IsDeletedClearBackground},
+		{req.ClipPartFile, req.ClipPartLink, string(constants.TopicImageTypeClipPart), req.IsDeletedClipPart},
+		{req.DrawingFile, req.DrawingLink, string(constants.TopicImageTypeDrawing), req.IsDeletedDrawing},
+		{req.IconFile, req.IconLink, string(constants.TopicImageTypeIcon), req.IsDeletedIcon},
+		{req.BMFile, req.BMLink, string(constants.TopicImageTypeBM), req.IsDeletedBM},
+		{req.SignLangFile, req.SignLangLink, string(constants.TopicImageTypeSignLang), req.IsDeletedSignLang},
+		{req.GifFile, req.GifLink, string(constants.TopicImageTypeGif), req.IsDeletedGif},
+		{req.OrderFile, req.OrderLink, string(constants.TopicImageTypeOrder), req.IsDeletedOrder},
 	}
 
-	// Lấy topic 1 lần để lấy các key cũ.
-	topic, err := uc.topicRepo.GetByID(ctx, topicID)
-	if err != nil {
-		return err
-	}
+	// topic is already available
 
 	// ================================ DELETE IMAGES ================================
 	// khong handle error khi xoa image -> chi ra log
 	if req.IsDeletedFullBackground {
-		err = uc.deleteImageKeyByLanguageAndType(ctx, topicID, req.LanguageID, "full_background")
-		if err != nil {
+		if err := uc.deleteImageKeyByLanguageAndType(ctx, topicID, req.LanguageID, string(constants.TopicImageTypeFullBackground)); err != nil {
 			logger.WriteLogData("[Time: "+time.Now().Format("2006-01-02 15:04:05")+"] [uploadAndSaveImages] Failed to delete full background image", err)
 		}
 	}
 	if req.IsDeletedClearBackground {
-		err = uc.deleteImageKeyByLanguageAndType(ctx, topicID, req.LanguageID, "clear_background")
-		if err != nil {
+		if err := uc.deleteImageKeyByLanguageAndType(ctx, topicID, req.LanguageID, string(constants.TopicImageTypeClearBackground)); err != nil {
 			logger.WriteLogData("[Time: "+time.Now().Format("2006-01-02 15:04:05")+"] [uploadAndSaveImages] Failed to delete clear background image", err)
 		}
 	}
 	if req.IsDeletedClipPart {
-		err = uc.deleteImageKeyByLanguageAndType(ctx, topicID, req.LanguageID, "clip_part")
-		if err != nil {
+		if err := uc.deleteImageKeyByLanguageAndType(ctx, topicID, req.LanguageID, string(constants.TopicImageTypeClipPart)); err != nil {
 			logger.WriteLogData("[Time: "+time.Now().Format("2006-01-02 15:04:05")+"] [uploadAndSaveImages] Failed to delete clip part image", err)
 		}
 	}
 	if req.IsDeletedDrawing {
-		err = uc.deleteImageKeyByLanguageAndType(ctx, topicID, req.LanguageID, "drawing")
-		if err != nil {
+		if err := uc.deleteImageKeyByLanguageAndType(ctx, topicID, req.LanguageID, string(constants.TopicImageTypeDrawing)); err != nil {
 			logger.WriteLogData("[Time: "+time.Now().Format("2006-01-02 15:04:05")+"] [uploadAndSaveImages] Failed to delete drawing image", err)
 		}
 	}
 	if req.IsDeletedIcon {
-		err = uc.deleteImageKeyByLanguageAndType(ctx, topicID, req.LanguageID, "icon")
-		if err != nil {
+		if err := uc.deleteImageKeyByLanguageAndType(ctx, topicID, req.LanguageID, string(constants.TopicImageTypeIcon)); err != nil {
 			logger.WriteLogData("[Time: "+time.Now().Format("2006-01-02 15:04:05")+"] [uploadAndSaveImages] Failed to delete icon image", err)
 		}
 	}
 	if req.IsDeletedBM {
-		err = uc.deleteImageKeyByLanguageAndType(ctx, topicID, req.LanguageID, "bm")
-		if err != nil {
+		if err := uc.deleteImageKeyByLanguageAndType(ctx, topicID, req.LanguageID, string(constants.TopicImageTypeBM)); err != nil {
 			logger.WriteLogData("[Time: "+time.Now().Format("2006-01-02 15:04:05")+"] [uploadAndSaveImages] Failed to delete bm image", err)
 		}
 	}
 	if req.IsDeletedSignLang {
-		err = uc.deleteImageKeyByLanguageAndType(ctx, topicID, req.LanguageID, "sign_lang")
-		if err != nil {
+		if err := uc.deleteImageKeyByLanguageAndType(ctx, topicID, req.LanguageID, string(constants.TopicImageTypeSignLang)); err != nil {
 			logger.WriteLogData("[Time: "+time.Now().Format("2006-01-02 15:04:05")+"] [uploadAndSaveImages] Failed to delete sign lang image", err)
 		}
 	}
 	if req.IsDeletedGif {
-		err = uc.deleteImageKeyByLanguageAndType(ctx, topicID, req.LanguageID, "gif")
-		if err != nil {
+		if err := uc.deleteImageKeyByLanguageAndType(ctx, topicID, req.LanguageID, string(constants.TopicImageTypeGif)); err != nil {
 			logger.WriteLogData("[Time: "+time.Now().Format("2006-01-02 15:04:05")+"] [uploadAndSaveImages] Failed to delete gif image", err)
 		}
 	}
 	if req.IsDeletedOrder {
-		err = uc.deleteImageKeyByLanguageAndType(ctx, topicID, req.LanguageID, "order")
-		if err != nil {
+		if err := uc.deleteImageKeyByLanguageAndType(ctx, topicID, req.LanguageID, string(constants.TopicImageTypeOrder)); err != nil {
 			logger.WriteLogData("[Time: "+time.Now().Format("2006-01-02 15:04:05")+"] [uploadAndSaveImages] Failed to delete order image", err)
 		}
 	}
@@ -440,29 +412,7 @@ func (uc *uploadTopicUseCase) createTopicLanguage(ctx context.Context, req reque
 	return newTopic, nil
 }
 
-func (uc *uploadTopicUseCase) getAudioKeyByLanguage(topic *model.Topic, languageID uint) string {
-	for _, lc := range topic.LanguageConfig {
-		if lc.LanguageID == languageID {
-			if lc.Audio.AudioKey != "" {
-				return lc.Audio.AudioKey
-			}
-			break
-		}
-	}
-	return ""
-}
-
-func (uc *uploadTopicUseCase) getVideoKeyByLanguage(topic *model.Topic, languageID uint) string {
-	for _, lc := range topic.LanguageConfig {
-		if lc.LanguageID == languageID {
-			if lc.Video.VideoKey != "" {
-				return lc.Video.VideoKey
-			}
-			break
-		}
-	}
-	return ""
-}
+// removed: getAudioKeyByLanguage, getVideoKeyByLanguage (use helper package)
 
 func (uc *uploadTopicUseCase) getImageKeyByLanguageAndType(topic *model.Topic, languageID uint, imageType string) string {
 	for _, lc := range topic.LanguageConfig {
