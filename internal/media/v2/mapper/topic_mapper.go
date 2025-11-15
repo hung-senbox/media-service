@@ -342,7 +342,7 @@ func ToTopic2Assign4Web(topics []model.Topic, appLanguage uint) []*response.Topi
 		}
 
 		res = append(res, &response.TopicResponse2Assign4Web{
-			ID:           t.ID.String(),
+			ID:           t.ID.Hex(),
 			Title:        langConfig.Title,
 			MainImageUrl: mainImageUrl,
 		})
