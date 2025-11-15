@@ -32,5 +32,4 @@ type UserInfor struct {
 type GroupedResourceResponse struct {
 	SelfResources    []*ResourceResponse `json:"self_resources" bson:"self_resources"`
 	RelatedResources []*ResourceResponse `json:"related_resources" bson:"related_resources"`
-	StudentResources []*ResourceResponse `json:"student_resources,omitempty" bson:"student_resources,omitempty"`
 }

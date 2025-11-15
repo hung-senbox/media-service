@@ -65,6 +65,10 @@ func (h *UserResourceHandler) UploadDocumentToResource(c *fiber.Ctx) error {
 		return helper.SendError(c, http.StatusBadRequest, err, helper.ErrInvalidRequest)
 	}
 
+	if file, err := c.FormFile("file"); err == nil {
+		req.File = file
+	}
+
 	id := c.Params("id")
 	if id == "" {
 		return helper.SendError(c, http.StatusBadRequest, fmt.Errorf("id is required"), helper.ErrInvalidRequest)

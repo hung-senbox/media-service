@@ -146,8 +146,8 @@ func (s *userResourceService) GetResources(ctx context.Context, role, organizati
 
 	var (
 		selfResources    []*model.UserResource
-		relatedResources []*model.UserResource
 		studentResources []*model.UserResource
+		relatedResources []*model.UserResource
 	)
 
 	switch role {
@@ -182,6 +182,8 @@ func (s *userResourceService) GetResources(ctx context.Context, role, organizati
 		studentResources, _ = s.UserResourceRepository.GetStudentResources(ctx, studentIDs)
 		selfResources, _ = s.UserResourceRepository.GetSelfResources(ctx, parent.ID)
 		relatedResources, _ = s.UserResourceRepository.GetRelatedResources(ctx, parent.ID)
+		relatedResources = append(relatedResources, studentResources...)
+
 	default:
 		return nil, fmt.Errorf("unsupported role: %s", role)
 	}
@@ -189,7 +191,6 @@ func (s *userResourceService) GetResources(ctx context.Context, role, organizati
 	return &dto.GroupedResourceResponse{
 		SelfResources:    dto.ToResourceResponses(ctx, organizationID, selfResources, s.userGateway, s.s3Service),
 		RelatedResources: dto.ToResourceResponses(ctx, organizationID, relatedResources, s.userGateway, s.s3Service),
-		StudentResources: dto.ToResourceResponses(ctx, organizationID, studentResources, s.userGateway, s.s3Service),
 	}, nil
 
 }
