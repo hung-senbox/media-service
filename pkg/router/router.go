@@ -25,7 +25,9 @@ import (
 )
 
 func SetupRouter(consulClient *api.Client, cacheClientRedis *cache.RedisCache, topicCollection, pdfCollection, topicResourceCollection, videoUploaderCollection, mediaAssetCollection *mongo.Collection) *fiber.App {
-	app := fiber.New()
+	app := fiber.New(fiber.Config{
+		BodyLimit: 1 * 1024 * 1024 * 1024, // 1 GB
+	})
 	// Apply CORS for all routes
 	app.Use(middleware.CORS())
 
