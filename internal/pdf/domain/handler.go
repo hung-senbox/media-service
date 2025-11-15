@@ -5,6 +5,7 @@ import (
 	"media-service/helper"
 	"media-service/internal/pdf/domain/dto"
 	"net/http"
+	"strings"
 
 	"github.com/gofiber/fiber/v2"
 )
@@ -61,12 +62,30 @@ func (h *UserResourceHandler) UploadDocumentToResource(c *fiber.Ctx) error {
 
 	var req dto.UpdateResourceRequest
 
-	if err := c.BodyParser(&req); err != nil {
-		return helper.SendError(c, http.StatusBadRequest, err, helper.ErrInvalidRequest)
-	}
+	contentType := c.Get("Content-Type")
+	if strings.Contains(contentType, "multipart/form-data") {
+		file, err := c.FormFile("file")
+		if err != nil {
+			return helper.SendError(c, http.StatusBadRequest, err, helper.ErrInvalidRequest)
+		} else {
+			req.File = file
+		}
 
-	if file, err := c.FormFile("file"); err == nil {
-		req.File = file
+		if resourceType := c.FormValue("resource_type"); resourceType != "" {
+			req.ResourceType = resourceType
+		}
+
+		if fileName := c.FormValue("file_name"); fileName != "" {
+			req.FileName = &fileName
+		}
+
+		if url := c.FormValue("url"); url != "" {
+			req.Url = &url
+		}
+	} else {
+		if err := c.BodyParser(&req); err != nil {
+			return helper.SendError(c, http.StatusBadRequest, err, helper.ErrInvalidRequest)
+		}
 	}
 
 	id := c.Params("id")
@@ -79,7 +98,7 @@ func (h *UserResourceHandler) UploadDocumentToResource(c *fiber.Ctx) error {
 		return helper.SendError(c, http.StatusInternalServerError, err, helper.ErrInvalidOperation)
 	}
 
-	return helper.SendSuccess(c, http.StatusOK, "create pdf success", res)
+	return helper.SendSuccess(c, http.StatusOK, "upload document success", res)
 
 }
 
