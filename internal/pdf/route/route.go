@@ -20,7 +20,7 @@ func RegisterRoutes(app *fiber.App, userResource *domain.UserResourceHandler, us
 	pdfGroup.Put("/resource/add-signature/:id", userResource.UploadSignatureToResource)
 
 	// Admin only routes - require SuperAdmin role
-	adminGroup := pdfGroup.Group("", middleware.RequireAdmin())
+	adminGroup := pdfGroup.Group("", middleware.Secured(userGw))
 	adminGroup.Put("/resource/update-status/:id", userResource.UpdateResourceStatus)
 	adminGroup.Put("/resource/download/:id", userResource.UpdateResourceDownloadPermission)
 
