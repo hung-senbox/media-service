@@ -5,6 +5,7 @@ import (
 	"media-service/internal/media/v2/dto/request"
 	"media-service/internal/media/v2/service"
 	"net/http"
+	"strconv"
 	"strings"
 
 	"github.com/gofiber/fiber/v2"
@@ -19,9 +20,30 @@ func NewVideoUploaderHandler(service service.VideoUploaderService) *VideoUploade
 }
 
 func (h *VideoUploaderHandler) UploadVideoUploader(c *fiber.Ctx) error {
-	var req request.UploadVideoUploaderRequest
-	if err := c.BodyParser(&req); err != nil {
-		return helper.SendError(c, http.StatusBadRequest, err, helper.ErrInvalidRequest)
+	// Parse multipart form
+	req := request.UploadVideoUploaderRequest{
+		VideoUploaderID:       c.FormValue("video_uploader_id"),
+		Title:                 c.FormValue("title"),
+		Note:                  c.FormValue("note"),
+		Transcript:            c.FormValue("transcript"),
+		IsVisible:             c.FormValue("is_visible") == "true",
+		IsDeletedVideo:        c.FormValue("is_deleted_video") == "true",
+		IsDeletedImagePreview: c.FormValue("is_deleted_image") == "true",
+	}
+
+	// Parse uint fields
+	if langID := c.FormValue("language_id"); langID != "" {
+		if val, err := strconv.ParseUint(langID, 10, 32); err == nil {
+			req.LanguageID = uint(val)
+		}
+	}
+
+	// Parse file fields
+	if videoFile, err := c.FormFile("video_file"); err == nil {
+		req.VideoFile = videoFile
+	}
+	if imagePreviewFile, err := c.FormFile("image_preview_file"); err == nil {
+		req.ImagePreviewFile = imagePreviewFile
 	}
 
 	err := h.service.UploadVideoUploader(c.UserContext(), req)
