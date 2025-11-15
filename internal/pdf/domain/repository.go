@@ -14,6 +14,7 @@ type UserResourceRepository interface {
 	GetResourceByID(ctx context.Context, id primitive.ObjectID) (*model.UserResource, error)
 	GetSelfResources(ctx context.Context, ownerID string) ([]*model.UserResource, error)
 	GetRelatedResources(ctx context.Context, ownerID string) ([]*model.UserResource, error)
+	GetStudentResources(ctx context.Context, studentIDs []string) ([]*model.UserResource, error)
 	UpdateResourceByID(ctx context.Context, id primitive.ObjectID, pdf *model.UserResource) error
 	UpdateResourceFields(ctx context.Context, id primitive.ObjectID, updateFields bson.M) error
 	DeleteResourceByID(ctx context.Context, id primitive.ObjectID) error
@@ -96,6 +97,23 @@ func (p *userResourceRepository) GetRelatedResources(ctx context.Context, ownerI
 	return resources, nil
 
 }
+
+func (p *userResourceRepository) GetStudentResources(ctx context.Context, studentIDs []string) ([]*model.UserResource, error) {
+	var resources []*model.UserResource
+	filter := bson.M{
+		"target_id.owner_id": bson.M{"$in": studentIDs},
+	}
+	cursor, err := p.UserResourceCollection.Find(ctx, filter)
+	if err != nil {
+		return nil, err
+	}
+	err = cursor.All(ctx, &resources)
+	if err != nil {
+		return nil, err
+	}
+	return resources, nil
+}
+
 func (p *userResourceRepository) UpdateResourceByID(ctx context.Context, id primitive.ObjectID, pdf *model.UserResource) error {
 	_, err := p.UserResourceCollection.UpdateOne(ctx, bson.M{"_id": id}, bson.M{"$set": pdf})
 	return err

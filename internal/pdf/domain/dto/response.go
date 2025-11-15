@@ -13,7 +13,7 @@ type ResourceResponse struct {
 	FileName       *string    `json:"file_name" bson:"file_name"`
 	Folder         string     `json:"folder" bson:"folder"`
 	Color          string     `json:"color" bson:"color"`
-	Status         int        `json:"status" bson:"status"` // 0 waiting, 1 viewed, 2 rejected, 3 signed, 4 need to helps
+	Status         int        `json:"status" bson:"status"`               // 0 waiting, 1 viewed, 2 rejected, 3 signed, 4 need to helps
 	IsDownloaded   int        `json:"is_downloaded" bson:"is_downloaded"` // 0 not downloaded, 1 downloaded
 	SignatureUrl   *string    `json:"signature_url" bson:"signature_url"`
 	URL            *string    `json:"url" bson:"url"`
@@ -32,4 +32,5 @@ type UserInfor struct {
 type GroupedResourceResponse struct {
 	SelfResources    []*ResourceResponse `json:"self_resources" bson:"self_resources"`
 	RelatedResources []*ResourceResponse `json:"related_resources" bson:"related_resources"`
+	StudentResources []*ResourceResponse `json:"student_resources,omitempty" bson:"student_resources,omitempty"`
 }
