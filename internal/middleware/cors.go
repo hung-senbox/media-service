@@ -1,41 +1,40 @@
 package middleware
 
-import "github.com/gin-gonic/gin"
+import "github.com/gofiber/fiber/v2"
 
-func CORS() gin.HandlerFunc {
-	return func(c *gin.Context) {
-		origin := c.Request.Header.Get("Origin")
-		c.Writer.Header().Set("Vary", "Origin")
+func CORS() fiber.Handler {
+	return func(c *fiber.Ctx) error {
+		origin := c.Get("Origin")
+		c.Set("Vary", "Origin")
 		// Accept all domains:
 		// - If Origin present: echo it and allow credentials
 		// - If no Origin (curl/server-to-server): return "*", no credentials
 		if origin != "" {
-			c.Writer.Header().Set("Access-Control-Allow-Origin", origin)
-			c.Writer.Header().Set("Access-Control-Allow-Credentials", "true")
+			c.Set("Access-Control-Allow-Origin", origin)
+			c.Set("Access-Control-Allow-Credentials", "true")
 		} else {
-			c.Writer.Header().Set("Access-Control-Allow-Origin", "*")
+			c.Set("Access-Control-Allow-Origin", "*")
 		}
-		c.Writer.Header().Set("Access-Control-Expose-Headers", "Content-Disposition")
-		reqHeaders := c.Request.Header.Get("Access-Control-Request-Headers")
+		c.Set("Access-Control-Expose-Headers", "Content-Disposition")
+		reqHeaders := c.Get("Access-Control-Request-Headers")
 		if reqHeaders != "" {
-			c.Writer.Header().Set("Access-Control-Allow-Headers", reqHeaders)
+			c.Set("Access-Control-Allow-Headers", reqHeaders)
 		} else {
-			c.Writer.Header().Set("Access-Control-Allow-Headers",
+			c.Set("Access-Control-Allow-Headers",
 				"Content-Type, Content-Length, Accept, Accept-Encoding, Accept-Language, X-CSRF-Token, Authorization, Cache-Control, X-Requested-With, X-App-Language, ngrok-skip-browser-warning")
 		}
-		reqMethod := c.Request.Header.Get("Access-Control-Request-Method")
+		reqMethod := c.Get("Access-Control-Request-Method")
 		if reqMethod != "" {
-			c.Writer.Header().Set("Access-Control-Allow-Methods", reqMethod)
+			c.Set("Access-Control-Allow-Methods", reqMethod)
 		} else {
-			c.Writer.Header().Set("Access-Control-Allow-Methods", "GET, POST, PUT, DELETE, OPTIONS")
+			c.Set("Access-Control-Allow-Methods", "GET, POST, PUT, DELETE, OPTIONS")
 		}
-		c.Writer.Header().Set("Access-Control-Max-Age", "86400")
+		c.Set("Access-Control-Max-Age", "86400")
 
-		if c.Request.Method == "OPTIONS" {
-			c.AbortWithStatus(204)
-			return
+		if c.Method() == "OPTIONS" {
+			return c.SendStatus(204)
 		}
 
-		c.Next()
+		return c.Next()
 	}
 }

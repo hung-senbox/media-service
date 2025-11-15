@@ -7,7 +7,7 @@ import (
 	"net/http"
 	"strings"
 
-	"github.com/gin-gonic/gin"
+	"github.com/gofiber/fiber/v2"
 )
 
 type VideoUploaderHandler struct {
@@ -18,39 +18,35 @@ func NewVideoUploaderHandler(service service.VideoUploaderService) *VideoUploade
 	return &VideoUploaderHandler{service: service}
 }
 
-func (h *VideoUploaderHandler) UploadVideoUploader(c *gin.Context) {
+func (h *VideoUploaderHandler) UploadVideoUploader(c *fiber.Ctx) error {
 	var req request.UploadVideoUploaderRequest
-	if err := c.ShouldBind(&req); err != nil {
-		helper.SendError(c, http.StatusBadRequest, err, helper.ErrInvalidRequest)
-		return
+	if err := c.BodyParser(&req); err != nil {
+		return helper.SendError(c, http.StatusBadRequest, err, helper.ErrInvalidRequest)
 	}
 
-	err := h.service.UploadVideoUploader(c.Request.Context(), req)
+	err := h.service.UploadVideoUploader(c.UserContext(), req)
 	if err != nil {
-		helper.SendError(c, http.StatusInternalServerError, err, helper.ErrInvalidOperation)
-		return
+		return helper.SendError(c, http.StatusInternalServerError, err, helper.ErrInvalidOperation)
 	}
 
-	helper.SendSuccess(c, http.StatusOK, "upload video uploader success", nil)
+	return helper.SendSuccess(c, http.StatusOK, "upload video uploader success", nil)
 }
 
-func (h *VideoUploaderHandler) GetUploaderStatus(c *gin.Context) {
-	videoUploaderID := c.Param("video_uploader_id")
+func (h *VideoUploaderHandler) GetUploaderStatus(c *fiber.Ctx) error {
+	videoUploaderID := c.Params("video_uploader_id")
 	if videoUploaderID == "" {
-		helper.SendError(c, http.StatusBadRequest, nil, helper.ErrInvalidRequest)
-		return
+		return helper.SendError(c, http.StatusBadRequest, nil, helper.ErrInvalidRequest)
 	}
 
-	res, err := h.service.GetUploaderStatus(c.Request.Context(), videoUploaderID)
+	res, err := h.service.GetUploaderStatus(c.UserContext(), videoUploaderID)
 	if err != nil {
-		helper.SendError(c, http.StatusInternalServerError, err, helper.ErrInvalidOperation)
-		return
+		return helper.SendError(c, http.StatusInternalServerError, err, helper.ErrInvalidOperation)
 	}
 
-	helper.SendSuccess(c, http.StatusOK, "get uploader status success", res)
+	return helper.SendSuccess(c, http.StatusOK, "get uploader status success", res)
 }
 
-func (h *VideoUploaderHandler) GetVideosUploader4Web(c *gin.Context) {
+func (h *VideoUploaderHandler) GetVideosUploader4Web(c *fiber.Ctx) error {
 	languageID := c.Query("language_id")
 	title := c.Query("title")
 
@@ -84,25 +80,22 @@ func (h *VideoUploaderHandler) GetVideosUploader4Web(c *gin.Context) {
 		}
 	}
 
-	res, err := h.service.GetVideosUploader4Web(c.Request.Context(), languageID, title, sortBy)
+	res, err := h.service.GetVideosUploader4Web(c.UserContext(), languageID, title, sortBy)
 	if err != nil {
-		helper.SendError(c, http.StatusInternalServerError, err, helper.ErrInvalidOperation)
-		return
+		return helper.SendError(c, http.StatusInternalServerError, err, helper.ErrInvalidOperation)
 	}
 
-	helper.SendSuccess(c, http.StatusOK, "get videos uploader success", res)
+	return helper.SendSuccess(c, http.StatusOK, "get videos uploader success", res)
 }
 
-func (h *VideoUploaderHandler) DeleteVideoUploader(c *gin.Context) {
-	videoUploaderID := c.Param("video_uploader_id")
+func (h *VideoUploaderHandler) DeleteVideoUploader(c *fiber.Ctx) error {
+	videoUploaderID := c.Params("video_uploader_id")
 	if videoUploaderID == "" {
-		helper.SendError(c, http.StatusBadRequest, nil, helper.ErrInvalidRequest)
-		return
+		return helper.SendError(c, http.StatusBadRequest, nil, helper.ErrInvalidRequest)
 	}
-	err := h.service.DeleteVideoUploader(c.Request.Context(), videoUploaderID)
+	err := h.service.DeleteVideoUploader(c.UserContext(), videoUploaderID)
 	if err != nil {
-		helper.SendError(c, http.StatusInternalServerError, err, helper.ErrInvalidOperation)
-		return
+		return helper.SendError(c, http.StatusInternalServerError, err, helper.ErrInvalidOperation)
 	}
-	helper.SendSuccess(c, http.StatusOK, "success", nil)
+	return helper.SendSuccess(c, http.StatusOK, "success", nil)
 }

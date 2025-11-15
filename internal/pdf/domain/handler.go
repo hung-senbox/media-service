@@ -6,7 +6,7 @@ import (
 	"media-service/internal/pdf/domain/dto"
 	"net/http"
 
-	"github.com/gin-gonic/gin"
+	"github.com/gofiber/fiber/v2"
 )
 
 type UserResourceHandler struct {
@@ -19,159 +19,140 @@ func NewUserResourceHandler(userResourceService UserResourceService) *UserResour
 	}
 }
 
-func (h *UserResourceHandler) CreateResource(c *gin.Context) {
+func (h *UserResourceHandler) CreateResource(c *fiber.Ctx) error {
 
 	var req dto.CreateResourceRequest
 
-	if err := c.ShouldBindJSON(&req); err != nil {
-		helper.SendError(c, http.StatusBadRequest, err, helper.ErrInvalidRequest)
-		return
+	if err := c.BodyParser(&req); err != nil {
+		return helper.SendError(c, http.StatusBadRequest, err, helper.ErrInvalidRequest)
 	}
 
-	res, err := h.userResourceService.CreateResource(c.Request.Context(), req)
+	res, err := h.userResourceService.CreateResource(c.UserContext(), req)
 	if err != nil {
-		helper.SendError(c, http.StatusInternalServerError, err, helper.ErrInvalidOperation)
-		return
+		return helper.SendError(c, http.StatusInternalServerError, err, helper.ErrInvalidOperation)
 	}
 
-	helper.SendSuccess(c, http.StatusOK, "create pdf success", res)
+	return helper.SendSuccess(c, http.StatusOK, "create pdf success", res)
 
 }
 
-func (h *UserResourceHandler) GetResources(c *gin.Context) {
+func (h *UserResourceHandler) GetResources(c *fiber.Ctx) error {
 
 	role := c.Query("role")
 	if role == "" {
-		helper.SendError(c, http.StatusBadRequest, fmt.Errorf("role is required"), helper.ErrInvalidRequest)
-		return
+		return helper.SendError(c, http.StatusBadRequest, fmt.Errorf("role is required"), helper.ErrInvalidRequest)
 	}
 
 	orgID := c.Query("organization_id")
 	if orgID == "" {
-		helper.SendError(c, http.StatusBadRequest, fmt.Errorf("organization_id is required"), helper.ErrInvalidRequest)
-		return
+		return helper.SendError(c, http.StatusBadRequest, fmt.Errorf("organization_id is required"), helper.ErrInvalidRequest)
 	}
 
-	res, err := h.userResourceService.GetResources(c.Request.Context(), role, orgID)
+	res, err := h.userResourceService.GetResources(c.UserContext(), role, orgID)
 	if err != nil {
-		helper.SendError(c, http.StatusInternalServerError, err, helper.ErrInvalidOperation)
-		return
+		return helper.SendError(c, http.StatusInternalServerError, err, helper.ErrInvalidOperation)
 	}
 
-	helper.SendSuccess(c, http.StatusOK, "get pdf success", res)
+	return helper.SendSuccess(c, http.StatusOK, "get pdf success", res)
 
 }
 
-func (h *UserResourceHandler) UploadDocumentToResource(c *gin.Context) {
+func (h *UserResourceHandler) UploadDocumentToResource(c *fiber.Ctx) error {
 
 	var req dto.UpdateResourceRequest
 
-	if err := c.ShouldBind(&req); err != nil {
-		helper.SendError(c, http.StatusBadRequest, err, helper.ErrInvalidRequest)
-		return
+	if err := c.BodyParser(&req); err != nil {
+		return helper.SendError(c, http.StatusBadRequest, err, helper.ErrInvalidRequest)
 	}
 
-	id := c.Param("id")
+	id := c.Params("id")
 	if id == "" {
-		helper.SendError(c, http.StatusBadRequest, fmt.Errorf("id is required"), helper.ErrInvalidRequest)
-		return
+		return helper.SendError(c, http.StatusBadRequest, fmt.Errorf("id is required"), helper.ErrInvalidRequest)
 	}
 
-	res, err := h.userResourceService.UploadDocumentToResource(c.Request.Context(), id, req)
+	res, err := h.userResourceService.UploadDocumentToResource(c.UserContext(), id, req)
 	if err != nil {
-		helper.SendError(c, http.StatusInternalServerError, err, helper.ErrInvalidOperation)
-		return
+		return helper.SendError(c, http.StatusInternalServerError, err, helper.ErrInvalidOperation)
 	}
 
-	helper.SendSuccess(c, http.StatusOK, "create pdf success", res)
+	return helper.SendSuccess(c, http.StatusOK, "create pdf success", res)
 
 }
 
-func (h *UserResourceHandler) UploadSignatureToResource(c *gin.Context) {
+func (h *UserResourceHandler) UploadSignatureToResource(c *fiber.Ctx) error {
 
 	var req dto.UploadSignatureRequest
 
-	if err := c.ShouldBind(&req); err != nil {
-		helper.SendError(c, http.StatusBadRequest, err, helper.ErrInvalidRequest)
-		return
+	if err := c.BodyParser(&req); err != nil {
+		return helper.SendError(c, http.StatusBadRequest, err, helper.ErrInvalidRequest)
 	}
 
-	id := c.Param("id")
+	id := c.Params("id")
 	if id == "" {
-		helper.SendError(c, http.StatusBadRequest, fmt.Errorf("id is required"), helper.ErrInvalidRequest)
-		return
+		return helper.SendError(c, http.StatusBadRequest, fmt.Errorf("id is required"), helper.ErrInvalidRequest)
 	}
 
-	res, err := h.userResourceService.UploadSignatureToResource(c.Request.Context(), id, req)
+	res, err := h.userResourceService.UploadSignatureToResource(c.UserContext(), id, req)
 	if err != nil {
-		helper.SendError(c, http.StatusInternalServerError, err, helper.ErrInvalidOperation)
-		return
+		return helper.SendError(c, http.StatusInternalServerError, err, helper.ErrInvalidOperation)
 	}
 
-	helper.SendSuccess(c, http.StatusOK, "create pdf success", res)
+	return helper.SendSuccess(c, http.StatusOK, "create pdf success", res)
 
 }
 
-func (h *UserResourceHandler) UpdateResourceStatus(c *gin.Context) {
+func (h *UserResourceHandler) UpdateResourceStatus(c *fiber.Ctx) error {
 	var req dto.UpdateResourceStatusRequest
 
-	if err := c.ShouldBindJSON(&req); err != nil {
-		helper.SendError(c, http.StatusBadRequest, err, helper.ErrInvalidRequest)
-		return
+	if err := c.BodyParser(&req); err != nil {
+		return helper.SendError(c, http.StatusBadRequest, err, helper.ErrInvalidRequest)
 	}
 
-	id := c.Param("id")
+	id := c.Params("id")
 	if id == "" {
-		helper.SendError(c, http.StatusBadRequest, fmt.Errorf("id is required"), helper.ErrInvalidRequest)
-		return
+		return helper.SendError(c, http.StatusBadRequest, fmt.Errorf("id is required"), helper.ErrInvalidRequest)
 	}
 
-	err := h.userResourceService.UpdateResourceStatus(c.Request.Context(), id, req)
+	err := h.userResourceService.UpdateResourceStatus(c.UserContext(), id, req)
 	if err != nil {
-		helper.SendError(c, http.StatusInternalServerError, err, helper.ErrInvalidOperation)
-		return
+		return helper.SendError(c, http.StatusInternalServerError, err, helper.ErrInvalidOperation)
 	}
 
-	helper.SendSuccess(c, http.StatusOK, "update resource status success", nil)
+	return helper.SendSuccess(c, http.StatusOK, "update resource status success", nil)
 }
 
-func (h *UserResourceHandler) UpdateResourceDownloadPermission(c *gin.Context) {
+func (h *UserResourceHandler) UpdateResourceDownloadPermission(c *fiber.Ctx) error {
 	var req dto.UpdateDownloadPermissionRequest
 
-	if err := c.ShouldBindJSON(&req); err != nil {
-		helper.SendError(c, http.StatusBadRequest, err, helper.ErrInvalidRequest)
-		return
+	if err := c.BodyParser(&req); err != nil {
+		return helper.SendError(c, http.StatusBadRequest, err, helper.ErrInvalidRequest)
 	}
 
-	id := c.Param("id")
+	id := c.Params("id")
 	if id == "" {
-		helper.SendError(c, http.StatusBadRequest, fmt.Errorf("id is required"), helper.ErrInvalidRequest)
-		return
+		return helper.SendError(c, http.StatusBadRequest, fmt.Errorf("id is required"), helper.ErrInvalidRequest)
 	}
 
-	err := h.userResourceService.UpdateResourceDownloadPermission(c.Request.Context(), id, req)
+	err := h.userResourceService.UpdateResourceDownloadPermission(c.UserContext(), id, req)
 	if err != nil {
-		helper.SendError(c, http.StatusInternalServerError, err, helper.ErrInvalidOperation)
-		return
+		return helper.SendError(c, http.StatusInternalServerError, err, helper.ErrInvalidOperation)
 	}
 
-	helper.SendSuccess(c, http.StatusOK, "update resource download permission success", nil)
+	return helper.SendSuccess(c, http.StatusOK, "update resource download permission success", nil)
 }
 
-func (h *UserResourceHandler) DeleteResource(c *gin.Context) {
+func (h *UserResourceHandler) DeleteResource(c *fiber.Ctx) error {
 
-	id := c.Param("id")
+	id := c.Params("id")
 	if id == "" {
-		helper.SendError(c, http.StatusBadRequest, fmt.Errorf("id is required"), helper.ErrInvalidRequest)
-		return
+		return helper.SendError(c, http.StatusBadRequest, fmt.Errorf("id is required"), helper.ErrInvalidRequest)
 	}
 
-	err := h.userResourceService.DeleteResource(c.Request.Context(), id)
+	err := h.userResourceService.DeleteResource(c.UserContext(), id)
 	if err != nil {
-		helper.SendError(c, http.StatusInternalServerError, err, helper.ErrInvalidOperation)
-		return
+		return helper.SendError(c, http.StatusInternalServerError, err, helper.ErrInvalidOperation)
 	}
 
-	helper.SendSuccess(c, http.StatusOK, "delete pdf success", nil)
+	return helper.SendSuccess(c, http.StatusOK, "delete pdf success", nil)
 
 }

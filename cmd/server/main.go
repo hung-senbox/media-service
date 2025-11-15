@@ -60,10 +60,10 @@ func main() {
 		return
 	}
 
-	r := router.SetupRouter(consulClient, cacheClientRedis, db.TopicCollection, db.PDFCollection, db.TopicResourceCollection, db.VideoUploaderCollection, db.MediaAssetCollection)
+	app := router.SetupRouter(consulClient, cacheClientRedis, db.TopicCollection, db.PDFCollection, db.TopicResourceCollection, db.VideoUploaderCollection, db.MediaAssetCollection)
 
 	port := cfg.Server.Port
-	if err := r.Run(":" + port); err != nil {
+	if err := app.Listen(":" + port); err != nil {
 		log.Fatal("Failed to run server:", err)
 	}
 }

@@ -7,7 +7,7 @@ import (
 	"net/http"
 	"strconv"
 
-	"github.com/gin-gonic/gin"
+	"github.com/gofiber/fiber/v2"
 )
 
 type TopicHandler struct {
@@ -18,238 +18,205 @@ func NewTopicHandler(service service.TopicService) *TopicHandler {
 	return &TopicHandler{service: service}
 }
 
-func (h *TopicHandler) UploadTopic(c *gin.Context) {
+func (h *TopicHandler) UploadTopic(c *fiber.Ctx) error {
 	var req request.UploadTopicRequest
-	if err := c.ShouldBind(&req); err != nil {
-		helper.SendError(c, http.StatusBadRequest, err, helper.ErrInvalidRequest)
-		return
+	if err := c.BodyParser(&req); err != nil {
+		return helper.SendError(c, http.StatusBadRequest, err, helper.ErrInvalidRequest)
 	}
-	err := h.service.UploadTopic(c.Request.Context(), req)
+	err := h.service.UploadTopic(c.UserContext(), req)
 	if err != nil {
-		helper.SendError(c, http.StatusInternalServerError, err, helper.ErrInvalidOperation)
-		return
+		return helper.SendError(c, http.StatusInternalServerError, err, helper.ErrInvalidOperation)
 	}
 
-	helper.SendSuccess(c, http.StatusOK, "upload topic success", nil)
+	return helper.SendSuccess(c, http.StatusOK, "upload topic success", nil)
 }
 
-func (h TopicHandler) GetPregressUpload(c *gin.Context) {
-	topicID := c.Param("topic_id")
+func (h TopicHandler) GetPregressUpload(c *fiber.Ctx) error {
+	topicID := c.Params("topic_id")
 	if topicID == "" {
-		helper.SendError(c, http.StatusBadRequest, nil, helper.ErrInvalidRequest)
-		return
+		return helper.SendError(c, http.StatusBadRequest, nil, helper.ErrInvalidRequest)
 	}
-	res, err := h.service.GetUploadProgress(c.Request.Context(), c.Param("topic_id"))
+	res, err := h.service.GetUploadProgress(c.UserContext(), c.Params("topic_id"))
 	if err != nil {
-		helper.SendError(c, http.StatusInternalServerError, err, helper.ErrInvalidOperation)
-		return
+		return helper.SendError(c, http.StatusInternalServerError, err, helper.ErrInvalidOperation)
 	}
 
-	helper.SendSuccess(c, http.StatusOK, "get progress upload success", res)
+	return helper.SendSuccess(c, http.StatusOK, "get progress upload success", res)
 }
 
-func (h TopicHandler) GetTopics4Web(c *gin.Context) {
+func (h TopicHandler) GetTopics4Web(c *fiber.Ctx) error {
 
 	studentID := c.Query("student_id")
 
-	res, err := h.service.GetTopics4Web(c.Request.Context(), studentID)
+	res, err := h.service.GetTopics4Web(c.UserContext(), studentID)
 	if err != nil {
-		helper.SendError(c, http.StatusInternalServerError, err, helper.ErrInvalidOperation)
-		return
+		return helper.SendError(c, http.StatusInternalServerError, err, helper.ErrInvalidOperation)
 	}
 
-	helper.SendSuccess(c, http.StatusOK, "get topics success", res)
+	return helper.SendSuccess(c, http.StatusOK, "get topics success", res)
 }
 
-func (h TopicHandler) GetTopic4Web(c *gin.Context) {
-	topicID := c.Param("topic_id")
+func (h TopicHandler) GetTopic4Web(c *fiber.Ctx) error {
+	topicID := c.Params("topic_id")
 	if topicID == "" {
-		helper.SendError(c, http.StatusBadRequest, nil, helper.ErrInvalidRequest)
-		return
+		return helper.SendError(c, http.StatusBadRequest, nil, helper.ErrInvalidRequest)
 	}
-	res, err := h.service.GetTopic4Web(c.Request.Context(), topicID)
+	res, err := h.service.GetTopic4Web(c.UserContext(), topicID)
 	if err != nil {
-		helper.SendError(c, http.StatusInternalServerError, err, helper.ErrInvalidOperation)
-		return
+		return helper.SendError(c, http.StatusInternalServerError, err, helper.ErrInvalidOperation)
 	}
 
-	helper.SendSuccess(c, http.StatusOK, "get topic success", res)
+	return helper.SendSuccess(c, http.StatusOK, "get topic success", res)
 }
 
-func (h TopicHandler) GetTopics4Student4App(c *gin.Context) {
-	studentID := c.Param("student_id")
+func (h TopicHandler) GetTopics4Student4App(c *fiber.Ctx) error {
+	studentID := c.Params("student_id")
 	if studentID == "" {
-		helper.SendError(c, http.StatusBadRequest, nil, helper.ErrInvalidRequest)
-		return
+		return helper.SendError(c, http.StatusBadRequest, nil, helper.ErrInvalidRequest)
 	}
-	res, err := h.service.GetTopics4Student4App(c.Request.Context(), studentID)
+	res, err := h.service.GetTopics4Student4App(c.UserContext(), studentID)
 	if err != nil {
-		helper.SendError(c, http.StatusInternalServerError, err, helper.ErrInvalidOperation)
-		return
+		return helper.SendError(c, http.StatusInternalServerError, err, helper.ErrInvalidOperation)
 	}
 
-	helper.SendSuccess(c, http.StatusOK, "get topics success", res)
+	return helper.SendSuccess(c, http.StatusOK, "get topics success", res)
 }
 
-func (h TopicHandler) GetTopic4Gw(c *gin.Context) {
-	topicID := c.Param("topic_id")
+func (h TopicHandler) GetTopic4Gw(c *fiber.Ctx) error {
+	topicID := c.Params("topic_id")
 	if topicID == "" {
-		helper.SendError(c, http.StatusBadRequest, nil, helper.ErrInvalidRequest)
-		return
+		return helper.SendError(c, http.StatusBadRequest, nil, helper.ErrInvalidRequest)
 	}
-	res, err := h.service.GetTopic4Gw(c.Request.Context(), topicID)
+	res, err := h.service.GetTopic4Gw(c.UserContext(), topicID)
 	if err != nil {
-		helper.SendError(c, http.StatusInternalServerError, err, helper.ErrInvalidOperation)
-		return
+		return helper.SendError(c, http.StatusInternalServerError, err, helper.ErrInvalidOperation)
 	}
 
-	helper.SendSuccess(c, http.StatusOK, "get topic success", res)
+	return helper.SendSuccess(c, http.StatusOK, "get topic success", res)
 }
 
-func (h TopicHandler) GetAllTopicsByOrganization4Gw(c *gin.Context) {
-	organizationID := c.Param("organization_id")
+func (h TopicHandler) GetAllTopicsByOrganization4Gw(c *fiber.Ctx) error {
+	organizationID := c.Params("organization_id")
 	if organizationID == "" {
-		helper.SendError(c, http.StatusBadRequest, nil, helper.ErrInvalidRequest)
-		return
+		return helper.SendError(c, http.StatusBadRequest, nil, helper.ErrInvalidRequest)
 	}
 
-	res, err := h.service.GetAllTopicsByOrganization4Gw(c.Request.Context(), organizationID)
+	res, err := h.service.GetAllTopicsByOrganization4Gw(c.UserContext(), organizationID)
 	if err != nil {
-		helper.SendError(c, http.StatusInternalServerError, err, helper.ErrInvalidOperation)
-		return
+		return helper.SendError(c, http.StatusInternalServerError, err, helper.ErrInvalidOperation)
 	}
 
-	helper.SendSuccess(c, http.StatusOK, "get all topics success", res)
+	return helper.SendSuccess(c, http.StatusOK, "get all topics success", res)
 }
 
-func (h TopicHandler) GetTopics4Student4Web(c *gin.Context) {
-	studentID := c.Param("student_id")
+func (h TopicHandler) GetTopics4Student4Web(c *fiber.Ctx) error {
+	studentID := c.Params("student_id")
 	if studentID == "" {
-		helper.SendError(c, http.StatusBadRequest, nil, helper.ErrInvalidRequest)
-		return
+		return helper.SendError(c, http.StatusBadRequest, nil, helper.ErrInvalidRequest)
 	}
-	res, err := h.service.GetTopics4Student4Web(c.Request.Context(), studentID)
+	res, err := h.service.GetTopics4Student4Web(c.UserContext(), studentID)
 	if err != nil {
-		helper.SendError(c, http.StatusInternalServerError, err, helper.ErrInvalidOperation)
-		return
+		return helper.SendError(c, http.StatusInternalServerError, err, helper.ErrInvalidOperation)
 	}
 
-	helper.SendSuccess(c, http.StatusOK, "get topics success", res)
+	return helper.SendSuccess(c, http.StatusOK, "get topics success", res)
 }
 
-func (h TopicHandler) GetTopics4Student4Gw(c *gin.Context) {
-	studentID := c.Param("student_id")
+func (h TopicHandler) GetTopics4Student4Gw(c *fiber.Ctx) error {
+	studentID := c.Params("student_id")
 	if studentID == "" {
-		helper.SendError(c, http.StatusBadRequest, nil, helper.ErrInvalidRequest)
-		return
+		return helper.SendError(c, http.StatusBadRequest, nil, helper.ErrInvalidRequest)
 	}
-	res, err := h.service.GetTopics4Student4Gw(c.Request.Context(), studentID)
+	res, err := h.service.GetTopics4Student4Gw(c.UserContext(), studentID)
 	if err != nil {
-		helper.SendError(c, http.StatusInternalServerError, err, helper.ErrInvalidOperation)
-		return
+		return helper.SendError(c, http.StatusInternalServerError, err, helper.ErrInvalidOperation)
 	}
 
-	helper.SendSuccess(c, http.StatusOK, "get topics success", res)
+	return helper.SendSuccess(c, http.StatusOK, "get topics success", res)
 }
 
-func (h TopicHandler) GetTopics2Assign4Web(c *gin.Context) {
-	res, err := h.service.GetTopics2Assign4Web(c.Request.Context())
+func (h TopicHandler) GetTopics2Assign4Web(c *fiber.Ctx) error {
+	res, err := h.service.GetTopics2Assign4Web(c.UserContext())
 	if err != nil {
-		helper.SendError(c, http.StatusInternalServerError, err, helper.ErrInvalidOperation)
-		return
+		return helper.SendError(c, http.StatusInternalServerError, err, helper.ErrInvalidOperation)
 	}
 
-	helper.SendSuccess(c, http.StatusOK, "get topics success", res)
+	return helper.SendSuccess(c, http.StatusOK, "get topics success", res)
 }
 
-func (h TopicHandler) GetTopics4App(c *gin.Context) {
-	organizationID := c.Param("organization_id")
+func (h TopicHandler) GetTopics4App(c *fiber.Ctx) error {
+	organizationID := c.Params("organization_id")
 	if organizationID == "" {
-		helper.SendError(c, http.StatusBadRequest, nil, helper.ErrInvalidRequest)
-		return
+		return helper.SendError(c, http.StatusBadRequest, nil, helper.ErrInvalidRequest)
 	}
-	res, err := h.service.GetTopics4App(c.Request.Context(), organizationID)
+	res, err := h.service.GetTopics4App(c.UserContext(), organizationID)
 	if err != nil {
-		helper.SendError(c, http.StatusInternalServerError, err, helper.ErrInvalidOperation)
-		return
+		return helper.SendError(c, http.StatusInternalServerError, err, helper.ErrInvalidOperation)
 	}
 
-	helper.SendSuccess(c, http.StatusOK, "get topics success", res)
+	return helper.SendSuccess(c, http.StatusOK, "get topics success", res)
 }
 
-func (h TopicHandler) DeleteTopicAudioKey(c *gin.Context) {
-	topicID := c.Param("topic_id")
+func (h TopicHandler) DeleteTopicAudioKey(c *fiber.Ctx) error {
+	topicID := c.Params("topic_id")
 	if topicID == "" {
-		helper.SendError(c, http.StatusBadRequest, nil, helper.ErrInvalidRequest)
-		return
+		return helper.SendError(c, http.StatusBadRequest, nil, helper.ErrInvalidRequest)
 	}
-	languageID := c.Param("language_id")
+	languageID := c.Params("language_id")
 	if languageID == "" {
-		helper.SendError(c, http.StatusBadRequest, nil, helper.ErrInvalidRequest)
-		return
+		return helper.SendError(c, http.StatusBadRequest, nil, helper.ErrInvalidRequest)
 	}
 	languageIDUint, err := strconv.ParseUint(languageID, 10, 64)
 	if err != nil {
-		helper.SendError(c, http.StatusBadRequest, err, helper.ErrInvalidRequest)
-		return
+		return helper.SendError(c, http.StatusBadRequest, err, helper.ErrInvalidRequest)
 	}
-	err = h.service.DeleteTopicAudioKey(c.Request.Context(), topicID, uint(languageIDUint))
+	err = h.service.DeleteTopicAudioKey(c.UserContext(), topicID, uint(languageIDUint))
 	if err != nil {
-		helper.SendError(c, http.StatusInternalServerError, err, helper.ErrInvalidOperation)
-		return
+		return helper.SendError(c, http.StatusInternalServerError, err, helper.ErrInvalidOperation)
 	}
-	helper.SendSuccess(c, http.StatusOK, "delete topic audio key success", nil)
+	return helper.SendSuccess(c, http.StatusOK, "delete topic audio key success", nil)
 }
 
-func (h TopicHandler) DeleteTopicVideoKey(c *gin.Context) {
-	topicID := c.Param("topic_id")
+func (h TopicHandler) DeleteTopicVideoKey(c *fiber.Ctx) error {
+	topicID := c.Params("topic_id")
 	if topicID == "" {
-		helper.SendError(c, http.StatusBadRequest, nil, helper.ErrInvalidRequest)
-		return
+		return helper.SendError(c, http.StatusBadRequest, nil, helper.ErrInvalidRequest)
 	}
-	languageID := c.Param("language_id")
+	languageID := c.Params("language_id")
 	if languageID == "" {
-		helper.SendError(c, http.StatusBadRequest, nil, helper.ErrInvalidRequest)
-		return
+		return helper.SendError(c, http.StatusBadRequest, nil, helper.ErrInvalidRequest)
 	}
 	languageIDUint, err := strconv.ParseUint(languageID, 10, 64)
 	if err != nil {
-		helper.SendError(c, http.StatusBadRequest, err, helper.ErrInvalidRequest)
-		return
+		return helper.SendError(c, http.StatusBadRequest, err, helper.ErrInvalidRequest)
 	}
-	err = h.service.DeleteTopicVideoKey(c.Request.Context(), topicID, uint(languageIDUint))
+	err = h.service.DeleteTopicVideoKey(c.UserContext(), topicID, uint(languageIDUint))
 	if err != nil {
-		helper.SendError(c, http.StatusInternalServerError, err, helper.ErrInvalidOperation)
-		return
+		return helper.SendError(c, http.StatusInternalServerError, err, helper.ErrInvalidOperation)
 	}
-	helper.SendSuccess(c, http.StatusOK, "delete topic video key success", nil)
+	return helper.SendSuccess(c, http.StatusOK, "delete topic video key success", nil)
 }
 
-func (h TopicHandler) DeleteTopicImageKey(c *gin.Context) {
-	topicID := c.Param("topic_id")
+func (h TopicHandler) DeleteTopicImageKey(c *fiber.Ctx) error {
+	topicID := c.Params("topic_id")
 	if topicID == "" {
-		helper.SendError(c, http.StatusBadRequest, nil, helper.ErrInvalidRequest)
-		return
+		return helper.SendError(c, http.StatusBadRequest, nil, helper.ErrInvalidRequest)
 	}
-	languageID := c.Param("language_id")
+	languageID := c.Params("language_id")
 	if languageID == "" {
-		helper.SendError(c, http.StatusBadRequest, nil, helper.ErrInvalidRequest)
-		return
+		return helper.SendError(c, http.StatusBadRequest, nil, helper.ErrInvalidRequest)
 	}
 	languageIDUint, err := strconv.ParseUint(languageID, 10, 64)
 	if err != nil {
-		helper.SendError(c, http.StatusBadRequest, err, helper.ErrInvalidRequest)
-		return
+		return helper.SendError(c, http.StatusBadRequest, err, helper.ErrInvalidRequest)
 	}
-	imageType := c.Param("image_type")
+	imageType := c.Params("image_type")
 	if imageType == "" {
-		helper.SendError(c, http.StatusBadRequest, nil, helper.ErrInvalidRequest)
-		return
+		return helper.SendError(c, http.StatusBadRequest, nil, helper.ErrInvalidRequest)
 	}
-	err = h.service.DeleteTopicImageKey(c.Request.Context(), topicID, uint(languageIDUint), imageType)
+	err = h.service.DeleteTopicImageKey(c.UserContext(), topicID, uint(languageIDUint), imageType)
 	if err != nil {
-		helper.SendError(c, http.StatusInternalServerError, err, helper.ErrInvalidOperation)
-		return
+		return helper.SendError(c, http.StatusInternalServerError, err, helper.ErrInvalidOperation)
 	}
-	helper.SendSuccess(c, http.StatusOK, "delete topic image key success", nil)
+	return helper.SendSuccess(c, http.StatusOK, "delete topic image key success", nil)
 }

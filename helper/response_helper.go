@@ -3,7 +3,7 @@ package helper
 import (
 	"media-service/logger"
 
-	"github.com/gin-gonic/gin"
+	"github.com/gofiber/fiber/v2"
 )
 
 const (
@@ -21,15 +21,15 @@ type APIResponse struct {
 	ErrorCode  string      `json:"error_code,omitempty"`
 }
 
-func SendSuccess(c *gin.Context, statusCode int, message string, data interface{}) {
-	c.JSON(statusCode, APIResponse{
+func SendSuccess(c *fiber.Ctx, statusCode int, message string, data interface{}) error {
+	return c.Status(statusCode).JSON(APIResponse{
 		StatusCode: statusCode,
 		Message:    message,
 		Data:       data,
 	})
 }
 
-func SendError(c *gin.Context, statusCode int, err error, errorCode string) {
+func SendError(c *fiber.Ctx, statusCode int, err error, errorCode string) error {
 	var errMsg string
 	if err != nil {
 		errMsg = err.Error()
@@ -41,11 +41,11 @@ func SendError(c *gin.Context, statusCode int, err error, errorCode string) {
 	logger.WriteLogEx("error", errMsg, map[string]interface{}{
 		"status_code": statusCode,
 		"error_code":  errorCode,
-		"path":        c.Request.URL.Path,
-		"method":      c.Request.Method,
+		"path":        c.Path(),
+		"method":      c.Method(),
 	})
 
-	c.JSON(statusCode, APIResponse{
+	return c.Status(statusCode).JSON(APIResponse{
 		StatusCode: statusCode,
 		Message:    errMsg,
 		Error:      errMsg,

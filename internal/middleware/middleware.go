@@ -9,30 +9,27 @@ import (
 	"strconv"
 	"strings"
 
-	"github.com/gin-gonic/gin"
+	"github.com/gofiber/fiber/v2"
 	"github.com/golang-jwt/jwt/v5"
 )
 
-func Secured(userGw gateway.UserGateway) gin.HandlerFunc {
-	return func(c *gin.Context) {
-		authorizationHeader := c.GetHeader("Authorization")
+func Secured(userGw gateway.UserGateway) fiber.Handler {
+	return func(c *fiber.Ctx) error {
+		authorizationHeader := c.Get("Authorization")
 
 		// app language header
-		appLanguage := helper.ParseAppLanguage(c.GetHeader("X-App-Language"), 1)
-		c.Writer.Header().Set("X-App-Language", strconv.Itoa(int(appLanguage)))
-		c.Set(constants.AppLanguage.String(), appLanguage)
-		ctx := context.WithValue(c.Request.Context(), constants.AppLanguage, appLanguage)
-		c.Request = c.Request.WithContext(ctx)
+		appLanguage := helper.ParseAppLanguage(c.Get("X-App-Language"), 1)
+		c.Set("X-App-Language", strconv.Itoa(int(appLanguage)))
+		c.Locals(constants.AppLanguage.String(), appLanguage)
+		ctx := context.WithValue(c.Context(), constants.AppLanguage, appLanguage)
 
 		// --- Authorization ---
 		if len(authorizationHeader) == 0 {
-			c.AbortWithStatus(http.StatusForbidden)
-			return
+			return c.SendStatus(http.StatusForbidden)
 		}
 
 		if !strings.HasPrefix(authorizationHeader, "Bearer ") {
-			c.AbortWithStatus(http.StatusUnauthorized)
-			return
+			return c.SendStatus(http.StatusUnauthorized)
 		}
 
 		tokenString := strings.Split(authorizationHeader, " ")[1]
@@ -42,63 +39,58 @@ func Secured(userGw gateway.UserGateway) gin.HandlerFunc {
 		if claims, ok := token.Claims.(jwt.MapClaims); ok {
 			// --- UserID ---
 			if userId, ok := claims[constants.UserID.String()].(string); ok {
-				c.Set(constants.UserID.String(), userId)
-				ctx = context.WithValue(c.Request.Context(), constants.UserID, userId)
-				c.Request = c.Request.WithContext(ctx)
+				c.Locals(constants.UserID.String(), userId)
+				ctx = context.WithValue(ctx, constants.UserID, userId)
 			}
 
 			// --- UserName ---
 			if userName, ok := claims[constants.UserName.String()].(string); ok {
-				c.Set(constants.UserName.String(), userName)
-				ctx = context.WithValue(c.Request.Context(), constants.UserName, userName)
-				c.Request = c.Request.WithContext(ctx)
+				c.Locals(constants.UserName.String(), userName)
+				ctx = context.WithValue(ctx, constants.UserName, userName)
 			}
 
 			// --- Roles ---
 			if userRoles, ok := claims[constants.UserRoles.String()].(string); ok {
-				c.Set(constants.UserRoles.String(), userRoles)
-				ctx = context.WithValue(c.Request.Context(), constants.UserRoles, userRoles)
-				c.Request = c.Request.WithContext(ctx)
+				c.Locals(constants.UserRoles.String(), userRoles)
+				ctx = context.WithValue(ctx, constants.UserRoles, userRoles)
 			}
 		}
 
 		// --- Token ---
-		c.Set(constants.Token.String(), tokenString)
-		ctx = context.WithValue(c.Request.Context(), constants.Token, tokenString)
-		c.Request = c.Request.WithContext(ctx)
+		c.Locals(constants.Token.String(), tokenString)
+		ctx = context.WithValue(ctx, constants.Token, tokenString)
 
 		// --- Call user-service to get current user ---
 		currentUser, err := userGw.GetCurrentUser(
 			context.WithValue(ctx, constants.CurrentUserKey, tokenString),
 		)
 		if err != nil {
-			c.AbortWithStatusJSON(http.StatusUnauthorized, gin.H{
+			return c.Status(http.StatusUnauthorized).JSON(fiber.Map{
 				"error": "unauthorized",
 			})
-			return
 		}
 
 		// --- Set currentUser vào context ---
-		c.Set(string(constants.CurrentUserKey), currentUser)
+		c.Locals(string(constants.CurrentUserKey), currentUser)
 		ctx = context.WithValue(ctx, constants.CurrentUserKey, currentUser)
-		c.Request = c.Request.WithContext(ctx)
+		
+		// Store the context for use in handlers
+		c.SetUserContext(ctx)
 
-		c.Next()
+		return c.Next()
 	}
 }
 
-func RequireAdmin() gin.HandlerFunc {
-	return func(c *gin.Context) {
-		rolesAny, exists := c.Get(constants.UserRoles.String())
-		if !exists {
-			c.AbortWithStatusJSON(http.StatusUnauthorized, gin.H{"error": "Roles not found"})
-			return
+func RequireAdmin() fiber.Handler {
+	return func(c *fiber.Ctx) error {
+		rolesAny := c.Locals(constants.UserRoles.String())
+		if rolesAny == nil {
+			return c.Status(http.StatusUnauthorized).JSON(fiber.Map{"error": "Roles not found"})
 		}
 
 		rolesStr, ok := rolesAny.(string)
 		if !ok {
-			c.AbortWithStatusJSON(http.StatusInternalServerError, gin.H{"error": "Invalid roles format"})
-			return
+			return c.Status(http.StatusInternalServerError).JSON(fiber.Map{"error": "Invalid roles format"})
 		}
 
 		// ví dụ roles: "SuperAdmin, Teacher"
@@ -112,10 +104,9 @@ func RequireAdmin() gin.HandlerFunc {
 		}
 
 		if !isAdmin {
-			c.AbortWithStatusJSON(http.StatusForbidden, gin.H{"error": "Admin access required"})
-			return
+			return c.Status(http.StatusForbidden).JSON(fiber.Map{"error": "Admin access required"})
 		}
 
-		c.Next()
+		return c.Next()
 	}
 }

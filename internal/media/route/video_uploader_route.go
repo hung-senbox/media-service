@@ -5,23 +5,19 @@ import (
 	"media-service/internal/media/v2/handler"
 	"media-service/internal/middleware"
 
-	"github.com/gin-gonic/gin"
+	"github.com/gofiber/fiber/v2"
 )
 
-func RegisterVideoUploaderRoutes(r *gin.Engine, h *handler.VideoUploaderHandler, userGw gateway.UserGateway) {
+func RegisterVideoUploaderRoutes(app *fiber.App, h *handler.VideoUploaderHandler, userGw gateway.UserGateway) {
 	// Admin routes
-	adminGroup := r.Group("/api/v1/admin")
+	adminGroup := app.Group("/api/v1/admin")
 	adminGroup.Use(middleware.Secured(userGw))
-	{
-		uploadAdmin := adminGroup.Group("/upload")
-		{
-			videoUploaderAdmin := uploadAdmin.Group("/videos")
-			{
-				videoUploaderAdmin.POST("", h.UploadVideoUploader)
-				videoUploaderAdmin.GET("/progress/:video_uploader_id", h.GetUploaderStatus)
-				videoUploaderAdmin.GET("", h.GetVideosUploader4Web)
-				videoUploaderAdmin.DELETE("/:video_uploader_id", h.DeleteVideoUploader)
-			}
-		}
-	}
+
+	uploadAdmin := adminGroup.Group("/upload")
+	videoUploaderAdmin := uploadAdmin.Group("/videos")
+
+	videoUploaderAdmin.Post("", h.UploadVideoUploader)
+	videoUploaderAdmin.Get("/progress/:video_uploader_id", h.GetUploaderStatus)
+	videoUploaderAdmin.Get("", h.GetVideosUploader4Web)
+	videoUploaderAdmin.Delete("/:video_uploader_id", h.DeleteVideoUploader)
 }

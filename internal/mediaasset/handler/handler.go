@@ -8,7 +8,7 @@ import (
 	"net/http"
 	"time"
 
-	"github.com/gin-gonic/gin"
+	"github.com/gofiber/fiber/v2"
 )
 
 type MediaHandler struct {
@@ -19,10 +19,10 @@ func NewMediaHandler(svc service.MediaService) *MediaHandler {
 	return &MediaHandler{svc: svc}
 }
 
-func (h *MediaHandler) Upload(c *gin.Context) {
-	folder := c.PostForm("folder")
-	mode := c.PostForm("mode")
-	mtStr := c.PostForm("media_type")
+func (h *MediaHandler) Upload(c *fiber.Ctx) error {
+	folder := c.FormValue("folder")
+	mode := c.FormValue("mode")
+	mtStr := c.FormValue("media_type")
 	var mtPtr *string
 	if mtStr != "" {
 		mtPtr = &mtStr
@@ -30,35 +30,31 @@ func (h *MediaHandler) Upload(c *gin.Context) {
 
 	fileHeader, err := c.FormFile("file")
 	if err != nil {
-		helper.SendError(c, http.StatusBadRequest, err, helper.ErrInvalidRequest)
-		return
+		return helper.SendError(c, http.StatusBadRequest, err, helper.ErrInvalidRequest)
 	}
 
 	opened, err := fileHeader.Open()
 	if err != nil {
-		helper.SendError(c, http.StatusBadRequest, err, helper.ErrInvalidRequest)
-		return
+		return helper.SendError(c, http.StatusBadRequest, err, helper.ErrInvalidRequest)
 	}
 	_ = opened.Close()
 
-	meta, url, err := h.svc.Upload(c.Request.Context(), fileHeader, folder, mode, mtPtr)
+	meta, url, err := h.svc.Upload(c.UserContext(), fileHeader, folder, mode, mtPtr)
 	if err != nil {
-		helper.SendError(c, http.StatusInternalServerError, err, helper.ErrInvalidOperation)
-		return
+		return helper.SendError(c, http.StatusInternalServerError, err, helper.ErrInvalidOperation)
 	}
 
-	helper.SendSuccess(c, http.StatusOK, "upload success", dto.UploadResponse{
+	return helper.SendSuccess(c, http.StatusOK, "upload success", dto.UploadResponse{
 		ID:  meta.ID.Hex(),
 		Key: meta.Key,
 		URL: url,
 	})
 }
 
-func (h *MediaHandler) GetURL(c *gin.Context) {
-	id := c.Param("id")
+func (h *MediaHandler) GetURL(c *fiber.Ctx) error {
+	id := c.Params("id")
 	if id == "" {
-		helper.SendError(c, http.StatusBadRequest, fmt.Errorf("id is required"), helper.ErrInvalidRequest)
-		return
+		return helper.SendError(c, http.StatusBadRequest, fmt.Errorf("id is required"), helper.ErrInvalidRequest)
 	}
 	ttlStr := c.Query("ttl_seconds")
 	var duration *time.Duration
@@ -67,33 +63,29 @@ func (h *MediaHandler) GetURL(c *gin.Context) {
 			duration = &d
 		}
 	}
-	url, err := h.svc.GetURL(c.Request.Context(), id, duration)
+	url, err := h.svc.GetURL(c.UserContext(), id, duration)
 	if err != nil {
-		helper.SendError(c, http.StatusInternalServerError, err, helper.ErrInvalidOperation)
-		return
+		return helper.SendError(c, http.StatusInternalServerError, err, helper.ErrInvalidOperation)
 	}
-	helper.SendSuccess(c, http.StatusOK, "ok", gin.H{"url": url})
+	return helper.SendSuccess(c, http.StatusOK, "ok", fiber.Map{"url": url})
 }
 
-func (h *MediaHandler) GetMeta(c *gin.Context) {
-	id := c.Param("id")
+func (h *MediaHandler) GetMeta(c *fiber.Ctx) error {
+	id := c.Params("id")
 	if id == "" {
-		helper.SendError(c, http.StatusBadRequest, fmt.Errorf("id is required"), helper.ErrInvalidRequest)
-		return
+		return helper.SendError(c, http.StatusBadRequest, fmt.Errorf("id is required"), helper.ErrInvalidRequest)
 	}
-	meta, err := h.svc.GetMeta(c.Request.Context(), id)
+	meta, err := h.svc.GetMeta(c.UserContext(), id)
 	if err != nil {
-		helper.SendError(c, http.StatusInternalServerError, err, helper.ErrInvalidOperation)
-		return
+		return helper.SendError(c, http.StatusInternalServerError, err, helper.ErrInvalidOperation)
 	}
-	helper.SendSuccess(c, http.StatusOK, "ok", meta)
+	return helper.SendSuccess(c, http.StatusOK, "ok", meta)
 }
 
-func (h *MediaHandler) GetURLByKey(c *gin.Context) {
+func (h *MediaHandler) GetURLByKey(c *fiber.Ctx) error {
 	key := c.Query("key")
 	if key == "" {
-		helper.SendError(c, http.StatusBadRequest, fmt.Errorf("key is required"), helper.ErrInvalidRequest)
-		return
+		return helper.SendError(c, http.StatusBadRequest, fmt.Errorf("key is required"), helper.ErrInvalidRequest)
 	}
 	ttlStr := c.Query("ttl_seconds")
 	var duration *time.Duration
@@ -102,23 +94,20 @@ func (h *MediaHandler) GetURLByKey(c *gin.Context) {
 			duration = &d
 		}
 	}
-	url, err := h.svc.GetURLByKey(c.Request.Context(), key, duration)
+	url, err := h.svc.GetURLByKey(c.UserContext(), key, duration)
 	if err != nil {
-		helper.SendError(c, http.StatusInternalServerError, err, helper.ErrInvalidOperation)
-		return
+		return helper.SendError(c, http.StatusInternalServerError, err, helper.ErrInvalidOperation)
 	}
-	helper.SendSuccess(c, http.StatusOK, "ok", gin.H{"url": url})
+	return helper.SendSuccess(c, http.StatusOK, "ok", fiber.Map{"url": url})
 }
 
-func (h *MediaHandler) Delete(c *gin.Context) {
-	id := c.Param("id")
+func (h *MediaHandler) Delete(c *fiber.Ctx) error {
+	id := c.Params("id")
 	if id == "" {
-		helper.SendError(c, http.StatusBadRequest, fmt.Errorf("id is required"), helper.ErrInvalidRequest)
-		return
+		return helper.SendError(c, http.StatusBadRequest, fmt.Errorf("id is required"), helper.ErrInvalidRequest)
 	}
-	if err := h.svc.Delete(c.Request.Context(), id); err != nil {
-		helper.SendError(c, http.StatusInternalServerError, err, helper.ErrInvalidOperation)
-		return
+	if err := h.svc.Delete(c.UserContext(), id); err != nil {
+		return helper.SendError(c, http.StatusInternalServerError, err, helper.ErrInvalidOperation)
 	}
-	helper.SendSuccess(c, http.StatusOK, "deleted", nil)
+	return helper.SendSuccess(c, http.StatusOK, "deleted", nil)
 }

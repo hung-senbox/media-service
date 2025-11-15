@@ -8,7 +8,7 @@ import (
 	"net/http"
 	"strconv"
 
-	"github.com/gin-gonic/gin"
+	"github.com/gofiber/fiber/v2"
 )
 
 type TopicResourceHandler struct {
@@ -19,161 +19,139 @@ func NewTopicResourceHandler(topicResourceService service.TopicResourceService) 
 	return &TopicResourceHandler{topicResourceService: topicResourceService}
 }
 
-func (h *TopicResourceHandler) CreateTopicResource(c *gin.Context) {
+func (h *TopicResourceHandler) CreateTopicResource(c *fiber.Ctx) error {
 	var req request.CreateTopicResourceRequest
-	if err := c.ShouldBind(&req); err != nil {
-		helper.SendError(c, http.StatusBadRequest, err, helper.ErrInvalidRequest)
-		return
+	if err := c.BodyParser(&req); err != nil {
+		return helper.SendError(c, http.StatusBadRequest, err, helper.ErrInvalidRequest)
 	}
-	res, err := h.topicResourceService.CreateTopicResource(c.Request.Context(), req)
+	res, err := h.topicResourceService.CreateTopicResource(c.UserContext(), req)
 	if err != nil {
-		helper.SendError(c, http.StatusInternalServerError, err, helper.ErrInvalidOperation)
-		return
+		return helper.SendError(c, http.StatusInternalServerError, err, helper.ErrInvalidOperation)
 	}
-	helper.SendSuccess(c, http.StatusOK, "create topic resource success", res)
+	return helper.SendSuccess(c, http.StatusOK, "create topic resource success", res)
 }
 
-func (h *TopicResourceHandler) GetTopicResources(c *gin.Context) {
+func (h *TopicResourceHandler) GetTopicResources(c *fiber.Ctx) error {
 	topicID := c.Query("topic_id")
 	studentID := c.Query("student_id")
 	orgID := c.Query("organization_id")
 
-	res, err := h.topicResourceService.GetTopicResources(c.Request.Context(), topicID, studentID, orgID)
+	res, err := h.topicResourceService.GetTopicResources(c.UserContext(), topicID, studentID, orgID)
 	if err != nil {
-		helper.SendError(c, http.StatusInternalServerError, err, helper.ErrInvalidOperation)
-		return
+		return helper.SendError(c, http.StatusInternalServerError, err, helper.ErrInvalidOperation)
 	}
-	helper.SendSuccess(c, http.StatusOK, "get topic resources success", res)
+	return helper.SendSuccess(c, http.StatusOK, "get topic resources success", res)
 }
 
-func (h *TopicResourceHandler) GetTopicResource(c *gin.Context) {
-	topicResourceID := c.Param("topic_resource_id")
+func (h *TopicResourceHandler) GetTopicResource(c *fiber.Ctx) error {
+	topicResourceID := c.Params("topic_resource_id")
 	orgID := c.Query("organization_id")
 	if topicResourceID == "" {
-		helper.SendError(c, http.StatusBadRequest, nil, helper.ErrInvalidRequest)
-		return
+		return helper.SendError(c, http.StatusBadRequest, nil, helper.ErrInvalidRequest)
 	}
-	res, err := h.topicResourceService.GetTopicResource(c.Request.Context(), topicResourceID, orgID)
+	res, err := h.topicResourceService.GetTopicResource(c.UserContext(), topicResourceID, orgID)
 	if err != nil {
-		helper.SendError(c, http.StatusInternalServerError, err, helper.ErrInvalidOperation)
-		return
+		return helper.SendError(c, http.StatusInternalServerError, err, helper.ErrInvalidOperation)
 	}
-	helper.SendSuccess(c, http.StatusOK, "get topic resource success", res)
+	return helper.SendSuccess(c, http.StatusOK, "get topic resource success", res)
 }
 
-func (h *TopicResourceHandler) UpdateTopicResource(c *gin.Context) {
-	topicResourceID := c.Param("topic_resource_id")
+func (h *TopicResourceHandler) UpdateTopicResource(c *fiber.Ctx) error {
+	topicResourceID := c.Params("topic_resource_id")
 	if topicResourceID == "" {
-		helper.SendError(c, http.StatusBadRequest, nil, helper.ErrInvalidRequest)
-		return
+		return helper.SendError(c, http.StatusBadRequest, nil, helper.ErrInvalidRequest)
 	}
 	var req request.UpdateTopicResourceRequest
-	if err := c.ShouldBind(&req); err != nil {
-		helper.SendError(c, http.StatusBadRequest, err, helper.ErrInvalidRequest)
-		return
+	if err := c.BodyParser(&req); err != nil {
+		return helper.SendError(c, http.StatusBadRequest, err, helper.ErrInvalidRequest)
 	}
-	res, err := h.topicResourceService.UpdateTopicResource(c.Request.Context(), topicResourceID, req)
+	res, err := h.topicResourceService.UpdateTopicResource(c.UserContext(), topicResourceID, req)
 	if err != nil {
-		helper.SendError(c, http.StatusInternalServerError, err, helper.ErrInvalidOperation)
-		return
+		return helper.SendError(c, http.StatusInternalServerError, err, helper.ErrInvalidOperation)
 	}
-	helper.SendSuccess(c, http.StatusOK, "update topic resource success", res)
+	return helper.SendSuccess(c, http.StatusOK, "update topic resource success", res)
 }
 
-func (h *TopicResourceHandler) DeleteTopicResource(c *gin.Context) {
-	topicResourceID := c.Param("topic_resource_id")
+func (h *TopicResourceHandler) DeleteTopicResource(c *fiber.Ctx) error {
+	topicResourceID := c.Params("topic_resource_id")
 	if topicResourceID == "" {
-		helper.SendError(c, http.StatusBadRequest, nil, helper.ErrInvalidRequest)
-		return
+		return helper.SendError(c, http.StatusBadRequest, nil, helper.ErrInvalidRequest)
 	}
-	err := h.topicResourceService.DeleteTopicResource(c.Request.Context(), topicResourceID)
+	err := h.topicResourceService.DeleteTopicResource(c.UserContext(), topicResourceID)
 	if err != nil {
-		helper.SendError(c, http.StatusInternalServerError, err, helper.ErrInvalidOperation)
-		return
+		return helper.SendError(c, http.StatusInternalServerError, err, helper.ErrInvalidOperation)
 	}
-	helper.SendSuccess(c, http.StatusOK, "delete topic resource success", nil)
+	return helper.SendSuccess(c, http.StatusOK, "delete topic resource success", nil)
 }
 
-func (h *TopicResourceHandler) GetTopicResourcesByTopic4Web(c *gin.Context) {
-	topicID := c.Param("topic_id")
+func (h *TopicResourceHandler) GetTopicResourcesByTopic4Web(c *fiber.Ctx) error {
+	topicID := c.Params("topic_id")
 	if topicID == "" {
-		helper.SendError(c, http.StatusBadRequest, nil, helper.ErrInvalidRequest)
-		return
+		return helper.SendError(c, http.StatusBadRequest, nil, helper.ErrInvalidRequest)
 	}
-	res, err := h.topicResourceService.GetTopicResourcesByTopic4Web(c.Request.Context(), topicID)
+	res, err := h.topicResourceService.GetTopicResourcesByTopic4Web(c.UserContext(), topicID)
 	if err != nil {
-		helper.SendError(c, http.StatusInternalServerError, err, helper.ErrInvalidOperation)
-		return
+		return helper.SendError(c, http.StatusInternalServerError, err, helper.ErrInvalidOperation)
 	}
-	helper.SendSuccess(c, http.StatusOK, "get topic resources success", res)
+	return helper.SendSuccess(c, http.StatusOK, "get topic resources success", res)
 }
 
-func (h *TopicResourceHandler) GetTopicResourcesByTopicAndStudent4Web(c *gin.Context) {
-	topicID := c.Param("topic_id")
-	studentID := c.Param("student_id")
+func (h *TopicResourceHandler) GetTopicResourcesByTopicAndStudent4Web(c *fiber.Ctx) error {
+	topicID := c.Params("topic_id")
+	studentID := c.Params("student_id")
 	if topicID == "" || studentID == "" {
-		helper.SendError(c, http.StatusBadRequest, nil, helper.ErrInvalidRequest)
-		return
+		return helper.SendError(c, http.StatusBadRequest, nil, helper.ErrInvalidRequest)
 	}
-	res, err := h.topicResourceService.GetTopicResourcesByTopicAndStudent4Web(c.Request.Context(), topicID, studentID)
+	res, err := h.topicResourceService.GetTopicResourcesByTopicAndStudent4Web(c.UserContext(), topicID, studentID)
 	if err != nil {
-		helper.SendError(c, http.StatusInternalServerError, err, helper.ErrInvalidOperation)
-		return
+		return helper.SendError(c, http.StatusInternalServerError, err, helper.ErrInvalidOperation)
 	}
-	helper.SendSuccess(c, http.StatusOK, "get topic resources success", res)
+	return helper.SendSuccess(c, http.StatusOK, "get topic resources success", res)
 }
 
-func (h *TopicResourceHandler) SetOutputTopicResource(c *gin.Context) {
+func (h *TopicResourceHandler) SetOutputTopicResource(c *fiber.Ctx) error {
 	var req request.SetOutputTopicResourceRequest
-	if err := c.ShouldBind(&req); err != nil {
-		helper.SendError(c, http.StatusBadRequest, err, helper.ErrInvalidRequest)
-		return
+	if err := c.BodyParser(&req); err != nil {
+		return helper.SendError(c, http.StatusBadRequest, err, helper.ErrInvalidRequest)
 	}
-	err := h.topicResourceService.SetOutputTopicResource(c.Request.Context(), req)
+	err := h.topicResourceService.SetOutputTopicResource(c.UserContext(), req)
 	if err != nil {
-		helper.SendError(c, http.StatusInternalServerError, err, helper.ErrInvalidOperation)
-		return
+		return helper.SendError(c, http.StatusInternalServerError, err, helper.ErrInvalidOperation)
 	}
-	helper.SendSuccess(c, http.StatusOK, "set output topic resource success", nil)
+	return helper.SendSuccess(c, http.StatusOK, "set output topic resource success", nil)
 }
 
-func (h *TopicResourceHandler) GetOutputResources4Web(c *gin.Context) {
-	studentID := c.Param("student_id")
+func (h *TopicResourceHandler) GetOutputResources4Web(c *fiber.Ctx) error {
+	studentID := c.Params("student_id")
 	if studentID == "" {
-		helper.SendError(c, http.StatusBadRequest, nil, helper.ErrInvalidRequest)
-		return
+		return helper.SendError(c, http.StatusBadRequest, nil, helper.ErrInvalidRequest)
 	}
-	topicID := c.Param("topic_id")
+	topicID := c.Params("topic_id")
 	if topicID == "" {
-		helper.SendError(c, http.StatusBadRequest, nil, helper.ErrInvalidRequest)
-		return
+		return helper.SendError(c, http.StatusBadRequest, nil, helper.ErrInvalidRequest)
 	}
-	res, err := h.topicResourceService.GetOutputResources4Web(c.Request.Context(), topicID, studentID)
+	res, err := h.topicResourceService.GetOutputResources4Web(c.UserContext(), topicID, studentID)
 	if err != nil {
-		helper.SendError(c, http.StatusInternalServerError, err, helper.ErrInvalidOperation)
-		return
+		return helper.SendError(c, http.StatusInternalServerError, err, helper.ErrInvalidOperation)
 	}
-	helper.SendSuccess(c, http.StatusOK, "get output resources success", res)
+	return helper.SendSuccess(c, http.StatusOK, "get output resources success", res)
 }
 
-func (h *TopicResourceHandler) GetOutputResources4App(c *gin.Context) {
-	studentID := c.Param("student_id")
+func (h *TopicResourceHandler) GetOutputResources4App(c *fiber.Ctx) error {
+	studentID := c.Params("student_id")
 	if studentID == "" {
-		helper.SendError(c, http.StatusBadRequest, nil, helper.ErrInvalidRequest)
-		return
+		return helper.SendError(c, http.StatusBadRequest, nil, helper.ErrInvalidRequest)
 	}
 	day := c.Query("day")
 	month := c.Query("month")
 	year := c.Query("year")
 
 	if day != "" && month == "" && year == "" {
-		helper.SendError(c, http.StatusBadRequest, fmt.Errorf("month and year are required"), helper.ErrInvalidRequest)
-		return
+		return helper.SendError(c, http.StatusBadRequest, fmt.Errorf("month and year are required"), helper.ErrInvalidRequest)
 	}
 
 	if month != "" && year == "" {
-		helper.SendError(c, http.StatusBadRequest, fmt.Errorf("year is required"), helper.ErrInvalidRequest)
-		return
+		return helper.SendError(c, http.StatusBadRequest, fmt.Errorf("year is required"), helper.ErrInvalidRequest)
 	}
 
 	// topicID
@@ -188,33 +166,27 @@ func (h *TopicResourceHandler) GetOutputResources4App(c *gin.Context) {
 	if day != "" {
 		d, err := strconv.Atoi(day)
 		if err != nil {
-			helper.SendError(c, http.StatusBadRequest, fmt.Errorf("day must be an integer"), helper.ErrInvalidRequest)
-			return
+			return helper.SendError(c, http.StatusBadRequest, fmt.Errorf("day must be an integer"), helper.ErrInvalidRequest)
 		}
 		if d < 1 || d > 31 {
-			helper.SendError(c, http.StatusBadRequest, fmt.Errorf("day must be between 1 and 31"), helper.ErrInvalidRequest)
-			return
+			return helper.SendError(c, http.StatusBadRequest, fmt.Errorf("day must be between 1 and 31"), helper.ErrInvalidRequest)
 		}
 		dayInt = d
 	}
 	if month != "" && year != "" {
 		m, err := strconv.Atoi(month)
 		if err != nil {
-			helper.SendError(c, http.StatusBadRequest, fmt.Errorf("month must be an integer"), helper.ErrInvalidRequest)
-			return
+			return helper.SendError(c, http.StatusBadRequest, fmt.Errorf("month must be an integer"), helper.ErrInvalidRequest)
 		}
 		y, err := strconv.Atoi(year)
 		if err != nil {
-			helper.SendError(c, http.StatusBadRequest, fmt.Errorf("year must be an integer"), helper.ErrInvalidRequest)
-			return
+			return helper.SendError(c, http.StatusBadRequest, fmt.Errorf("year must be an integer"), helper.ErrInvalidRequest)
 		}
 		if m < 1 || m > 12 {
-			helper.SendError(c, http.StatusBadRequest, fmt.Errorf("month must be between 1 and 12"), helper.ErrInvalidRequest)
-			return
+			return helper.SendError(c, http.StatusBadRequest, fmt.Errorf("month must be between 1 and 12"), helper.ErrInvalidRequest)
 		}
 		if y < 1 {
-			helper.SendError(c, http.StatusBadRequest, fmt.Errorf("year must be greater than 0"), helper.ErrInvalidRequest)
-			return
+			return helper.SendError(c, http.StatusBadRequest, fmt.Errorf("year must be greater than 0"), helper.ErrInvalidRequest)
 		}
 		monthInt = m
 		yearInt = y
@@ -223,34 +195,29 @@ func (h *TopicResourceHandler) GetOutputResources4App(c *gin.Context) {
 	if year != "" {
 		y, err := strconv.Atoi(year)
 		if err != nil {
-			helper.SendError(c, http.StatusBadRequest, fmt.Errorf("year must be an integer"), helper.ErrInvalidRequest)
-			return
+			return helper.SendError(c, http.StatusBadRequest, fmt.Errorf("year must be an integer"), helper.ErrInvalidRequest)
 		}
 		if y < 1 {
-			helper.SendError(c, http.StatusBadRequest, fmt.Errorf("year must be greater than 0"), helper.ErrInvalidRequest)
-			return
+			return helper.SendError(c, http.StatusBadRequest, fmt.Errorf("year must be greater than 0"), helper.ErrInvalidRequest)
 		}
 		yearInt = y
 	}
 
-	res, err := h.topicResourceService.GetOutputResources4App(c.Request.Context(), studentID, dayInt, monthInt, yearInt, topicID)
+	res, err := h.topicResourceService.GetOutputResources4App(c.UserContext(), studentID, dayInt, monthInt, yearInt, topicID)
 	if err != nil {
-		helper.SendError(c, http.StatusInternalServerError, err, helper.ErrInvalidOperation)
-		return
+		return helper.SendError(c, http.StatusInternalServerError, err, helper.ErrInvalidOperation)
 	}
-	helper.SendSuccess(c, http.StatusOK, "get output resources success", res)
+	return helper.SendSuccess(c, http.StatusOK, "get output resources success", res)
 }
 
-func (h *TopicResourceHandler) OffOutputTopicResource(c *gin.Context) {
-	topicResourceID := c.Param("topic_resource_id")
+func (h *TopicResourceHandler) OffOutputTopicResource(c *fiber.Ctx) error {
+	topicResourceID := c.Params("topic_resource_id")
 	if topicResourceID == "" {
-		helper.SendError(c, http.StatusBadRequest, nil, helper.ErrInvalidRequest)
-		return
+		return helper.SendError(c, http.StatusBadRequest, nil, helper.ErrInvalidRequest)
 	}
-	err := h.topicResourceService.OffOutputTopicResource(c.Request.Context(), topicResourceID)
+	err := h.topicResourceService.OffOutputTopicResource(c.UserContext(), topicResourceID)
 	if err != nil {
-		helper.SendError(c, http.StatusInternalServerError, err, helper.ErrInvalidOperation)
-		return
+		return helper.SendError(c, http.StatusInternalServerError, err, helper.ErrInvalidOperation)
 	}
-	helper.SendSuccess(c, http.StatusOK, "off output topic resource success", nil)
+	return helper.SendSuccess(c, http.StatusOK, "off output topic resource success", nil)
 }

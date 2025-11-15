@@ -17,17 +17,17 @@ import (
 	"media-service/internal/redis"
 	s3svc "media-service/internal/s3"
 
-	"github.com/gin-gonic/gin"
+	"github.com/gofiber/fiber/v2"
 	"github.com/hashicorp/consul/api"
 	"github.com/hung-senbox/senbox-cache-service/pkg/cache"
 	"github.com/hung-senbox/senbox-cache-service/pkg/cache/cached"
 	"go.mongodb.org/mongo-driver/mongo"
 )
 
-func SetupRouter(consulClient *api.Client, cacheClientRedis *cache.RedisCache, topicCollection, pdfCollection, topicResourceCollection, videoUploaderCollection, mediaAssetCollection *mongo.Collection) *gin.Engine {
-	r := gin.Default()
+func SetupRouter(consulClient *api.Client, cacheClientRedis *cache.RedisCache, topicCollection, pdfCollection, topicResourceCollection, videoUploaderCollection, mediaAssetCollection *mongo.Collection) *fiber.App {
+	app := fiber.New()
 	// Apply CORS for all routes
-	r.Use(middleware.CORS())
+	app.Use(middleware.CORS())
 
 	// gateway
 	cachedMainGateway := cached.NewCachedMainGateway(cacheClientRedis)
@@ -72,15 +72,15 @@ func SetupRouter(consulClient *api.Client, cacheClientRedis *cache.RedisCache, t
 	// ========================  Video Uploader ======================== //
 
 	// Register routes
-	route.RegisterTopicRoutes(r, topicHandlerv2, userGateway)
-	route.RegisterTopicResourceRoutes(r, topicResourceHandlerv2, userGateway)
-	route.RegisterVideoUploaderRoutes(r, videoUploaderHandler, userGateway)
-	route2.RegisterRoutes(r, pdfHandlerv2, userGateway)
+	route.RegisterTopicRoutes(app, topicHandlerv2, userGateway)
+	route.RegisterTopicResourceRoutes(app, topicResourceHandlerv2, userGateway)
+	route.RegisterVideoUploaderRoutes(app, videoUploaderHandler, userGateway)
+	route2.RegisterRoutes(app, pdfHandlerv2, userGateway)
 
 	// ========================  Media Assets (direct S3) ======================== //
 	mediaRepo := mediaassetRepo.NewMediaRepository(mediaAssetCollection)
 	mediaSvc := mediaassetService.NewMediaService(mediaRepo)
 	mediaHandler := mediaassetHandler.NewMediaHandler(mediaSvc)
-	mediaassetRoute.RegisterMediaRoutes(r, mediaHandler)
-	return r
+	mediaassetRoute.RegisterMediaRoutes(app, mediaHandler)
+	return app
 }

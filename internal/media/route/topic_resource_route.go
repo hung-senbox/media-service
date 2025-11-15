@@ -5,39 +5,32 @@ import (
 	"media-service/internal/media/v2/handler"
 	"media-service/internal/middleware"
 
-	"github.com/gin-gonic/gin"
+	"github.com/gofiber/fiber/v2"
 )
 
-func RegisterTopicResourceRoutes(r *gin.Engine, h *handler.TopicResourceHandler, userGw gateway.UserGateway) {
-	topicResourceGroup := r.Group("/api/v2/topic-resources")
+func RegisterTopicResourceRoutes(app *fiber.App, h *handler.TopicResourceHandler, userGw gateway.UserGateway) {
+	topicResourceGroup := app.Group("/api/v2/topic-resources")
 	topicResourceGroup.Use(middleware.Secured(userGw))
-	{
-		topicResourceGroup.POST("", h.CreateTopicResource)
-		topicResourceGroup.GET("", h.GetTopicResources)
-		topicResourceGroup.GET("/:topic_resource_id", h.GetTopicResource)
-		topicResourceGroup.PUT("/:topic_resource_id", h.UpdateTopicResource)
-		topicResourceGroup.DELETE("/:topic_resource_id", h.DeleteTopicResource)
-	}
+	
+	topicResourceGroup.Post("", h.CreateTopicResource)
+	topicResourceGroup.Get("", h.GetTopicResources)
+	topicResourceGroup.Get("/:topic_resource_id", h.GetTopicResource)
+	topicResourceGroup.Put("/:topic_resource_id", h.UpdateTopicResource)
+	topicResourceGroup.Delete("/:topic_resource_id", h.DeleteTopicResource)
 
-	adminGroup := r.Group("/api/v2/admin")
+	adminGroup := app.Group("/api/v2/admin")
 	adminGroup.Use(middleware.Secured(userGw))
-	{
-		topicResourceAdmin := adminGroup.Group("/resources")
-		{
-			topicResourceAdmin.GET("/topic/:topic_id", h.GetTopicResourcesByTopic4Web)
-			topicResourceAdmin.GET("/topic/:topic_id/student/:student_id", h.GetTopicResourcesByTopicAndStudent4Web)
-			topicResourceAdmin.POST("/output", h.SetOutputTopicResource)
-			topicResourceAdmin.DELETE("/output/:topic_resource_id", h.OffOutputTopicResource)
-			topicResourceAdmin.GET("/output/topic/:topic_id/student/:student_id", h.GetOutputResources4Web)
-		}
-	}
+	
+	topicResourceAdmin := adminGroup.Group("/resources")
+	topicResourceAdmin.Get("/topic/:topic_id", h.GetTopicResourcesByTopic4Web)
+	topicResourceAdmin.Get("/topic/:topic_id/student/:student_id", h.GetTopicResourcesByTopicAndStudent4Web)
+	topicResourceAdmin.Post("/output", h.SetOutputTopicResource)
+	topicResourceAdmin.Delete("/output/:topic_resource_id", h.OffOutputTopicResource)
+	topicResourceAdmin.Get("/output/topic/:topic_id/student/:student_id", h.GetOutputResources4Web)
 
-	userGroup := r.Group("/api/v2/user")
+	userGroup := app.Group("/api/v2/user")
 	userGroup.Use(middleware.Secured(userGw))
-	{
-		topicResourceUser := userGroup.Group("/resources")
-		{
-			topicResourceUser.GET("/output/student/:student_id", h.GetOutputResources4App)
-		}
-	}
+	
+	topicResourceUser := userGroup.Group("/resources")
+	topicResourceUser.Get("/output/student/:student_id", h.GetOutputResources4App)
 }
