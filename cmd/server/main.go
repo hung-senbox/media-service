@@ -62,7 +62,7 @@ func main() {
 	}
 
 	app := fiber.New(fiber.Config{
-		BodyLimit: 100 * 1024 * 1024,
+		BodyLimit: 1024 * 1024 * 1024,
 	})
 
 	app = router.SetupRouter(
