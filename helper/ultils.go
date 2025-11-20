@@ -111,3 +111,41 @@ func BuildObjectKeyS3(folder, originalFilename, baseName string) string {
 	name = strings.NewReplacer(" ", "-", "/", "-", "\\", "-").Replace(name)
 	return fmt.Sprintf("%s/%d_%s%s", strings.Trim(folder, "/"), time.Now().UnixNano(), name, ext)
 }
+
+func GetVocabularyAudioKeyByLanguage(vocabulary *model.Vocabulary, languageID uint) string {
+	for _, lc := range vocabulary.LanguageConfig {
+		if lc.LanguageID == languageID {
+			if lc.Audio.AudioKey != "" {
+				return lc.Audio.AudioKey
+			}
+			break
+		}
+	}
+	return ""
+}
+
+func GetVocabularyVideoKeyByLanguage(vocabulary *model.Vocabulary, languageID uint) string {
+	for _, lc := range vocabulary.LanguageConfig {
+		if lc.LanguageID == languageID {
+			if lc.Video.VideoKey != "" {
+				return lc.Video.VideoKey
+			}
+			break
+		}
+	}
+	return ""
+}
+
+func GetVocabularyImageKeyByLanguageAndType(vocabulary *model.Vocabulary, languageID uint, imageType string) string {
+	for _, lc := range vocabulary.LanguageConfig {
+		if lc.LanguageID == languageID {
+			for _, img := range lc.Images {
+				if img.ImageType == imageType {
+					return img.ImageKey
+				}
+			}
+			break
+		}
+	}
+	return ""
+}
