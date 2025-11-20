@@ -120,7 +120,7 @@ func (h *VocabularyHandler) UploadVocabulary(c *fiber.Ctx) error {
 		return helper.SendError(c, http.StatusInternalServerError, err, helper.ErrInvalidOperation)
 	}
 
-	return helper.SendSuccess(c, http.StatusOK, "upload topic success", nil)
+	return helper.SendSuccess(c, http.StatusOK, "upload vocabulary success", nil)
 }
 
 func (h *VocabularyHandler) GetVocabularies4Web(c *fiber.Ctx) error {
