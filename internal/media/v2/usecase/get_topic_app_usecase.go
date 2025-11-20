@@ -3,7 +3,6 @@ package usecase
 import (
 	"context"
 	"media-service/helper"
-	"media-service/internal/gateway"
 	"media-service/internal/media/v2/dto/response"
 	"media-service/internal/media/v2/mapper"
 	"media-service/internal/media/v2/repository"
@@ -16,25 +15,18 @@ type GetTopicAppUseCase interface {
 }
 
 type getTopicAppUseCase struct {
-	topicRepo    repository.TopicRepository
-	cachedUserGw gateway.UserGateway
-	s3Service    s3svc.Service
+	topicRepo repository.TopicRepository
+	s3Service s3svc.Service
 }
 
-func NewGetTopicAppUseCase(topicRepo repository.TopicRepository, cachedUserGw gateway.UserGateway, s3Service s3svc.Service) GetTopicAppUseCase {
+func NewGetTopicAppUseCase(topicRepo repository.TopicRepository, s3Service s3svc.Service) GetTopicAppUseCase {
 	return &getTopicAppUseCase{
-		topicRepo:    topicRepo,
-		cachedUserGw: cachedUserGw,
-		s3Service:    s3Service,
+		topicRepo: topicRepo,
+		s3Service: s3Service,
 	}
 }
 
 func (uc *getTopicAppUseCase) GetTopics4Student4App(ctx context.Context, studentID string) ([]*response.GetTopic4StudentResponse4App, error) {
-	// get org by student
-	// student, err := uc.cachedUserGw.GetStudentInfo(ctx, studentID)
-	// if err != nil {
-	// 	return nil, err
-	// }
 	topics, err := uc.topicRepo.GetAllTopicsIsPublished(ctx)
 	if err != nil {
 		return nil, err

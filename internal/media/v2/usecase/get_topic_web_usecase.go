@@ -3,7 +3,6 @@ package usecase
 import (
 	"context"
 	"fmt"
-	"media-service/internal/gateway"
 	gw_response "media-service/internal/gateway/dto/response"
 	"media-service/internal/media/model"
 	"media-service/internal/media/v2/dto/response"
@@ -24,29 +23,21 @@ type GetTopicWebUseCase interface {
 type getTopicWebUseCase struct {
 	topicRepo         repository.TopicRepository
 	topicResourceRepo repository.TopicResourceRepository
-	cachedUserGw      gateway.UserGateway
 	s3Service         s3svc.Service
 }
 
 func NewGetTopicWebUseCase(
 	topicRepo repository.TopicRepository,
 	topicResourceRepo repository.TopicResourceRepository,
-	cachedUserGw gateway.UserGateway,
 	s3Service s3svc.Service) GetTopicWebUseCase {
 	return &getTopicWebUseCase{
 		topicRepo:         topicRepo,
 		topicResourceRepo: topicResourceRepo,
-		cachedUserGw:      cachedUserGw,
 		s3Service:         s3Service,
 	}
 }
 
 func (uc *getTopicWebUseCase) GetTopics4Student4Web(ctx context.Context, studentID string) ([]*response.GetTopic4StudentResponse4Web, error) {
-	// get org by student
-	// student, err := uc.cachedUserGw.GetStudentInfo(ctx, studentID)
-	// if err != nil {
-	// 	return nil, err
-	// }
 	topics, err := uc.topicRepo.GetAllTopicsIsPublished(ctx)
 	if err != nil {
 		return nil, err
