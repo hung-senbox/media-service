@@ -6,11 +6,11 @@ import (
 	"media-service/pkg/constants"
 )
 
-func ToVocabularyResponses4Web(vocabularies []model.Vocabulary) []response.VocabularyResponse4Web {
-	var result = make([]response.VocabularyResponse4Web, 0)
+func ToVocabularyResponses4Web(vocabularies []model.Vocabulary) []*response.VocabularyResponse4Web {
+	var result = make([]*response.VocabularyResponse4Web, 0)
 
 	for _, v := range vocabularies {
-		resp := response.VocabularyResponse4Web{
+		resp := &response.VocabularyResponse4Web{
 			ID:          v.ID.Hex(),
 			IsPublished: v.IsPublished,
 		}

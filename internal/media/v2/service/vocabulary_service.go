@@ -9,7 +9,7 @@ import (
 
 type VocabularyService interface {
 	UploadVocabulary(ctx context.Context, req request.UploadVocabularyRequest) error
-	GetVocabularies4Web(ctx context.Context, topicID string) (*response.VocabularyResponse4Web, error)
+	GetVocabularies4Web(ctx context.Context, topicID string) ([]*response.VocabularyResponse4Web, error)
 }
 
 type vocabularyService struct {
@@ -28,6 +28,6 @@ func (s *vocabularyService) UploadVocabulary(ctx context.Context, req request.Up
 	return s.uploadVocabularyUseCase.UploadVocabulary(ctx, req)
 }
 
-func (s *vocabularyService) GetVocabularies4Web(ctx context.Context, topicID string) (*response.VocabularyResponse4Web, error) {
+func (s *vocabularyService) GetVocabularies4Web(ctx context.Context, topicID string) ([]*response.VocabularyResponse4Web, error) {
 	return s.getVocabularyWebUseCase.GetVocabularies4Web(ctx, topicID)
 }

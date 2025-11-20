@@ -14,7 +14,7 @@ import (
 )
 
 type GetVocabularyWebUseCase interface {
-	GetVocabularies4Web(ctx context.Context, topicID string) (*response.VocabularyResponse4Web, error)
+	GetVocabularies4Web(ctx context.Context, topicID string) ([]*response.VocabularyResponse4Web, error)
 }
 
 type getVocabularyWebUseCase struct {
@@ -26,7 +26,7 @@ func NewGetVocabularyWebUseCase(vocabularyRepo repository.VocabularyRepository, 
 	return &getVocabularyWebUseCase{vocabularyRepo: vocabularyRepo, s3Service: s3Service}
 }
 
-func (uc *getVocabularyWebUseCase) GetVocabularies4Web(ctx context.Context, topicID string) (*response.VocabularyResponse4Web, error) {
+func (uc *getVocabularyWebUseCase) GetVocabularies4Web(ctx context.Context, topicID string) ([]*response.VocabularyResponse4Web, error) {
 	currentUser, _ := ctx.Value(constants.CurrentUserKey).(*gw_response.CurrentUser)
 	if currentUser == nil {
 		return nil, fmt.Errorf("access denied")
@@ -40,7 +40,7 @@ func (uc *getVocabularyWebUseCase) GetVocabularies4Web(ctx context.Context, topi
 		for ti := range vocabularies {
 			uc.populateMediaUrlsForVocabulary(ctx, &vocabularies[ti])
 		}
-		return &mapper.ToVocabularyResponses4Web(vocabularies)[0], nil
+		return mapper.ToVocabularyResponses4Web(vocabularies), nil
 	}
 
 	if currentUser.OrganizationAdmin.ID == "" {
@@ -59,7 +59,7 @@ func (uc *getVocabularyWebUseCase) GetVocabularies4Web(ctx context.Context, topi
 		uc.populateMediaUrlsForVocabulary(ctx, &vocabularies[ti])
 	}
 
-	return &mapper.ToVocabularyResponses4Web(vocabularies)[0], nil
+	return mapper.ToVocabularyResponses4Web(vocabularies), nil
 }
 
 // populateMediaUrlsForTopic enriches a topic's language configs with signed media URLs when keys exist

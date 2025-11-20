@@ -210,7 +210,11 @@ func (r *vocabularyRepository) InitImages(ctx context.Context, vocabularyID stri
 
 func (r *vocabularyRepository) GetByID(ctx context.Context, vocabularyID string) (*model.Vocabulary, error) {
 	var vocabulary model.Vocabulary
-	if err := r.vocabularyCollection.FindOne(ctx, bson.M{"_id": vocabularyID}).Decode(&vocabulary); err != nil {
+	objID, err := primitive.ObjectIDFromHex(vocabularyID)
+	if err != nil {
+		return nil, fmt.Errorf("[GetByID] invalid vocabularyID=%s: %w", vocabularyID, err)
+	}
+	if err := r.vocabularyCollection.FindOne(ctx, bson.M{"_id": objID}).Decode(&vocabulary); err != nil {
 		return nil, fmt.Errorf("[GetByID] get vocabulary failed: %w", err)
 	}
 	return &vocabulary, nil
