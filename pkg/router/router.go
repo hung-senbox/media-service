@@ -18,16 +18,16 @@ import (
 	s3svc "media-service/internal/s3"
 
 	"github.com/gofiber/fiber/v2"
+	fiberLogger "github.com/gofiber/fiber/v2/middleware/logger"
 	"github.com/hashicorp/consul/api"
 	"github.com/hung-senbox/senbox-cache-service/pkg/cache"
 	"github.com/hung-senbox/senbox-cache-service/pkg/cache/cached"
 	"go.mongodb.org/mongo-driver/mongo"
 )
 
-func SetupRouter(consulClient *api.Client, cacheClientRedis *cache.RedisCache, topicCollection, pdfCollection, topicResourceCollection, videoUploaderCollection, mediaAssetCollection, vocabularyCollection *mongo.Collection) *fiber.App {
-	app := fiber.New(fiber.Config{
-		BodyLimit: 1 * 1024 * 1024 * 1024, // 1 GB
-	})
+func SetupRouter(app *fiber.App, consulClient *api.Client, cacheClientRedis *cache.RedisCache, topicCollection, pdfCollection, topicResourceCollection, videoUploaderCollection, mediaAssetCollection, vocabularyCollection *mongo.Collection) *fiber.App {
+
+	app.Use(fiberLogger.New())
 	// Apply CORS for all routes
 	app.Use(middleware.CORS())
 

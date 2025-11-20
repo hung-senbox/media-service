@@ -15,6 +15,7 @@ import (
 
 	"media-service/pkg/zap"
 
+	"github.com/gofiber/fiber/v2"
 	consulapi "github.com/hashicorp/consul/api"
 	redis "github.com/hung-senbox/senbox-cache-service/pkg/redis"
 )
@@ -60,8 +61,21 @@ func main() {
 		return
 	}
 
-	app := router.SetupRouter(consulClient, cacheClientRedis, db.TopicCollection, db.PDFCollection, db.TopicResourceCollection, db.VideoUploaderCollection, db.MediaAssetCollection, db.VocabularyCollection)
+	app := fiber.New(fiber.Config{
+		BodyLimit: 100 * 1024 * 1024,
+	})
 
+	app = router.SetupRouter(
+		app,
+		consulClient,
+		cacheClientRedis,
+		db.TopicCollection,
+		db.PDFCollection,
+		db.TopicResourceCollection,
+		db.VideoUploaderCollection,
+		db.MediaAssetCollection,
+		db.VocabularyCollection,
+	)
 	port := cfg.Server.Port
 	if err := app.Listen(":" + port); err != nil {
 		log.Fatal("Failed to run server:", err)
