@@ -6,7 +6,7 @@ import (
 	"media-service/pkg/constants"
 )
 
-func ToVocabularyResponses4Web(vocabularies []model.Vocabulary) []*response.VocabularyResponse4Web {
+func ToVocabulariesResponses4Web(vocabularies []model.Vocabulary) []*response.VocabularyResponse4Web {
 	var result = make([]*response.VocabularyResponse4Web, 0)
 
 	for _, v := range vocabularies {
@@ -78,4 +78,46 @@ func ToVocabularyResponses4Web(vocabularies []model.Vocabulary) []*response.Voca
 	}
 
 	return result
+}
+
+func ToVocabulariesResponses4App(vocabularies []*model.Vocabulary, appLanguage uint) []*response.GetVocabularyResponse4App {
+	var res = make([]*response.GetVocabularyResponse4App, 0)
+
+	for _, v := range vocabularies {
+		// is published = false
+		if !v.IsPublished {
+			continue
+		}
+		// chọn language config
+		var langConfig *model.VocabularyLanguageConfig
+		for _, lc := range v.LanguageConfig {
+			if lc.LanguageID == appLanguage {
+				langConfig = &lc
+				break
+			}
+		}
+
+		if langConfig == nil {
+			continue
+		}
+
+		mainImageUrl := ""
+		if len(langConfig.Images) > 0 {
+			for _, img := range langConfig.Images {
+				if img.ImageType == string(constants.TopicImageTypeBM) {
+					mainImageUrl = img.UploadedUrl
+					break
+				}
+			}
+		}
+
+		res = append(res, &response.GetVocabularyResponse4App{
+			ID:           v.ID.Hex(),
+			IsPublished:  v.IsPublished,
+			Title:        langConfig.Title,
+			MainImageUrl: mainImageUrl,
+		})
+	}
+
+	return res
 }

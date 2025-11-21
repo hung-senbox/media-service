@@ -40,7 +40,7 @@ func (uc *getVocabularyWebUseCase) GetVocabularies4Web(ctx context.Context, topi
 		for ti := range vocabularies {
 			uc.populateMediaUrlsForVocabulary(ctx, &vocabularies[ti])
 		}
-		return mapper.ToVocabularyResponses4Web(vocabularies), nil
+		return mapper.ToVocabulariesResponses4Web(vocabularies), nil
 	}
 
 	if currentUser.OrganizationAdmin.ID == "" {
@@ -59,7 +59,7 @@ func (uc *getVocabularyWebUseCase) GetVocabularies4Web(ctx context.Context, topi
 		uc.populateMediaUrlsForVocabulary(ctx, &vocabularies[ti])
 	}
 
-	return mapper.ToVocabularyResponses4Web(vocabularies), nil
+	return mapper.ToVocabulariesResponses4Web(vocabularies), nil
 }
 
 // populateMediaUrlsForTopic enriches a topic's language configs with signed media URLs when keys exist

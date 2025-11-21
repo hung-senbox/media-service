@@ -27,6 +27,7 @@ type VocabularyRepository interface {
 	DeleteImageKey(ctx context.Context, vocabularyID string, languageID uint, imageType string) error
 	SetImage(ctx context.Context, vocabularyID string, languageID uint, img model.VocabularyImageConfig) error
 	GetAllVocabulariesByTopicID(ctx context.Context, topicID string) ([]model.Vocabulary, error)
+	GetAllVocabulariesByTopicIDAndIsPublished(ctx context.Context, topicID string) ([]*model.Vocabulary, error)
 }
 
 type vocabularyRepository struct {
@@ -519,6 +520,19 @@ func (r *vocabularyRepository) GetAllVocabulariesByTopicID(ctx context.Context, 
 	cursor, err := r.vocabularyCollection.Find(ctx, filter)
 	if err != nil {
 		return nil, fmt.Errorf("get all vocabularies by topic id failed: %w", err)
+	}
+	if err := cursor.All(ctx, &vocabularies); err != nil {
+		return nil, fmt.Errorf("decode vocabularies failed: %w", err)
+	}
+	return vocabularies, nil
+}
+
+func (r *vocabularyRepository) GetAllVocabulariesByTopicIDAndIsPublished(ctx context.Context, topicID string) ([]*model.Vocabulary, error) {
+	var vocabularies []*model.Vocabulary
+	filter := bson.M{"topic_id": topicID, "is_published": true}
+	cursor, err := r.vocabularyCollection.Find(ctx, filter)
+	if err != nil {
+		return nil, fmt.Errorf("get all vocabularies by topic id and is published failed: %w", err)
 	}
 	if err := cursor.All(ctx, &vocabularies); err != nil {
 		return nil, fmt.Errorf("decode vocabularies failed: %w", err)
