@@ -1,11 +1,13 @@
 package logger
 
 import (
+	"fmt"
 	"io"
 	"os"
 	"path/filepath"
 	"strings"
 	"sync"
+	"time"
 
 	"github.com/sirupsen/logrus"
 	"gopkg.in/natefinch/lumberjack.v2"
@@ -18,7 +20,7 @@ var (
 	initMutex sync.Mutex
 )
 
-// parse log level
+// ---------------- Parse Log Level --------------------
 func parseLogLevel(level string) logrus.Level {
 	switch strings.ToLower(level) {
 	case "trace":
@@ -40,17 +42,15 @@ func parseLogLevel(level string) logrus.Level {
 	}
 }
 
-// setup base path only once
+// ---------------- Init Base Path --------------------
 func initBasePath() {
 	once.Do(func() {
-		// log path mới
 		basePath = filepath.Join("logs", "media-service")
-
-		// tạo thư mục nếu chưa có
 		_ = os.MkdirAll(basePath, 0755)
 	})
 }
 
+// ---------------- Create Logger Instance --------------------
 func getLogger(folder string) *logrus.Logger {
 	initBasePath()
 
@@ -62,32 +62,32 @@ func getLogger(folder string) *logrus.Logger {
 	}
 
 	logDir := filepath.Join(basePath, folder)
-	os.MkdirAll(logDir, 0755)
+	_ = os.MkdirAll(logDir, 0755)
 
-	// file rotation config
-	logFile := &lumberjack.Logger{
-		Filename:   filepath.Join(logDir, "app.log"),
-		MaxSize:    10, // MB
-		MaxBackups: 5,
-		MaxAge:     30, // days
+	// Format file name theo ngày
+	today := time.Now().Format("2006-01-02")
+	logFileName := fmt.Sprintf("app_%s.log", today)
+
+	lumberjackLogger := &lumberjack.Logger{
+		Filename:   filepath.Join(logDir, logFileName),
+		MaxSize:    10, // MB before rotating
+		MaxBackups: 7,  // keep 7 rotated files
+		MaxAge:     60, // days old
 		Compress:   true,
 	}
 
 	logger := logrus.New()
-	logger.SetOutput(logFile)
 	logger.SetFormatter(&logrus.JSONFormatter{})
-	logger.SetLevel(logrus.DebugLevel)
 
-	// Also log to console (best for containers)
-	logger.SetOutput(io.MultiWriter(os.Stdout, logFile))
+	// Output both console & file
+	logger.SetOutput(io.MultiWriter(os.Stdout, lumberjackLogger))
+	logger.SetLevel(logrus.DebugLevel)
 
 	loggers[folder] = logger
 	return logger
 }
 
-// ------------------------------------------------------
-// Public usage
-// ------------------------------------------------------
+// ---------------- Public Functions --------------------
 
 func WriteLogMsg(level string, msg string) {
 	getLogger("LogMsg").Log(parseLogLevel(level), msg)
