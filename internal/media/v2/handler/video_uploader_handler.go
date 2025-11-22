@@ -22,7 +22,7 @@ func NewVideoUploaderHandler(service service.VideoUploaderService) *VideoUploade
 func (h *VideoUploaderHandler) UploadVideoUploader(c *fiber.Ctx) error {
 	// Parse multipart form
 	req := request.UploadVideoUploaderRequest{
-		VideoUploaderID:       c.FormValue("video_uploader_id"),
+		VideoFolderID:         c.FormValue("video_folder_id"),
 		Title:                 c.FormValue("title"),
 		Note:                  c.FormValue("note"),
 		Transcript:            c.FormValue("transcript"),

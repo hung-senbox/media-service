@@ -14,7 +14,7 @@ func RegisterVideoUploaderRoutes(app *fiber.App, h *handler.VideoUploaderHandler
 	adminGroup.Use(middleware.Secured(userGw))
 
 	uploadAdmin := adminGroup.Group("/upload")
-	videoUploaderAdmin := uploadAdmin.Group("/videos")
+	videoUploaderAdmin := uploadAdmin.Group("/video_folders")
 
 	videoUploaderAdmin.Post("", h.UploadVideoUploader)
 	videoUploaderAdmin.Get("", h.GetVideosUploader4Web)

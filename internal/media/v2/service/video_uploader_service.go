@@ -50,8 +50,8 @@ func (s *videoUploaderService) UploadVideoUploader(ctx context.Context, req requ
 	var videoUploader *model.VideoUploader
 
 	// Step 1: tạo / lấy record trong MongoDB (insert hoặc update, chưa xử lý file)
-	if req.VideoUploaderID != "" {
-		existing, err := s.videoUploaderRepository.GetVideoUploaderByID(ctx, req.VideoUploaderID)
+	if req.VideoFolderID != "" {
+		existing, err := s.videoUploaderRepository.GetVideoUploaderByID(ctx, req.VideoFolderID)
 		if err != nil {
 			return nil, fmt.Errorf("get video uploader failed: %w", err)
 		}
