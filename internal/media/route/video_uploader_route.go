@@ -17,7 +17,7 @@ func RegisterVideoUploaderRoutes(app *fiber.App, h *handler.VideoUploaderHandler
 	videoUploaderAdmin := uploadAdmin.Group("/videos")
 
 	videoUploaderAdmin.Post("", h.UploadVideoUploader)
-	videoUploaderAdmin.Get("/progress/:video_uploader_id", h.GetUploaderStatus)
 	videoUploaderAdmin.Get("", h.GetVideosUploader4Web)
 	videoUploaderAdmin.Delete("/:video_uploader_id", h.DeleteVideoUploader)
+	videoUploaderAdmin.Get("/:video_uploader_id", h.GetVideo4Web)
 }
