@@ -8,7 +8,6 @@ import (
 
 	// "os"
 
-	"media-service/logger"
 	"media-service/pkg/config"
 	"media-service/pkg/consul"
 	"media-service/pkg/db"
@@ -30,12 +29,6 @@ func main() {
 	config.LoadConfig(filePath)
 
 	cfg := config.AppConfig
-
-	// logger.WriteLogData("info", map[string]any{"id": 123, "name": "Hung"})
-
-	logger.WriteLogMsg("info", "App started")
-	logger.WriteLogData("debug", map[string]string{"user": "hung"})
-	logger.WriteLogEx("error", "Query failed", map[string]string{"user": "hung"})
 
 	//logger
 	logger, err := zap.New(cfg)
