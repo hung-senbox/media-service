@@ -22,7 +22,7 @@ func NewVideoUploaderHandler(service service.VideoUploaderService) *VideoUploade
 func (h *VideoUploaderHandler) UploadVideoUploader(c *fiber.Ctx) error {
 	// Parse multipart form
 	req := request.UploadVideoUploaderRequest{
-		VideoUploaderID:       c.FormValue("video_uploader_id"),
+		VideoFolderID:         c.FormValue("video_folder_id"),
 		Title:                 c.FormValue("title"),
 		Note:                  c.FormValue("note"),
 		Transcript:            c.FormValue("transcript"),
@@ -46,26 +46,12 @@ func (h *VideoUploaderHandler) UploadVideoUploader(c *fiber.Ctx) error {
 		req.ImagePreviewFile = imagePreviewFile
 	}
 
-	err := h.service.UploadVideoUploader(c.UserContext(), req)
+	videoUploader, err := h.service.UploadVideoUploader(c.UserContext(), req)
 	if err != nil {
 		return helper.SendError(c, http.StatusInternalServerError, err, helper.ErrInvalidOperation)
 	}
 
-	return helper.SendSuccess(c, http.StatusOK, "upload video uploader success", nil)
-}
-
-func (h *VideoUploaderHandler) GetUploaderStatus(c *fiber.Ctx) error {
-	videoUploaderID := c.Params("video_uploader_id")
-	if videoUploaderID == "" {
-		return helper.SendError(c, http.StatusBadRequest, nil, helper.ErrInvalidRequest)
-	}
-
-	res, err := h.service.GetUploaderStatus(c.UserContext(), videoUploaderID)
-	if err != nil {
-		return helper.SendError(c, http.StatusInternalServerError, err, helper.ErrInvalidOperation)
-	}
-
-	return helper.SendSuccess(c, http.StatusOK, "get uploader status success", res)
+	return helper.SendSuccess(c, http.StatusOK, "upload video uploader success", videoUploader)
 }
 
 func (h *VideoUploaderHandler) GetVideosUploader4Web(c *fiber.Ctx) error {
@@ -120,4 +106,16 @@ func (h *VideoUploaderHandler) DeleteVideoUploader(c *fiber.Ctx) error {
 		return helper.SendError(c, http.StatusInternalServerError, err, helper.ErrInvalidOperation)
 	}
 	return helper.SendSuccess(c, http.StatusOK, "success", nil)
+}
+
+func (h *VideoUploaderHandler) GetVideo4Web(c *fiber.Ctx) error {
+	videoUploaderID := c.Params("video_uploader_id")
+	if videoUploaderID == "" {
+		return helper.SendError(c, http.StatusBadRequest, nil, helper.ErrInvalidRequest)
+	}
+	res, err := h.service.GetVideo4Web(c.UserContext(), videoUploaderID)
+	if err != nil {
+		return helper.SendError(c, http.StatusInternalServerError, err, helper.ErrInvalidOperation)
+	}
+	return helper.SendSuccess(c, http.StatusOK, "get video success", res)
 }

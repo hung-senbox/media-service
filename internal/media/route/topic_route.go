@@ -8,13 +8,18 @@ import (
 	"github.com/gofiber/fiber/v2"
 )
 
-func RegisterTopicRoutes(app *fiber.App, hv2 *handler.TopicHandler, userGw gateway.UserGateway) {
+func RegisterTopicRoutes(app *fiber.App, hv2 *handler.TopicHandler, hv *handler.VocabularyHandler, userGw gateway.UserGateway) {
 	// Admin routes
 	adminGroup := app.Group("/api/v2/admin")
 	adminGroup.Use(middleware.Secured(userGw))
 
 	topicsAdmin := adminGroup.Group("/topics")
-	topicsAdmin.Post("", hv2.UploadTopic)
+
+	vocabularyAdmin := topicsAdmin.Group("/:topic_id/vocabularies")
+	vocabularyAdmin.Get("", hv.GetVocabularies4Web)
+	vocabularyAdmin.Post("", middleware.RequireAdmin(), hv.UploadVocabulary)
+
+	topicsAdmin.Post("", middleware.RequireAdmin(), hv2.UploadTopic)
 	topicsAdmin.Get("", hv2.GetTopics4Web)
 	// Static routes MUST come before dynamic routes
 	topicsAdmin.Get("/assign", hv2.GetTopics2Assign4Web)

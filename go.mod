@@ -12,7 +12,7 @@ require (
 	github.com/gofiber/fiber/v2 v2.52.5
 	github.com/golang-jwt/jwt/v5 v5.2.2
 	github.com/hashicorp/consul/api v1.32.1
-	github.com/hung-senbox/senbox-cache-service v1.0.7
+	github.com/hung-senbox/senbox-cache-service v1.0.8
 	github.com/natefinch/lumberjack v2.0.0+incompatible
 	github.com/pkg/errors v0.9.1
 	github.com/redis/go-redis/v9 v9.16.0

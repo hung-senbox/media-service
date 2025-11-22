@@ -18,16 +18,16 @@ import (
 	s3svc "media-service/internal/s3"
 
 	"github.com/gofiber/fiber/v2"
+	fiberLogger "github.com/gofiber/fiber/v2/middleware/logger"
 	"github.com/hashicorp/consul/api"
 	"github.com/hung-senbox/senbox-cache-service/pkg/cache"
 	"github.com/hung-senbox/senbox-cache-service/pkg/cache/cached"
 	"go.mongodb.org/mongo-driver/mongo"
 )
 
-func SetupRouter(consulClient *api.Client, cacheClientRedis *cache.RedisCache, topicCollection, pdfCollection, topicResourceCollection, videoUploaderCollection, mediaAssetCollection *mongo.Collection) *fiber.App {
-	app := fiber.New(fiber.Config{
-		BodyLimit: 1 * 1024 * 1024 * 1024, // 1 GB
-	})
+func SetupRouter(app *fiber.App, consulClient *api.Client, cacheClientRedis *cache.RedisCache, topicCollection, pdfCollection, topicResourceCollection, videoUploaderCollection, mediaAssetCollection, vocabularyCollection *mongo.Collection) *fiber.App {
+
+	app.Use(fiberLogger.New())
 	// Apply CORS for all routes
 	app.Use(middleware.CORS())
 
@@ -40,22 +40,28 @@ func SetupRouter(consulClient *api.Client, cacheClientRedis *cache.RedisCache, t
 	// --- Repo ---
 	topicRepov2 := repository.NewTopicRepository(topicCollection)
 	topicResourceRepov2 := repository.NewTopicResourceRepository(topicResourceCollection)
+	vocabularyRepo := repository.NewVocabularyRepository(vocabularyCollection)
 
 	// --- UseCase ---
 	uploadTopicUseCasev2 := usecase.NewUploadTopicUseCase(topicRepov2, s3svc.NewFromConfig())
-	getTopicAppUseCasev2 := usecase.NewGetTopicAppUseCase(topicRepov2, userGateway, s3svc.NewFromConfig())
-	getTopicWebUseCasev2 := usecase.NewGetTopicWebUseCase(topicRepov2, topicResourceRepov2, userGateway, s3svc.NewFromConfig())
+	getTopicWebUseCasev2 := usecase.NewGetTopicWebUseCase(topicRepov2, topicResourceRepov2, s3svc.NewFromConfig())
 	getTopicGatewayUseCasev2 := usecase.NewGetTopicGatewayUseCase(topicRepov2, userGateway, s3svc.NewFromConfig())
 	getUploadProgressUseCasev2 := usecase.NewGetUploadProgressUseCase(topicRepov2, redisService)
 	deleteTopicFileUseCasev2 := usecase.NewDeleteTopicFileUseCase(topicRepov2, s3svc.NewFromConfig())
 	getTopicResourcesWebUseCasev2 := usecase.NewGetTopicResourcesWebUseCase(topicResourceRepov2, s3svc.NewFromConfig())
 	getTopicResourceAppUseCasev2 := usecase.NewGetTopicResourceAppUseCase(topicRepov2, topicResourceRepov2, s3svc.NewFromConfig())
+	uploadVocabularyUseCase := usecase.NewUploadVocabularyUseCase(topicRepov2, vocabularyRepo, s3svc.NewFromConfig())
+	getVocabularyWebUseCase := usecase.NewGetVocabularyWebUseCase(vocabularyRepo, s3svc.NewFromConfig())
+	vocabularyUseCase := usecase.NewVocabularyUseCase(vocabularyRepo, s3svc.NewFromConfig())
+	getTopicAppUseCasev2 := usecase.NewGetTopicAppUseCase(topicRepov2, s3svc.NewFromConfig(), vocabularyUseCase)
 
 	// --- Service ---
 	topicServicev2 := service.NewTopicService(uploadTopicUseCasev2, getUploadProgressUseCasev2, getTopicAppUseCasev2, getTopicWebUseCasev2, getTopicGatewayUseCasev2, deleteTopicFileUseCasev2)
+	vocabularyService := service.NewVocabularyService(uploadVocabularyUseCase, getVocabularyWebUseCase)
 
 	// --- Handler ---
 	topicHandlerv2 := handler.NewTopicHandler(topicServicev2)
+	vocabularyHandler := handler.NewVocabularyHandler(vocabularyService)
 	// ========================  Topic ======================== //
 
 	// ========================  PDF ======================== //
@@ -74,7 +80,7 @@ func SetupRouter(consulClient *api.Client, cacheClientRedis *cache.RedisCache, t
 	// ========================  Video Uploader ======================== //
 
 	// Register routes
-	route.RegisterTopicRoutes(app, topicHandlerv2, userGateway)
+	route.RegisterTopicRoutes(app, topicHandlerv2, vocabularyHandler, userGateway)
 	route.RegisterTopicResourceRoutes(app, topicResourceHandlerv2, userGateway)
 	route.RegisterVideoUploaderRoutes(app, videoUploaderHandler, userGateway)
 	route2.RegisterRoutes(app, pdfHandlerv2, userGateway)

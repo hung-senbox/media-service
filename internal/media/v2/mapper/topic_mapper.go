@@ -308,6 +308,7 @@ func ToTopicResponses4GW(topic *model.Topic, appLanguage uint) *response.TopicRe
 		ID:           topic.ID.Hex(),
 		Title:        langConfig.Title,
 		MainImageUrl: mainImageUrl,
+		VideoUrl:     langConfig.Video.UploadedUrl,
 	}
 }
 

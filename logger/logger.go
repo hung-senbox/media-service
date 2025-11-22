@@ -2,25 +2,25 @@ package logger
 
 import (
 	"fmt"
+	"io"
 	"os"
 	"path/filepath"
 	"strings"
+	"sync"
+	"time"
 
 	"github.com/sirupsen/logrus"
+	"gopkg.in/natefinch/lumberjack.v2"
 )
 
-var basePath string
+var (
+	loggers   = make(map[string]*logrus.Logger)
+	once      sync.Once
+	basePath  string
+	initMutex sync.Mutex
+)
 
-func init() {
-	// Lấy thư mục hiện tại của project (ví dụ: /Applications/Senbox/src/term-service)
-	wd, _ := os.Getwd()
-
-	// Gốc log = thư mục cha (/Applications/Senbox/src) + /Log/Term-Service
-	srcDir := filepath.Dir(wd)
-	basePath = filepath.Join(srcDir, "Log")
-}
-
-// parseLogLevel chuyển string → logrus.Level
+// ---------------- Parse Log Level --------------------
 func parseLogLevel(level string) logrus.Level {
 	switch strings.ToLower(level) {
 	case "trace":
@@ -42,54 +42,61 @@ func parseLogLevel(level string) logrus.Level {
 	}
 }
 
-// initLogger tạo logger theo thư mục con
-func initLogger(subFolder string, level logrus.Level) (*logrus.Logger, error) {
-	logDir := filepath.Join(basePath, subFolder)
-	err := os.MkdirAll(logDir, 0755)
-	if err != nil {
-		return nil, err
+// ---------------- Init Base Path --------------------
+func initBasePath() {
+	once.Do(func() {
+		basePath = filepath.Join("logs", "media-service")
+		_ = os.MkdirAll(basePath, 0755)
+	})
+}
+
+// ---------------- Create Logger Instance --------------------
+func getLogger(folder string) *logrus.Logger {
+	initBasePath()
+
+	initMutex.Lock()
+	defer initMutex.Unlock()
+
+	if logger, exists := loggers[folder]; exists {
+		return logger
 	}
 
-	logFile := filepath.Join(logDir, "app.log")
-	f, err := os.OpenFile(logFile, os.O_CREATE|os.O_WRONLY|os.O_APPEND, 0666)
-	if err != nil {
-		return nil, err
+	logDir := filepath.Join(basePath, folder)
+	_ = os.MkdirAll(logDir, 0755)
+
+	// Format file name theo ngày
+	today := time.Now().Format("2006-01-02")
+	logFileName := fmt.Sprintf("app_%s.log", today)
+
+	lumberjackLogger := &lumberjack.Logger{
+		Filename:   filepath.Join(logDir, logFileName),
+		MaxSize:    10, // MB before rotating
+		MaxBackups: 7,  // keep 7 rotated files
+		MaxAge:     60, // days old
+		Compress:   true,
 	}
 
 	logger := logrus.New()
-	logger.SetOutput(f)
-	logger.SetFormatter(&logrus.JSONFormatter{PrettyPrint: true})
-	logger.SetLevel(level)
+	logger.SetFormatter(&logrus.JSONFormatter{})
 
-	return logger, nil
+	// Output both console & file
+	logger.SetOutput(io.MultiWriter(os.Stdout, lumberjackLogger))
+	logger.SetLevel(logrus.DebugLevel)
+
+	loggers[folder] = logger
+	return logger
 }
 
-// WriteLogMsg → ghi vào LogMsg/app.log
-func WriteLogMsg(levelStr string, msg string) {
-	logger, err := initLogger("LogMsg", parseLogLevel(levelStr))
-	if err != nil {
-		fmt.Println("Lỗi khởi tạo logger:", err)
-		return
-	}
-	logger.Log(parseLogLevel(levelStr), msg)
+// ---------------- Public Functions --------------------
+
+func WriteLogMsg(level string, msg string) {
+	getLogger("LogMsg").Log(parseLogLevel(level), msg)
 }
 
-// WriteLogData → ghi vào LogData/app.log
-func WriteLogData(levelStr string, data any) {
-	logger, err := initLogger("LogData", parseLogLevel(levelStr))
-	if err != nil {
-		fmt.Println("Lỗi khởi tạo logger:", err)
-		return
-	}
-	logger.WithField("data", data).Log(parseLogLevel(levelStr), "Log dữ liệu")
+func WriteLogData(level string, data any) {
+	getLogger("LogData").WithField("data", data).Log(parseLogLevel(level), "Data log")
 }
 
-// WriteLogEx → ghi vào LogEx/app.log
-func WriteLogEx(levelStr string, msg string, data any) {
-	logger, err := initLogger("LogEx", parseLogLevel(levelStr))
-	if err != nil {
-		fmt.Println("Lỗi khởi tạo logger:", err)
-		return
-	}
-	logger.WithField("data", data).Log(parseLogLevel(levelStr), msg)
+func WriteLogEx(level string, msg string, data any) {
+	getLogger("LogEx").WithField("data", data).Log(parseLogLevel(level), msg)
 }

@@ -70,9 +70,18 @@ func (h *TopicHandler) UploadTopic(c *fiber.Ctx) error {
 	if langID := c.FormValue("language_id"); langID != "" {
 		if val, err := strconv.ParseUint(langID, 10, 32); err == nil {
 			req.LanguageID = uint(val)
+		} else {
+			return helper.SendError(c, http.StatusBadRequest, nil, helper.ErrInvalidRequest)
 		}
 	}
-	req.IsPublished = c.FormValue("is_published") == "true"
+
+	if isPublished := c.FormValue("is_published"); isPublished != "" {
+		if val, err := strconv.ParseBool(isPublished); err == nil {
+			req.IsPublished = val
+		} else {
+			return helper.SendError(c, http.StatusBadRequest, nil, helper.ErrInvalidRequest)
+		}
+	}
 
 	// Parse file fields
 	if audioFile, err := c.FormFile("audio_file"); err == nil {

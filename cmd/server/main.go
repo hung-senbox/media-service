@@ -8,6 +8,7 @@ import (
 
 	// "os"
 
+	"media-service/logger"
 	"media-service/pkg/config"
 	"media-service/pkg/consul"
 	"media-service/pkg/db"
@@ -15,6 +16,7 @@ import (
 
 	"media-service/pkg/zap"
 
+	"github.com/gofiber/fiber/v2"
 	consulapi "github.com/hashicorp/consul/api"
 	redis "github.com/hung-senbox/senbox-cache-service/pkg/redis"
 )
@@ -30,6 +32,10 @@ func main() {
 	cfg := config.AppConfig
 
 	// logger.WriteLogData("info", map[string]any{"id": 123, "name": "Hung"})
+
+	logger.WriteLogMsg("info", "App started")
+	logger.WriteLogData("debug", map[string]string{"user": "hung"})
+	logger.WriteLogEx("error", "Query failed", map[string]string{"user": "hung"})
 
 	//logger
 	logger, err := zap.New(cfg)
@@ -60,8 +66,21 @@ func main() {
 		return
 	}
 
-	app := router.SetupRouter(consulClient, cacheClientRedis, db.TopicCollection, db.PDFCollection, db.TopicResourceCollection, db.VideoUploaderCollection, db.MediaAssetCollection)
+	app := fiber.New(fiber.Config{
+		BodyLimit: 1024 * 1024 * 1024,
+	})
 
+	app = router.SetupRouter(
+		app,
+		consulClient,
+		cacheClientRedis,
+		db.TopicCollection,
+		db.PDFCollection,
+		db.TopicResourceCollection,
+		db.VideoUploaderCollection,
+		db.MediaAssetCollection,
+		db.VocabularyCollection,
+	)
 	port := cfg.Server.Port
 	if err := app.Listen(":" + port); err != nil {
 		log.Fatal("Failed to run server:", err)

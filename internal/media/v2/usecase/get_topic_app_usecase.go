@@ -3,7 +3,6 @@ package usecase
 import (
 	"context"
 	"media-service/helper"
-	"media-service/internal/gateway"
 	"media-service/internal/media/v2/dto/response"
 	"media-service/internal/media/v2/mapper"
 	"media-service/internal/media/v2/repository"
@@ -16,32 +15,35 @@ type GetTopicAppUseCase interface {
 }
 
 type getTopicAppUseCase struct {
-	topicRepo    repository.TopicRepository
-	cachedUserGw gateway.UserGateway
-	s3Service    s3svc.Service
+	topicRepo         repository.TopicRepository
+	s3Service         s3svc.Service
+	vocabularyUseCase VocabularyUseCase
 }
 
-func NewGetTopicAppUseCase(topicRepo repository.TopicRepository, cachedUserGw gateway.UserGateway, s3Service s3svc.Service) GetTopicAppUseCase {
+func NewGetTopicAppUseCase(topicRepo repository.TopicRepository, s3Service s3svc.Service, vocabularyUseCase VocabularyUseCase) GetTopicAppUseCase {
 	return &getTopicAppUseCase{
-		topicRepo:    topicRepo,
-		cachedUserGw: cachedUserGw,
-		s3Service:    s3Service,
+		topicRepo:         topicRepo,
+		s3Service:         s3Service,
+		vocabularyUseCase: vocabularyUseCase,
 	}
 }
 
 func (uc *getTopicAppUseCase) GetTopics4Student4App(ctx context.Context, studentID string) ([]*response.GetTopic4StudentResponse4App, error) {
-	// get org by student
-	// student, err := uc.cachedUserGw.GetStudentInfo(ctx, studentID)
-	// if err != nil {
-	// 	return nil, err
-	// }
 	topics, err := uc.topicRepo.GetAllTopicsIsPublished(ctx)
 	if err != nil {
 		return nil, err
 	}
 	appLanguage := helper.GetAppLanguage(ctx, 1)
 
-	return mapper.ToTopic4StudentResponses4App(topics, appLanguage), nil
+	result := mapper.ToTopic4StudentResponses4App(topics, appLanguage)
+	for ri := range result {
+		vocabularies, err := uc.vocabularyUseCase.GetVocabulariesByTopicID4App(ctx, result[ri].ID)
+		if err != nil {
+			return nil, err
+		}
+		result[ri].Vocabularies = vocabularies
+	}
+	return result, nil
 }
 
 // Hien tai khong dung den organizationID
@@ -70,5 +72,13 @@ func (uc *getTopicAppUseCase) GetTopics4App(ctx context.Context, organizationID 
 		}
 	}
 
-	return mapper.ToTopic4StudentResponses4App(topics, appLanguage), nil
+	result := mapper.ToTopic4StudentResponses4App(topics, appLanguage)
+	for ri := range result {
+		vocabularies, err := uc.vocabularyUseCase.GetVocabulariesByTopicID4App(ctx, result[ri].ID)
+		if err != nil {
+			return nil, err
+		}
+		result[ri].Vocabularies = vocabularies
+	}
+	return result, nil
 }

@@ -37,17 +37,19 @@ type ImgEntry struct {
 //// 4 App
 
 type GetTopic4StudentResponse4App struct {
-	ID           string `json:"id"`
-	IsPublished  bool   `json:"is_published"`
-	Title        string `json:"title"`
-	MainImageUrl string `json:"main_image_url"`
+	ID           string                       `json:"id"`
+	IsPublished  bool                         `json:"is_published"`
+	Title        string                       `json:"title"`
+	MainImageUrl string                       `json:"main_image_url"`
+	Vocabularies []*GetVocabularyResponse4App `json:"vocabularies"`
 }
 
 type GetTopicResponse4App struct {
-	ID           string `json:"id"`
-	IsPublished  bool   `json:"is_published"`
-	Title        string `json:"title"`
-	MainImageUrl string `json:"main_image_url"`
+	ID           string                       `json:"id"`
+	IsPublished  bool                         `json:"is_published"`
+	Title        string                       `json:"title"`
+	MainImageUrl string                       `json:"main_image_url"`
+	Vocabularies []*GetVocabularyResponse4App `json:"vocabularies"`
 }
 
 type GetTopic4StudentResponse4Web struct {
@@ -68,6 +70,7 @@ type TopicResponse4GW struct {
 	ID           string `json:"id"`
 	Title        string `json:"title"`
 	MainImageUrl string `json:"main_image_url"`
+	VideoUrl     string `json:"video_url"`
 }
 
 type TopicResponse2Assign4Web struct {

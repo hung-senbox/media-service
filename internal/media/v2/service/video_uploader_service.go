@@ -17,13 +17,15 @@ import (
 	"sort"
 	"strings"
 	"time"
+
+	"go.mongodb.org/mongo-driver/bson/primitive"
 )
 
 type VideoUploaderService interface {
-	UploadVideoUploader(ctx context.Context, req request.UploadVideoUploaderRequest) error
-	GetUploaderStatus(ctx context.Context, videoUploaderID string) (response.GetUploaderStatusResponse, error)
+	UploadVideoUploader(ctx context.Context, req request.UploadVideoUploaderRequest) (*model.VideoUploader, error)
 	GetVideosUploader4Web(ctx context.Context, languageID string, title string, sortBy []request.GetVideoUploaderSortBy) ([]response.GetVideoUploaderResponse4Web, error)
 	DeleteVideoUploader(ctx context.Context, videoUploaderID string) error
+	GetVideo4Web(ctx context.Context, videoUploaderID string) (*response.GetDetailVideo4WebResponse, error)
 }
 
 type videoUploaderService struct {
@@ -39,132 +41,149 @@ func NewVideoUploaderService(videoUploaderRepository repository.VideoUploaderRep
 // ======================================================
 // =============== PUBLIC FUNCTION ======================
 // ======================================================
-func (s *videoUploaderService) UploadVideoUploader(ctx context.Context, req request.UploadVideoUploaderRequest) error {
+func (s *videoUploaderService) UploadVideoUploader(ctx context.Context, req request.UploadVideoUploaderRequest) (*model.VideoUploader, error) {
 	currentUser, _ := ctx.Value(constants.CurrentUserKey).(*gw_response.CurrentUser)
 	if !currentUser.IsSuperAdmin {
-		return fmt.Errorf("access denied")
+		return nil, fmt.Errorf("access denied")
 	}
 
 	var videoUploader *model.VideoUploader
 
-	// Step 1: tạo record trong MongoDB (insert hoặc update)
-	if req.VideoUploaderID != "" {
-		existing, err := s.videoUploaderRepository.GetVideoUploaderByID(ctx, req.VideoUploaderID)
+	// Step 1: tạo / lấy record trong MongoDB (insert hoặc update, chưa xử lý file)
+	if req.VideoFolderID != "" {
+		existing, err := s.videoUploaderRepository.GetVideoUploaderByID(ctx, req.VideoFolderID)
 		if err != nil {
-			return fmt.Errorf("get video uploader failed: %w", err)
+			return nil, fmt.Errorf("get video uploader failed: %w", err)
 		}
 		existing.IsVisible = req.IsVisible
 		existing.Title = req.Title
-		existing.LanguageID = req.LanguageID
-		existing.Note = req.Note
-		existing.Transcript = req.Transcript
 		existing.UpdatedAt = time.Now()
-		if req.IsDeletedVideo {
-			s.videoUploaderRepository.DeleteVideoMetadata(ctx, req.VideoUploaderID)
-		}
-		if req.IsDeletedImagePreview {
-			s.videoUploaderRepository.DeleteImagePreviewMetadata(ctx, req.VideoUploaderID)
-		}
-		if err := s.videoUploaderRepository.SetVideoUploaderWithoutFiles(ctx, existing); err != nil {
-			return fmt.Errorf("save video uploader failed: %w", err)
-		}
 		videoUploader = existing
 	} else {
 		newVideo := &model.VideoUploader{
-			CreatedBy:  currentUser.ID,
-			IsVisible:  req.IsVisible,
-			LanguageID: req.LanguageID,
-			Title:      req.Title,
-			Note:       req.Note,
-			Transcript: req.Transcript,
-			CreatedAt:  time.Now(),
-			UpdatedAt:  time.Now(),
-		}
-		if err := s.videoUploaderRepository.SetVideoUploaderWithoutFiles(ctx, newVideo); err != nil {
-			return fmt.Errorf("save video uploader failed: %w", err)
+			CreatedBy:      currentUser.ID,
+			IsVisible:      req.IsVisible,
+			Title:          req.Title,
+			LanguageConfig: make([]model.VideoUploaderLanguageConfig, 0),
+			CreatedAt:      time.Now(),
+			UpdatedAt:      time.Now(),
 		}
 		videoUploader = newVideo
 	}
 
-	// Step 2: Upload đồng bộ, không dùng Redis
+	// Step 2: xử lý language config tương ứng với LanguageID
+	langCfgIdx := -1
+	for i := range videoUploader.LanguageConfig {
+		if videoUploader.LanguageConfig[i].LanguageID == req.LanguageID {
+			langCfgIdx = i
+			break
+		}
+	}
+	if langCfgIdx == -1 {
+		videoUploader.LanguageConfig = append(videoUploader.LanguageConfig, model.VideoUploaderLanguageConfig{
+			ID:         primitive.NewObjectID(),
+			LanguageID: req.LanguageID,
+		})
+		langCfgIdx = len(videoUploader.LanguageConfig) - 1
+	}
+	cfg := &videoUploader.LanguageConfig[langCfgIdx]
+
+	// Apply note & transcript (giá trị mới nhất từ request)
+	cfg.Note = req.Note
+	cfg.Transcript = req.Transcript
+
+	// Xử lý xoá trước khi upload mới
+	if req.IsDeletedVideo {
+		if cfg.VideoKey != "" {
+			_ = s.s3Service.Delete(ctx, cfg.VideoKey)
+		}
+		cfg.VideoKey = ""
+		cfg.VideoPublicUrl = ""
+	}
+	if req.IsDeletedImagePreview {
+		if cfg.ImagePreviewKey != "" {
+			_ = s.s3Service.Delete(ctx, cfg.ImagePreviewKey)
+		}
+		cfg.ImagePreviewKey = ""
+		cfg.ImagePreviewPublicUrl = ""
+	}
+
+	// Step 3: Upload đồng bộ video & image cho language config này
 	// Upload video nếu có
 	if helper.IsValidFile(req.VideoFile) {
-		oldVideoKey := videoUploader.VideoKey
-		if oldVideoKey != "" {
-			_ = s.s3Service.Delete(ctx, oldVideoKey)
+		if cfg.VideoKey != "" {
+			_ = s.s3Service.Delete(ctx, cfg.VideoKey)
 		}
-		if err := s.processVideoUpload(ctx, videoUploader.ID.Hex(), req); err != nil {
-			return fmt.Errorf("video upload failed: %w", err)
+		videoKey, videoUrl, err := s.processVideoUpload(ctx, req)
+		if err != nil {
+			return nil, fmt.Errorf("video upload failed: %w", err)
 		}
+		cfg.VideoKey = videoKey
+		cfg.VideoPublicUrl = videoUrl
 	}
 	// Upload ảnh preview nếu có
 	if helper.IsValidFile(req.ImagePreviewFile) {
-		oldImageKey := videoUploader.ImagePreviewKey
-		if oldImageKey != "" {
-			_ = s.s3Service.Delete(ctx, oldImageKey)
+		if cfg.ImagePreviewKey != "" {
+			_ = s.s3Service.Delete(ctx, cfg.ImagePreviewKey)
 		}
-		if err := s.processImagePreviewUpload(ctx, videoUploader.ID.Hex(), req); err != nil {
-			return fmt.Errorf("image upload failed: %w", err)
+		imageKey, imageUrl, err := s.processImagePreviewUpload(ctx, req)
+		if err != nil {
+			return nil, fmt.Errorf("image upload failed: %w", err)
 		}
+		cfg.ImagePreviewKey = imageKey
+		cfg.ImagePreviewPublicUrl = imageUrl
 	}
 
-	return nil
+	// Step 4: Lưu toàn bộ document (bao gồm language_config) vào MongoDB
+	if err := s.videoUploaderRepository.SetVideoUploader(ctx, videoUploader); err != nil {
+		return nil, fmt.Errorf("save video uploader failed: %w", err)
+	}
+
+	return videoUploader, nil
 }
 
 // ======================================================
 // =============== PRIVATE HELPERS ======================
 // ======================================================
 
-// xử lý upload video và lưu metadata
-func (s *videoUploaderService) processVideoUpload(ctx context.Context, videoUploaderID string, req request.UploadVideoUploaderRequest) error {
+// xử lý upload video và trả về key + public URL
+func (s *videoUploaderService) processVideoUpload(ctx context.Context, req request.UploadVideoUploaderRequest) (string, string, error) {
 	if req.VideoFile == nil {
-		return fmt.Errorf("video file is required")
+		return "", "", fmt.Errorf("video file is required")
 	}
 
 	key := helper.BuildObjectKeyS3("media_video_uploader", req.VideoFile.Filename, "video_"+req.Title)
 	f, openErr := req.VideoFile.Open()
 	if openErr != nil {
-		return openErr
+		return "", "", openErr
 	}
 	defer f.Close()
 	ct := req.VideoFile.Header.Get("Content-Type")
 	url, err := s.s3Service.SaveReader(ctx, f, key, ct, uploader.UploadPublic)
 	if err != nil {
-		return err
+		return "", "", err
 	}
-
-	// cập nhật metadata vào DB
-	if err := s.videoUploaderRepository.SetVideoMetadata(ctx, videoUploaderID, key, deref(url)); err != nil {
-		return fmt.Errorf("save video metadata failed: %w", err)
-	}
-
-	return nil
+	return key, deref(url), nil
 }
 
-// xử lý upload ảnh preview và lưu metadata
-func (s *videoUploaderService) processImagePreviewUpload(ctx context.Context, videoUploaderID string, req request.UploadVideoUploaderRequest) error {
+// xử lý upload ảnh preview và trả về key + public URL
+func (s *videoUploaderService) processImagePreviewUpload(ctx context.Context, req request.UploadVideoUploaderRequest) (string, string, error) {
 	if req.ImagePreviewFile == nil {
-		return fmt.Errorf("image preview file is required")
+		return "", "", fmt.Errorf("image preview file is required")
 	}
 
 	key := helper.BuildObjectKeyS3("media_video_uploader", req.ImagePreviewFile.Filename, "image_preview_"+req.Title)
 	f, openErr := req.ImagePreviewFile.Open()
 	if openErr != nil {
-		return openErr
+		return "", "", openErr
 	}
 	defer f.Close()
 	ct := req.ImagePreviewFile.Header.Get("Content-Type")
 	url, err := s.s3Service.SaveReader(ctx, f, key, ct, uploader.UploadPublic)
 	if err != nil {
-		return err
+		return "", "", err
 	}
-
-	// cập nhật metadata vào DB
-	if err := s.videoUploaderRepository.SetImagePreviewMetadata(ctx, videoUploaderID, key, deref(url)); err != nil {
-		return fmt.Errorf("save image metadata failed: %w", err)
-	}
-
-	return nil
+	return key, deref(url), nil
 }
 
 func deref(s *string) string {
@@ -172,19 +191,6 @@ func deref(s *string) string {
 		return ""
 	}
 	return *s
-}
-
-func (s *videoUploaderService) GetUploaderStatus(ctx context.Context, videoUploaderID string) (response.GetUploaderStatusResponse, error) {
-	currentUser, _ := ctx.Value(constants.CurrentUserKey).(*gw_response.CurrentUser)
-	if !currentUser.IsSuperAdmin {
-		return response.GetUploaderStatusResponse{}, fmt.Errorf("access denied")
-	}
-
-	return response.GetUploaderStatusResponse{
-		Status:    "done",
-		Message:   "upload completed",
-		UpdatedAt: time.Now().UTC().Format(time.RFC3339),
-	}, nil
 }
 
 func (s *videoUploaderService) GetVideosUploader4Web(ctx context.Context, languageID, title string, sortBy []request.GetVideoUploaderSortBy) ([]response.GetVideoUploaderResponse4Web, error) {
@@ -209,7 +215,7 @@ func (s *videoUploaderService) GetVideosUploader4Web(ctx context.Context, langua
 			}
 			videoUploaders = filterVideosByTitle(videoUploaders, strings.TrimSpace(title))
 			videoUploaders = sortVideos(videoUploaders, sortBy)
-			return mapper.ToGetVideosResponse4Web(videoUploaders, currentUser.Nickname), nil
+			return mapper.ToGetVideosResponse4Web(videoUploaders, currentUser.Nickname, langID), nil
 		}
 	}
 
@@ -220,7 +226,7 @@ func (s *videoUploaderService) GetVideosUploader4Web(ctx context.Context, langua
 	}
 	videoUploaders = filterVideosByTitle(videoUploaders, strings.TrimSpace(title))
 	videoUploaders = sortVideos(videoUploaders, sortBy)
-	return mapper.ToGetVideosResponse4Web(videoUploaders, currentUser.Nickname), nil
+	return mapper.ToGetVideosResponse4Web(videoUploaders, currentUser.Nickname, 0), nil
 
 }
 
@@ -238,16 +244,17 @@ func (s *videoUploaderService) DeleteVideoUploader(ctx context.Context, videoUpl
 		return fmt.Errorf("video uploader not found")
 	}
 
-	if videoUploader.VideoKey != "" {
-		err = s.s3Service.Delete(ctx, videoUploader.VideoKey)
-		if err != nil {
-			return err
+	// Xoá toàn bộ file video & image preview của tất cả language config
+	for _, cfg := range videoUploader.LanguageConfig {
+		if cfg.VideoKey != "" {
+			if err := s.s3Service.Delete(ctx, cfg.VideoKey); err != nil {
+				return err
+			}
 		}
-	}
-	if videoUploader.ImagePreviewKey != "" {
-		err = s.s3Service.Delete(ctx, videoUploader.ImagePreviewKey)
-		if err != nil {
-			return err
+		if cfg.ImagePreviewKey != "" {
+			if err := s.s3Service.Delete(ctx, cfg.ImagePreviewKey); err != nil {
+				return err
+			}
 		}
 	}
 
@@ -283,11 +290,19 @@ func sortVideos(vs []model.VideoUploader, sortBy []request.GetVideoUploaderSortB
 					return strings.ToLower(vs[i].Title) > strings.ToLower(vs[j].Title)
 				}
 			case "language_id":
-				if vs[i].LanguageID != vs[j].LanguageID {
+				// sort theo language_id đầu tiên trong language_config (nếu có)
+				var li, lj uint
+				if len(vs[i].LanguageConfig) > 0 {
+					li = vs[i].LanguageConfig[0].LanguageID
+				}
+				if len(vs[j].LanguageConfig) > 0 {
+					lj = vs[j].LanguageConfig[0].LanguageID
+				}
+				if li != lj {
 					if asc {
-						return vs[i].LanguageID < vs[j].LanguageID
+						return li < lj
 					}
-					return vs[i].LanguageID > vs[j].LanguageID
+					return li > lj
 				}
 			case "updated_at":
 				if !vs[i].UpdatedAt.Equal(vs[j].UpdatedAt) {
@@ -310,4 +325,13 @@ func sortVideos(vs []model.VideoUploader, sortBy []request.GetVideoUploaderSortB
 	})
 
 	return vs
+}
+
+func (s *videoUploaderService) GetVideo4Web(ctx context.Context, videoUploaderID string) (*response.GetDetailVideo4WebResponse, error) {
+
+	videoUploader, err := s.videoUploaderRepository.GetVideoUploaderByID(ctx, videoUploaderID)
+	if err != nil {
+		return nil, err
+	}
+	return mapper.ToGetDetailVideo4WebResponse(videoUploader), nil
 }

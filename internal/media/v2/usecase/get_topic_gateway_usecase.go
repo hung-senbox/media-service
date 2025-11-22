@@ -2,12 +2,15 @@ package usecase
 
 import (
 	"context"
+	"fmt"
 	"media-service/helper"
 	"media-service/internal/gateway"
+	"media-service/internal/media/model"
 	"media-service/internal/media/v2/dto/response"
 	"media-service/internal/media/v2/mapper"
 	"media-service/internal/media/v2/repository"
 	s3svc "media-service/internal/s3"
+	"media-service/logger"
 )
 
 type GetTopicGatewayUseCase interface {
@@ -65,16 +68,7 @@ func (uc *getTopicGatewayUseCase) GetTopic4Gw(ctx context.Context, topicID strin
 
 	appLang := helper.GetAppLanguage(ctx, 1)
 
-	// images
-	for ii := range topic.LanguageConfig[0].Images {
-		img := &topic.LanguageConfig[0].Images[ii]
-		if img.ImageKey != "" {
-			url, err := uc.s3Service.Get(ctx, img.ImageKey, nil)
-			if err == nil && url != nil {
-				img.UploadedUrl = *url
-			}
-		}
-	}
+	uc.populateMediaUrlsForTopic(ctx, topic)
 
 	return mapper.ToTopicResponses4GW(topic, appLang), nil
 }
@@ -92,17 +86,7 @@ func (uc *getTopicGatewayUseCase) GetAllTopicsByOrganization4Gw(ctx context.Cont
 	var result []*response.TopicResponse4GW
 
 	for _, topic := range topics {
-		// xử lý ảnh từng topic
-		for ii := range topic.LanguageConfig[0].Images {
-			img := &topic.LanguageConfig[0].Images[ii]
-			if img.ImageKey != "" {
-				url, err := uc.s3Service.Get(ctx, img.ImageKey, nil)
-				if err == nil && url != nil {
-					img.UploadedUrl = *url
-				}
-			}
-		}
-
+		uc.populateMediaUrlsForTopic(ctx, &topic)
 		topicRes := mapper.ToTopicResponses4GW(&topic, appLang)
 		if topicRes != nil {
 			result = append(result, topicRes)
@@ -110,4 +94,43 @@ func (uc *getTopicGatewayUseCase) GetAllTopicsByOrganization4Gw(ctx context.Cont
 	}
 
 	return result, nil
+}
+
+func (uc *getTopicGatewayUseCase) populateMediaUrlsForTopic(ctx context.Context, topic *model.Topic) {
+	for li := range topic.LanguageConfig {
+		langCfg := &topic.LanguageConfig[li]
+
+		// images
+		for ii := range langCfg.Images {
+			img := &langCfg.Images[ii]
+			if img.ImageKey != "" {
+				url, err := uc.s3Service.Get(ctx, img.ImageKey, nil)
+				if err == nil && url != nil {
+					img.UploadedUrl = *url
+				} else {
+					logger.WriteLogEx("get_topic_web_usecase", "populateMediaUrlsForTopic_images", fmt.Sprintf("error getting image url: %v", err))
+				}
+			}
+		}
+
+		// video
+		if langCfg.Video.VideoKey != "" {
+			url, err := uc.s3Service.Get(ctx, langCfg.Video.VideoKey, nil)
+			if err == nil && url != nil {
+				langCfg.Video.UploadedUrl = *url
+			} else {
+				logger.WriteLogEx("get_topic_web_usecase", "populateMediaUrlsForTopic_video", fmt.Sprintf("error getting image url: %v", err))
+			}
+		}
+
+		// audio
+		if langCfg.Audio.AudioKey != "" {
+			url, err := uc.s3Service.Get(ctx, langCfg.Audio.AudioKey, nil)
+			if err == nil && url != nil {
+				langCfg.Audio.UploadedUrl = *url
+			} else {
+				logger.WriteLogEx("get_topic_web_usecase", "populateMediaUrlsForTopic_audio", fmt.Sprintf("error getting image url: %v", err))
+			}
+		}
+	}
 }
