@@ -70,6 +70,7 @@ type TopicResponse4GW struct {
 	ID           string `json:"id"`
 	Title        string `json:"title"`
 	MainImageUrl string `json:"main_image_url"`
+	VideoUrl     string `json:"video_url"`
 }
 
 type TopicResponse2Assign4Web struct {
