@@ -21,9 +21,30 @@ func NewTopicResourceHandler(topicResourceService service.TopicResourceService) 
 
 func (h *TopicResourceHandler) CreateTopicResource(c *fiber.Ctx) error {
 	var req request.CreateTopicResourceRequest
+
+	// Parse multipart form for file upload
 	if err := c.BodyParser(&req); err != nil {
 		return helper.SendError(c, http.StatusBadRequest, err, helper.ErrInvalidRequest)
 	}
+
+	// Validate required fields
+	if req.TopicID == "" {
+		return helper.SendError(c, http.StatusBadRequest, fmt.Errorf("topic_id is required"), helper.ErrInvalidRequest)
+	}
+	if req.StudentID == "" {
+		return helper.SendError(c, http.StatusBadRequest, fmt.Errorf("student_id is required"), helper.ErrInvalidRequest)
+	}
+	if req.FileName == "" {
+		return helper.SendError(c, http.StatusBadRequest, fmt.Errorf("file_name is required"), helper.ErrInvalidRequest)
+	}
+
+	// Get file from form
+	file, err := c.FormFile("file")
+	if err != nil {
+		return helper.SendError(c, http.StatusBadRequest, fmt.Errorf("file is required"), helper.ErrInvalidRequest)
+	}
+	req.File = file
+
 	res, err := h.topicResourceService.CreateTopicResource(c.UserContext(), req)
 	if err != nil {
 		return helper.SendError(c, http.StatusInternalServerError, err, helper.ErrInvalidOperation)
