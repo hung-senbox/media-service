@@ -143,3 +143,15 @@ func (h *VocabularyHandler) GetVocabularies4Web(c *fiber.Ctx) error {
 	}
 	return helper.SendSuccess(c, http.StatusOK, "get vocabularies success", res)
 }
+
+func (h *VocabularyHandler) GetVocabulary4Gw(c *fiber.Ctx) error {
+	vocabularyID := c.Params("vocabulary_id")
+	if vocabularyID == "" {
+		return helper.SendError(c, http.StatusBadRequest, nil, helper.ErrInvalidRequest)
+	}
+	res, err := h.vocabularyService.GetVocabulary4Gw(c.UserContext(), vocabularyID)
+	if err != nil {
+		return helper.SendError(c, http.StatusInternalServerError, err, helper.ErrInvalidOperation)
+	}
+	return helper.SendSuccess(c, http.StatusOK, "get vocabulary success", res)
+}

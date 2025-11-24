@@ -75,3 +75,9 @@ type VocabularyResponse2Assign4Web struct {
 	Title        string `json:"title"`
 	MainImageUrl string `json:"main_image_url"`
 }
+
+type VocabularyResponse4Gw struct {
+	ID           string `json:"id"`
+	Title        string `json:"title"`
+	MainImageUrl string `json:"main_image_url"`
+}

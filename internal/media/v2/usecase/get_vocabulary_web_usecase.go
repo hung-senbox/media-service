@@ -3,6 +3,7 @@ package usecase
 import (
 	"context"
 	"fmt"
+	"media-service/helper"
 	gw_response "media-service/internal/gateway/dto/response"
 	"media-service/internal/media/model"
 	"media-service/internal/media/v2/dto/response"
@@ -15,6 +16,7 @@ import (
 
 type GetVocabularyWebUseCase interface {
 	GetVocabularies4Web(ctx context.Context, topicID string) ([]*response.VocabularyResponse4Web, error)
+	GetVocabulary4Gw(ctx context.Context, vocabularyID string) (*response.VocabularyResponse4Gw, error)
 }
 
 type getVocabularyWebUseCase struct {
@@ -110,4 +112,15 @@ func filterIsPublished(vocabularies []model.Vocabulary) []model.Vocabulary {
 		}
 	}
 	return filteredVocabularies
+}
+
+func (uc *getVocabularyWebUseCase) GetVocabulary4Gw(ctx context.Context, vocabularyID string) (*response.VocabularyResponse4Gw, error) {
+	vocabulary, err := uc.vocabularyRepo.GetByID(ctx, vocabularyID)
+	if err != nil {
+		return nil, err
+	}
+
+	appLanguage := helper.GetAppLanguage(ctx, 1)
+	uc.populateMediaUrlsForVocabulary(ctx, vocabulary)
+	return mapper.ToVocabularyResponse4Gw(vocabulary, appLanguage), nil
 }

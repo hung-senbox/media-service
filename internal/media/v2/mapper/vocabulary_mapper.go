@@ -121,3 +121,27 @@ func ToVocabulariesResponses4App(vocabularies []*model.Vocabulary, appLanguage u
 
 	return res
 }
+
+func ToVocabularyResponse4Gw(vocabulary *model.Vocabulary, appLanguage uint) *response.VocabularyResponse4Gw {
+	if vocabulary == nil {
+		return nil
+	}
+
+	langConfig := vocabulary.LanguageConfig[appLanguage]
+
+	mainImageUrl := ""
+	if len(langConfig.Images) > 0 {
+		for _, img := range langConfig.Images {
+			if img.ImageType == string(constants.TopicImageTypeBM) {
+				mainImageUrl = img.UploadedUrl
+				break
+			}
+		}
+	}
+
+	return &response.VocabularyResponse4Gw{
+		ID:           vocabulary.ID.Hex(),
+		Title:        langConfig.Title,
+		MainImageUrl: mainImageUrl,
+	}
+}

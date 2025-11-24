@@ -42,9 +42,12 @@ func RegisterTopicRoutes(app *fiber.App, hv2 *handler.TopicHandler, hv *handler.
 	// gateway
 	gatewayGroup := app.Group("/api/v2/gateway")
 	gatewayGroup.Use(middleware.Secured(userGw))
+	vocabularyGateway := gatewayGroup.Group("/:topic_id/vocabularies")
 
 	topicsGateway := gatewayGroup.Group("/topics")
 	topicsGateway.Get("/organization/:organization_id", hv2.GetAllTopicsByOrganization4Gw)
 	topicsGateway.Get("/:topic_id", hv2.GetTopic4Gw)
 	topicsGateway.Get("/student/:student_id", hv2.GetTopics4Student4Gw)
+
+	vocabularyGateway.Get("/:vocabulary_id", hv.GetVocabulary4Gw)
 }
