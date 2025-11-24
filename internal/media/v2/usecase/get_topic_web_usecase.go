@@ -118,18 +118,7 @@ func (uc *getTopicWebUseCase) GetTopics2Assign4Web(ctx context.Context) ([]*resp
 	}
 
 	for ti := range topics {
-		for li := range topics[ti].LanguageConfig {
-			langCfg := &topics[ti].LanguageConfig[li]
-			for ii := range langCfg.Images {
-				img := &langCfg.Images[ii]
-				if img.ImageKey != "" {
-					url, err := uc.s3Service.Get(ctx, img.ImageKey, nil)
-					if err == nil && url != nil {
-						img.UploadedUrl = *url
-					}
-				}
-			}
-		}
+		uc.populateMediaUrlsForTopic(ctx, &topics[ti])
 	}
 
 	return mapper.ToTopic2Assign4Web(topics, 1), nil

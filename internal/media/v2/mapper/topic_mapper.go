@@ -346,6 +346,7 @@ func ToTopic2Assign4Web(topics []model.Topic, appLanguage uint) []*response.Topi
 			ID:           t.ID.Hex(),
 			Title:        langConfig.Title,
 			MainImageUrl: mainImageUrl,
+			VideoUrl:     langConfig.Video.UploadedUrl,
 		})
 	}
 
