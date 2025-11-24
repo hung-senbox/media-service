@@ -52,6 +52,7 @@ func ToGetDetailVideo4WebResponse(videoUploader *model.VideoUploader) *response.
 		result = append(result, response.DetailVideoMessageLanguageEntry{
 			LanguageID: int(cfg.LanguageID),
 			Contents: response.DetailVideoLanguageContents{
+				Note:            cfg.Note,
 				Transcript:      cfg.Transcript,
 				VideoUrl:        cfg.VideoPublicUrl,
 				ImagePreviewUrl: cfg.ImagePreviewPublicUrl,
