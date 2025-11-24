@@ -144,12 +144,12 @@ func (h *VocabularyHandler) GetVocabularies4Web(c *fiber.Ctx) error {
 	return helper.SendSuccess(c, http.StatusOK, "get vocabularies success", res)
 }
 
-func (h *VocabularyHandler) GetVocabulary4Gw(c *fiber.Ctx) error {
-	vocabularyID := c.Params("vocabulary_id")
-	if vocabularyID == "" {
+func (h *VocabularyHandler) GetVocabularies4Gw(c *fiber.Ctx) error {
+	topicID := c.Params("topic_id")
+	if topicID == "" {
 		return helper.SendError(c, http.StatusBadRequest, nil, helper.ErrInvalidRequest)
 	}
-	res, err := h.vocabularyService.GetVocabulary4Gw(c.UserContext(), vocabularyID)
+	res, err := h.vocabularyService.GetVocabularies4Gw(c.UserContext(), topicID)
 	if err != nil {
 		return helper.SendError(c, http.StatusInternalServerError, err, helper.ErrInvalidOperation)
 	}

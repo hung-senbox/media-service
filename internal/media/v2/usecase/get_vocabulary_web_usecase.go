@@ -16,7 +16,7 @@ import (
 
 type GetVocabularyWebUseCase interface {
 	GetVocabularies4Web(ctx context.Context, topicID string) ([]*response.VocabularyResponse4Web, error)
-	GetVocabulary4Gw(ctx context.Context, vocabularyID string) (*response.VocabularyResponse4Gw, error)
+	GetVocabularies4Gw(ctx context.Context, topicID string) ([]*response.VocabularyResponse4Gw, error)
 }
 
 type getVocabularyWebUseCase struct {
@@ -114,13 +114,15 @@ func filterIsPublished(vocabularies []model.Vocabulary) []model.Vocabulary {
 	return filteredVocabularies
 }
 
-func (uc *getVocabularyWebUseCase) GetVocabulary4Gw(ctx context.Context, vocabularyID string) (*response.VocabularyResponse4Gw, error) {
-	vocabulary, err := uc.vocabularyRepo.GetByID(ctx, vocabularyID)
+func (uc *getVocabularyWebUseCase) GetVocabularies4Gw(ctx context.Context, topicID string) ([]*response.VocabularyResponse4Gw, error) {
+	vocabularies, err := uc.vocabularyRepo.GetAllVocabulariesByTopicID(ctx, topicID)
 	if err != nil {
 		return nil, err
 	}
-
+	for vi := range vocabularies {
+		uc.populateMediaUrlsForVocabulary(ctx, &vocabularies[vi])
+	}
 	appLanguage := helper.GetAppLanguage(ctx, 1)
-	uc.populateMediaUrlsForVocabulary(ctx, vocabulary)
-	return mapper.ToVocabularyResponse4Gw(vocabulary, appLanguage), nil
+	res := mapper.ToVocabulariesResponse4Gw(vocabularies, appLanguage)
+	return res, nil
 }

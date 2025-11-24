@@ -10,7 +10,7 @@ import (
 type VocabularyService interface {
 	UploadVocabulary(ctx context.Context, req request.UploadVocabularyRequest) error
 	GetVocabularies4Web(ctx context.Context, topicID string) ([]*response.VocabularyResponse4Web, error)
-	GetVocabulary4Gw(ctx context.Context, vocabularyID string) (*response.VocabularyResponse4Gw, error)
+	GetVocabularies4Gw(ctx context.Context, topicID string) ([]*response.VocabularyResponse4Gw, error)
 }
 
 type vocabularyService struct {
@@ -33,6 +33,6 @@ func (s *vocabularyService) GetVocabularies4Web(ctx context.Context, topicID str
 	return s.getVocabularyWebUseCase.GetVocabularies4Web(ctx, topicID)
 }
 
-func (s *vocabularyService) GetVocabulary4Gw(ctx context.Context, vocabularyID string) (*response.VocabularyResponse4Gw, error) {
-	return s.getVocabularyWebUseCase.GetVocabulary4Gw(ctx, vocabularyID)
+func (s *vocabularyService) GetVocabularies4Gw(ctx context.Context, topicID string) ([]*response.VocabularyResponse4Gw, error) {
+	return s.getVocabularyWebUseCase.GetVocabularies4Gw(ctx, topicID)
 }

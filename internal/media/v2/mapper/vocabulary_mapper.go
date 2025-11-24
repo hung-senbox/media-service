@@ -122,26 +122,43 @@ func ToVocabulariesResponses4App(vocabularies []*model.Vocabulary, appLanguage u
 	return res
 }
 
-func ToVocabularyResponse4Gw(vocabulary *model.Vocabulary, appLanguage uint) *response.VocabularyResponse4Gw {
-	if vocabulary == nil {
-		return nil
-	}
+func ToVocabulariesResponse4Gw(vocabularies []model.Vocabulary, appLanguage uint) []*response.VocabularyResponse4Gw {
+	var res = make([]*response.VocabularyResponse4Gw, 0)
 
-	langConfig := vocabulary.LanguageConfig[appLanguage]
-
-	mainImageUrl := ""
-	if len(langConfig.Images) > 0 {
-		for _, img := range langConfig.Images {
-			if img.ImageType == string(constants.TopicImageTypeBM) {
-				mainImageUrl = img.UploadedUrl
+	for _, v := range vocabularies {
+		// is published = false
+		if !v.IsPublished {
+			continue
+		}
+		// chọn language config
+		var langConfig *model.VocabularyLanguageConfig
+		for _, lc := range v.LanguageConfig {
+			if lc.LanguageID == appLanguage {
+				langConfig = &lc
 				break
 			}
 		}
+
+		if langConfig == nil {
+			continue
+		}
+
+		mainImageUrl := ""
+		if len(langConfig.Images) > 0 {
+			for _, img := range langConfig.Images {
+				if img.ImageType == string(constants.TopicImageTypeBM) {
+					mainImageUrl = img.UploadedUrl
+					break
+				}
+			}
+		}
+
+		res = append(res, &response.VocabularyResponse4Gw{
+			ID:           v.ID.Hex(),
+			Title:        langConfig.Title,
+			MainImageUrl: mainImageUrl,
+		})
 	}
 
-	return &response.VocabularyResponse4Gw{
-		ID:           vocabulary.ID.Hex(),
-		Title:        langConfig.Title,
-		MainImageUrl: mainImageUrl,
-	}
+	return res
 }

@@ -49,5 +49,5 @@ func RegisterTopicRoutes(app *fiber.App, hv2 *handler.TopicHandler, hv *handler.
 	topicsGateway.Get("/:topic_id", hv2.GetTopic4Gw)
 	topicsGateway.Get("/student/:student_id", hv2.GetTopics4Student4Gw)
 
-	vocabularyGateway.Get("/:vocabulary_id", hv.GetVocabulary4Gw)
+	vocabularyGateway.Get("", hv.GetVocabularies4Gw)
 }
