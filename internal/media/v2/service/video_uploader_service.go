@@ -57,6 +57,7 @@ func (s *videoUploaderService) UploadVideoUploader(ctx context.Context, req requ
 		}
 		existing.IsVisible = req.IsVisible
 		existing.Title = req.Title
+		existing.WikiCode = req.WikiCode
 		existing.UpdatedAt = time.Now()
 		videoUploader = existing
 	} else {
@@ -64,6 +65,7 @@ func (s *videoUploaderService) UploadVideoUploader(ctx context.Context, req requ
 			CreatedBy:      currentUser.ID,
 			IsVisible:      req.IsVisible,
 			Title:          req.Title,
+			WikiCode:       req.WikiCode,
 			LanguageConfig: make([]model.VideoUploaderLanguageConfig, 0),
 			CreatedAt:      time.Now(),
 			UpdatedAt:      time.Now(),

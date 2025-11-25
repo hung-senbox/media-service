@@ -61,6 +61,7 @@ func (r *videoUploaderRepository) SetVideoUploader(ctx context.Context, videoUpl
 		"$set": bson.M{
 			"is_visible":      videoUploader.IsVisible,
 			"title":           videoUploader.Title,
+			"wiki_code":       videoUploader.WikiCode,
 			"language_config": videoUploader.LanguageConfig,
 			"updated_at":      time.Now(),
 		},

@@ -11,6 +11,7 @@ type VideoUploader struct {
 	CreatedBy      string                        `bson:"created_by" json:"created_by"`
 	IsVisible      bool                          `bson:"is_visible" json:"is_visible"`
 	Title          string                        `bson:"title" json:"title"`
+	WikiCode       string                        `bson:"wiki_code" json:"wiki_code"`
 	LanguageConfig []VideoUploaderLanguageConfig `bson:"language_config" json:"language_config"`
 	CreatedAt      time.Time                     `bson:"created_at" json:"created_at"`
 	UpdatedAt      time.Time                     `bson:"updated_at" json:"updated_at"`

@@ -24,6 +24,7 @@ func (h *VideoUploaderHandler) UploadVideoUploader(c *fiber.Ctx) error {
 	req := request.UploadVideoUploaderRequest{
 		VideoFolderID:         c.FormValue("video_folder_id"),
 		Title:                 c.FormValue("title"),
+		WikiCode:              c.FormValue("wiki_code"),
 		Note:                  c.FormValue("note"),
 		Transcript:            c.FormValue("transcript"),
 		IsVisible:             c.FormValue("is_visible") == "true",

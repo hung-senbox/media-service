@@ -9,6 +9,7 @@ type GetVideoUploaderResponse4Web struct {
 	IsVisible        bool      `json:"is_visible"`
 	CreatedByName    string    `json:"created_by_name"`
 	Title            string    `json:"title"`
+	WikiCode         string    `json:"wiki_code"`
 	VideoUrl         string    `json:"video_url"`
 	ImagePreviewUrl  string    `json:"image_preview_url"`
 	Note             string    `json:"note"`
@@ -20,6 +21,7 @@ type GetDetailVideo4WebResponse struct {
 	ID            string                            `json:"id"`
 	IsVisible     bool                              `json:"is_visible"`
 	Title         string                            `json:"title"`
+	WikiCode      string                            `json:"wiki_code"`
 	CreatedByName string                            `json:"created_by_name"`
 	MessageLangs  []DetailVideoMessageLanguageEntry `json:"message_languages"`
 	CreatedAt     time.Time                         `json:"created_at"`
