@@ -211,7 +211,7 @@ func (s *videoUploaderService) GetVideosUploader4Web(ctx context.Context, langua
 	if langStr := strings.TrimSpace(languageID); langStr != "" {
 		var langID uint
 		if _, scanErr := fmt.Sscan(langStr, &langID); scanErr == nil && langID > 0 {
-			videoUploaders, err = s.videoUploaderRepository.GetVideosByLanguageID(ctx, langID)
+			videoUploaders, err = s.videoUploaderRepository.GetAllVideos(ctx)
 			if err != nil {
 				return nil, err
 			}
