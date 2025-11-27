@@ -27,6 +27,7 @@ type VideoUploaderService interface {
 	DeleteVideoUploader(ctx context.Context, videoUploaderID string) error
 	GetVideo4Web(ctx context.Context, videoUploaderID string) (*response.GetDetailVideo4WebResponse, error)
 	GetVideosByWikiCode4Web(ctx context.Context, wikiCode string, languageID uint) ([]response.GetVideosByWikiCode4WebResponse, error)
+	GetVideo4Gw(ctx context.Context, videoUploaderID string, languageID uint) (*response.GetVideo4GwResponse, error)
 }
 
 type videoUploaderService struct {
@@ -351,6 +352,9 @@ func (s *videoUploaderService) GetVideosByWikiCode4Web(ctx context.Context, wiki
 	}
 	var result []response.GetVideosByWikiCode4WebResponse
 	for _, videoUploader := range videoUploaders {
+		if !videoUploader.IsVisible {
+			continue
+		}
 		if len(videoUploader.LanguageConfig) == 0 {
 			continue
 		}
@@ -375,4 +379,12 @@ func (s *videoUploaderService) GetVideosByWikiCode4Web(ctx context.Context, wiki
 		})
 	}
 	return result, nil
+}
+
+func (s *videoUploaderService) GetVideo4Gw(ctx context.Context, videoUploaderID string, languageID uint) (*response.GetVideo4GwResponse, error) {
+	videoUploader, err := s.videoUploaderRepository.GetVideoUploaderByID(ctx, videoUploaderID)
+	if err != nil {
+		return nil, err
+	}
+	return mapper.ToVideo4GwResponse(videoUploader, languageID), nil
 }

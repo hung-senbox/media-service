@@ -49,3 +49,12 @@ type GetVideosByWikiCode4WebResponse struct {
 	ImagePreviewUrl string    `json:"image_preview_url"`
 	CreatedAt       time.Time `json:"created_at"`
 }
+
+type GetVideo4GwResponse struct {
+	ID              string    `json:"id"`
+	Title           string    `json:"title"`
+	WikiCode        string    `json:"wiki_code"`
+	VideoUrl        string    `json:"video_url"`
+	ImagePreviewUrl string    `json:"image_preview_url"`
+	CreatedAt       time.Time `json:"created_at"`
+}

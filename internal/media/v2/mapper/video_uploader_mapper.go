@@ -70,3 +70,24 @@ func ToGetDetailVideo4WebResponse(videoUploader *model.VideoUploader) *response.
 		CreatedAt:     videoUploader.CreatedAt,
 	}
 }
+
+func ToVideo4GwResponse(videoUploader *model.VideoUploader, languageID uint) *response.GetVideo4GwResponse {
+	videoUrl := ""
+	imagePreviewUrl := ""
+	if languageID != 0 {
+		for _, cfg := range videoUploader.LanguageConfig {
+			if cfg.LanguageID == languageID {
+				videoUrl = cfg.VideoPublicUrl
+				imagePreviewUrl = cfg.ImagePreviewPublicUrl
+			}
+		}
+	}
+	return &response.GetVideo4GwResponse{
+		ID:              videoUploader.ID.Hex(),
+		Title:           videoUploader.Title,
+		WikiCode:        videoUploader.WikiCode,
+		VideoUrl:        videoUrl,
+		ImagePreviewUrl: imagePreviewUrl,
+		CreatedAt:       videoUploader.CreatedAt,
+	}
+}
