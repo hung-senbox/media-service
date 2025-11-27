@@ -13,7 +13,7 @@ type UserResourceRepository interface {
 	CreateResource(ctx context.Context, pdf *model.UserResource) error
 	GetResourceByID(ctx context.Context, id primitive.ObjectID) (*model.UserResource, error)
 	GetSelfResources(ctx context.Context, ownerID string) ([]*model.UserResource, error)
-	GetRelatedResources(ctx context.Context, ownerID string) ([]*model.UserResource, error)
+	GetRelatedResources(ctx context.Context, ownerID, studentID string) ([]*model.UserResource, error)
 	GetStudentResources(ctx context.Context, studentIDs []string) ([]*model.UserResource, error)
 	UpdateResourceByID(ctx context.Context, id primitive.ObjectID, pdf *model.UserResource) error
 	UpdateResourceFields(ctx context.Context, id primitive.ObjectID, updateFields bson.M) error
@@ -75,13 +75,17 @@ func (p *userResourceRepository) GetSelfResources(ctx context.Context, ownerID s
 	return resources, nil
 }
 
-func (p *userResourceRepository) GetRelatedResources(ctx context.Context, ownerID string) ([]*model.UserResource, error) {
+func (p *userResourceRepository) GetRelatedResources(ctx context.Context, ownerID, studentID string) ([]*model.UserResource, error) {
 
 	var resources []*model.UserResource
 
 	filter := bson.M{
 		"uploader_id.owner_id": ownerID,
 		"target_id.owner_id":   bson.M{"$exists": true},
+	}
+
+	if studentID != "" {
+		filter["target_id.owner_id"] = studentID
 	}
 
 	cursor, err := p.UserResourceCollection.Find(ctx, filter)

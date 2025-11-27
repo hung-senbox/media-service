@@ -49,7 +49,9 @@ func (h *UserResourceHandler) GetResources(c *fiber.Ctx) error {
 		return helper.SendError(c, http.StatusBadRequest, fmt.Errorf("organization_id is required"), helper.ErrInvalidRequest)
 	}
 
-	res, err := h.userResourceService.GetResources(c.UserContext(), role, orgID)
+	studentID := c.Query("student_id")
+
+	res, err := h.userResourceService.GetResources(c.UserContext(), role, orgID, studentID)
 	if err != nil {
 		return helper.SendError(c, http.StatusInternalServerError, err, helper.ErrInvalidOperation)
 	}

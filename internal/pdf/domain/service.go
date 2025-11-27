@@ -17,7 +17,7 @@ import (
 
 type UserResourceService interface {
 	CreateResource(ctx context.Context, req dto.CreateResourceRequest) (string, error)
-	GetResources(ctx context.Context, role, organizationID string) (*dto.GroupedResourceResponse, error)
+	GetResources(ctx context.Context, role, organizationID, studentID string) (*dto.GroupedResourceResponse, error)
 	UploadDocumentToResource(ctx context.Context, id string, req dto.UpdateResourceRequest) (string, error)
 	UploadSignatureToResource(ctx context.Context, id string, req dto.UploadSignatureRequest) (string, error)
 	UpdateResourceStatus(ctx context.Context, id string, req dto.UpdateResourceStatusRequest) error
@@ -138,7 +138,7 @@ func (s *userResourceService) CreateResource(ctx context.Context, req dto.Create
 
 }
 
-func (s *userResourceService) GetResources(ctx context.Context, role, organizationID string) (*dto.GroupedResourceResponse, error) {
+func (s *userResourceService) GetResources(ctx context.Context, role, organizationID, studentID string) (*dto.GroupedResourceResponse, error) {
 
 	if role == "" {
 		return nil, fmt.Errorf("role cannot be empty")
@@ -157,14 +157,14 @@ func (s *userResourceService) GetResources(ctx context.Context, role, organizati
 			return nil, err
 		}
 		selfResources, _ = s.UserResourceRepository.GetSelfResources(ctx, teacher.ID)
-		relatedResources, _ = s.UserResourceRepository.GetRelatedResources(ctx, teacher.ID)
+		relatedResources, _ = s.UserResourceRepository.GetRelatedResources(ctx, teacher.ID, studentID)
 	case "staff":
 		staff, err := s.userGateway.GetStaffByUserAndOrganization(ctx, helper.GetUserID(ctx), organizationID)
 		if err != nil {
 			return nil, err
 		}
 		selfResources, _ = s.UserResourceRepository.GetSelfResources(ctx, staff.ID)
-		relatedResources, _ = s.UserResourceRepository.GetRelatedResources(ctx, staff.ID)
+		relatedResources, _ = s.UserResourceRepository.GetRelatedResources(ctx, staff.ID, "")
 	case "parent":
 		parent, err := s.userGateway.GetParentByUser(ctx, helper.GetUserID(ctx))
 		if err != nil {
@@ -181,8 +181,9 @@ func (s *userResourceService) GetResources(ctx context.Context, role, organizati
 		}
 		studentResources, _ = s.UserResourceRepository.GetStudentResources(ctx, studentIDs)
 		selfResources, _ = s.UserResourceRepository.GetSelfResources(ctx, parent.ID)
-		relatedResources, _ = s.UserResourceRepository.GetRelatedResources(ctx, parent.ID)
-		relatedResources = append(relatedResources, studentResources...)
+		relatedResources = studentResources
+		// relatedResources, _ = s.UserResourceRepository.GetRelatedResources(ctx, parent.ID, studentID)
+		// relatedResources = append(relatedResources, studentResources...)
 
 	default:
 		return nil, fmt.Errorf("unsupported role: %s", role)
