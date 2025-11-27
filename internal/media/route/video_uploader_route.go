@@ -23,9 +23,10 @@ func RegisterVideoUploaderRoutes(app *fiber.App, h *handler.VideoUploaderHandler
 	videoUploaderAdmin.Get("/wiki_code/:wiki_code", h.GetVideosByWikiCode4Web)
 
 	// gateway routes
-	gatewayGroup := app.Group("/api/v2/gateway")
+	gatewayGroup := app.Group("/api/v1/gateway")
 	gatewayGroup.Use(middleware.Secured(userGw))
+	uploadGateway := gatewayGroup.Group("/upload")
+	videoUploaderGateway := uploadGateway.Group("/video_folders")
 
-	videoUploaderGateway := gatewayGroup.Group("/video_uploaders")
-	videoUploaderGateway.Get("/:video_uploader_id", h.GetVideo4Web)
+	videoUploaderGateway.Get("/:video_uploader_id", h.GetVideo4Gw)
 }

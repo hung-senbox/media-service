@@ -141,3 +141,23 @@ func (h *VideoUploaderHandler) GetVideosByWikiCode4Web(c *fiber.Ctx) error {
 	}
 	return helper.SendSuccess(c, http.StatusOK, "get videos by wiki code success", res)
 }
+
+func (h *VideoUploaderHandler) GetVideo4Gw(c *fiber.Ctx) error {
+	videoUploaderID := c.Params("video_uploader_id")
+	if videoUploaderID == "" {
+		return helper.SendError(c, http.StatusBadRequest, nil, helper.ErrInvalidRequest)
+	}
+	languageID := c.Query("language_id")
+	if languageID == "" {
+		return helper.SendError(c, http.StatusBadRequest, nil, helper.ErrInvalidRequest)
+	}
+	var langID uint
+	if _, err := fmt.Sscanf(languageID, "%d", &langID); err != nil {
+		return helper.SendError(c, http.StatusBadRequest, err, helper.ErrInvalidRequest)
+	}
+	res, err := h.service.GetVideo4Gw(c.UserContext(), videoUploaderID, langID)
+	if err != nil {
+		return helper.SendError(c, http.StatusInternalServerError, err, helper.ErrInvalidOperation)
+	}
+	return helper.SendSuccess(c, http.StatusOK, "get video success", res)
+}
