@@ -14,7 +14,7 @@ import (
 )
 
 type UserGateway interface {
-	GetUserByID(ctx context.Context, userID string) (*response.UserInfoResponse, error)
+	GetUserInfo(ctx context.Context, userID string) (*response.UserInfoResponse, error)
 	GetCurrentUser(ctx context.Context) (*response.CurrentUser, error)
 	GetUserByTeacher(ctx context.Context, teacherID string) (*response.CurrentUser, error)
 	GetStudentInfo(ctx context.Context, studentID string) (*response.StudentResponse, error)
@@ -87,7 +87,7 @@ func (g *userGatewayImpl) GetCurrentUser(ctx context.Context) (*response.Current
 }
 
 // Get User by id
-func (g *userGatewayImpl) GetUserByID(ctx context.Context, userID string) (*response.UserInfoResponse, error) {
+func (g *userGatewayImpl) GetUserInfo(ctx context.Context, userID string) (*response.UserInfoResponse, error) {
 	token, ok := ctx.Value(constants.Token).(string)
 	if !ok {
 		return nil, fmt.Errorf("token not found in context")
