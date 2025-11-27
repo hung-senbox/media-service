@@ -120,3 +120,15 @@ func (h *VideoUploaderHandler) GetVideo4Web(c *fiber.Ctx) error {
 	}
 	return helper.SendSuccess(c, http.StatusOK, "get video success", res)
 }
+
+func (h *VideoUploaderHandler) GetVideosByWikiCode4Web(c *fiber.Ctx) error {
+	wikiCode := c.Params("wiki_code")
+	if wikiCode == "" {
+		return helper.SendError(c, http.StatusBadRequest, nil, helper.ErrInvalidRequest)
+	}
+	res, err := h.service.GetVideosByWikiCode4Web(c.UserContext(), wikiCode)
+	if err != nil {
+		return helper.SendError(c, http.StatusInternalServerError, err, helper.ErrInvalidOperation)
+	}
+	return helper.SendSuccess(c, http.StatusOK, "get videos by wiki code success", res)
+}

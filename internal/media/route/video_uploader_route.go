@@ -20,4 +20,5 @@ func RegisterVideoUploaderRoutes(app *fiber.App, h *handler.VideoUploaderHandler
 	videoUploaderAdmin.Get("", h.GetVideosUploader4Web)
 	videoUploaderAdmin.Delete("/:video_uploader_id", h.DeleteVideoUploader)
 	videoUploaderAdmin.Get("/:video_uploader_id", h.GetVideo4Web)
+	videoUploaderAdmin.Get("/wiki_code/:wiki_code", h.GetVideosByWikiCode4Web)
 }

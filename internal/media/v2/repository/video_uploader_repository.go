@@ -23,6 +23,7 @@ type VideoUploaderRepository interface {
 	DeleteVideoUploader(ctx context.Context, videoUploaderID string) error
 	DeleteVideoMetadata(ctx context.Context, videoUploaderID string, languageID uint) error
 	DeleteImagePreviewMetadata(ctx context.Context, videoUploaderID string, languageID uint) error
+	GetVideosByWikiCode(ctx context.Context, wikiCode string) ([]model.VideoUploader, error)
 }
 
 type videoUploaderRepository struct {
@@ -210,4 +211,17 @@ func (r *videoUploaderRepository) DeleteImagePreviewMetadata(ctx context.Context
 		return fmt.Errorf("failed to delete image preview metadata: %w", err)
 	}
 	return nil
+}
+
+func (r *videoUploaderRepository) GetVideosByWikiCode(ctx context.Context, wikiCode string) ([]model.VideoUploader, error) {
+	var videoUploaders []model.VideoUploader
+	cursor, err := r.videoUploaderCollection.Find(ctx, bson.M{"wiki_code": wikiCode})
+	if err != nil {
+		return nil, fmt.Errorf("failed to get videos by wiki code: %w", err)
+	}
+	err = cursor.All(ctx, &videoUploaders)
+	if err != nil {
+		return nil, fmt.Errorf("failed to decode videos by wiki code: %w", err)
+	}
+	return videoUploaders, nil
 }

@@ -1,6 +1,9 @@
 package response
 
-import "time"
+import (
+	"media-service/internal/media/model"
+	"time"
+)
 
 type GetVideoUploaderResponse4Web struct {
 	ID               string    `json:"id"`
@@ -37,4 +40,12 @@ type DetailVideoLanguageContents struct {
 	Transcript      string `json:"transcript"`
 	VideoUrl        string `json:"video_url"`
 	ImagePreviewUrl string `json:"image_preview_url"`
+}
+
+type GetVideosByWikiCode4WebResponse struct {
+	ID             string                              `json:"id"`
+	Title          string                              `json:"title"`
+	WikiCode       string                              `json:"wiki_code"`
+	LanguageConfig []model.VideoUploaderLanguageConfig `json:"language_config"`
+	CreatedAt      time.Time                           `json:"created_at"`
 }
