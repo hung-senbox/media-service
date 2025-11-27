@@ -1,6 +1,7 @@
 package handler
 
 import (
+	"fmt"
 	"media-service/helper"
 	"media-service/internal/media/v2/dto/request"
 	"media-service/internal/media/v2/service"
@@ -126,7 +127,15 @@ func (h *VideoUploaderHandler) GetVideosByWikiCode4Web(c *fiber.Ctx) error {
 	if wikiCode == "" {
 		return helper.SendError(c, http.StatusBadRequest, nil, helper.ErrInvalidRequest)
 	}
-	res, err := h.service.GetVideosByWikiCode4Web(c.UserContext(), wikiCode)
+	languageID := c.Query("language_id")
+	if languageID == "" {
+		return helper.SendError(c, http.StatusBadRequest, nil, helper.ErrInvalidRequest)
+	}
+	var langID uint
+	if _, err := fmt.Sscanf(languageID, "%d", &langID); err != nil {
+		return helper.SendError(c, http.StatusBadRequest, err, helper.ErrInvalidRequest)
+	}
+	res, err := h.service.GetVideosByWikiCode4Web(c.UserContext(), wikiCode, langID)
 	if err != nil {
 		return helper.SendError(c, http.StatusInternalServerError, err, helper.ErrInvalidOperation)
 	}

@@ -26,7 +26,7 @@ type VideoUploaderService interface {
 	GetVideosUploader4Web(ctx context.Context, languageID string, title string, sortBy []request.GetVideoUploaderSortBy) ([]response.GetVideoUploaderResponse4Web, error)
 	DeleteVideoUploader(ctx context.Context, videoUploaderID string) error
 	GetVideo4Web(ctx context.Context, videoUploaderID string) (*response.GetDetailVideo4WebResponse, error)
-	GetVideosByWikiCode4Web(ctx context.Context, wikiCode string) ([]response.GetVideosByWikiCode4WebResponse, error)
+	GetVideosByWikiCode4Web(ctx context.Context, wikiCode string, languageID uint) ([]response.GetVideosByWikiCode4WebResponse, error)
 }
 
 type videoUploaderService struct {
@@ -344,19 +344,34 @@ func (s *videoUploaderService) GetVideo4Web(ctx context.Context, videoUploaderID
 	return mapper.ToGetDetailVideo4WebResponse(videoUploader), nil
 }
 
-func (s *videoUploaderService) GetVideosByWikiCode4Web(ctx context.Context, wikiCode string) ([]response.GetVideosByWikiCode4WebResponse, error) {
+func (s *videoUploaderService) GetVideosByWikiCode4Web(ctx context.Context, wikiCode string, languageID uint) ([]response.GetVideosByWikiCode4WebResponse, error) {
 	videoUploaders, err := s.videoUploaderRepository.GetVideosByWikiCode(ctx, wikiCode)
 	if err != nil {
 		return nil, err
 	}
 	var result []response.GetVideosByWikiCode4WebResponse
 	for _, videoUploader := range videoUploaders {
+		if len(videoUploader.LanguageConfig) == 0 {
+			continue
+		}
+
+		videoUrl := ""
+		imagePreviewUrl := ""
+		if languageID != 0 {
+			for _, cfg := range videoUploader.LanguageConfig {
+				if cfg.LanguageID == languageID {
+					videoUrl = cfg.VideoPublicUrl
+					imagePreviewUrl = cfg.ImagePreviewPublicUrl
+				}
+			}
+		}
 		result = append(result, response.GetVideosByWikiCode4WebResponse{
-			ID:             videoUploader.ID.Hex(),
-			Title:          videoUploader.Title,
-			WikiCode:       videoUploader.WikiCode,
-			LanguageConfig: videoUploader.LanguageConfig,
-			CreatedAt:      videoUploader.CreatedAt,
+			ID:              videoUploader.ID.Hex(),
+			Title:           videoUploader.Title,
+			WikiCode:        videoUploader.WikiCode,
+			VideoUrl:        videoUrl,
+			ImagePreviewUrl: imagePreviewUrl,
+			CreatedAt:       videoUploader.CreatedAt,
 		})
 	}
 	return result, nil
