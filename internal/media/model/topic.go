@@ -42,6 +42,7 @@ type TopicLanguageConfig struct {
 
 type Topic struct {
 	ID             primitive.ObjectID    `json:"id" bson:"_id"`
+	IsAllPic       bool                  `json:"is_all_pic" bson:"is_all_pic"`
 	ParentID       string                `json:"parent_id" bson:"parent_id"`
 	OrganizationID string                `json:"organization_id" bson:"organization_id"`
 	IsPublished    bool                  `json:"is_published" bson:"is_published"`

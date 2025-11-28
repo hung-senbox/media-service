@@ -44,9 +44,24 @@ func (uc *getTopicResourcesWebUseCase) GetTopicResourcesByTopicAndStudent4Web(ct
 	if currentUser.IsSuperAdmin || currentUser.OrganizationAdmin.ID == "" {
 		return nil, fmt.Errorf("access denied")
 	}
-	topicResources, err := uc.topicResourceRepository.GetTopicResouresByTopicAndStudent(ctx, topicID, studentID)
-	if err != nil {
-		return nil, err
+	// get topic de kiem tra isAllPic
+	topic, _ := uc.topicRepository.GetByID(ctx, topicID)
+	if topic == nil {
+		return nil, fmt.Errorf("topic not found")
+	}
+	var topicResources []*model.TopicResource
+	if topic.IsAllPic {
+		resources, err := uc.topicResourceRepository.GetTopicResouresByStudentID(ctx, studentID)
+		if err != nil {
+			return nil, err
+		}
+		topicResources = resources
+	} else {
+		resources, err := uc.topicResourceRepository.GetTopicResouresByTopicAndStudent(ctx, topicID, studentID)
+		if err != nil {
+			return nil, err
+		}
+		topicResources = resources
 	}
 
 	result := make([]*response.GetTopicResourcesResponse4Web, 0, len(topicResources))
