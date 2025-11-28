@@ -48,7 +48,7 @@ func SetupRouter(app *fiber.App, consulClient *api.Client, cacheClientRedis *cac
 	getTopicGatewayUseCasev2 := usecase.NewGetTopicGatewayUseCase(topicRepov2, userGateway, s3svc.NewFromConfig())
 	getUploadProgressUseCasev2 := usecase.NewGetUploadProgressUseCase(topicRepov2, redisService)
 	deleteTopicFileUseCasev2 := usecase.NewDeleteTopicFileUseCase(topicRepov2, s3svc.NewFromConfig())
-	getTopicResourcesWebUseCasev2 := usecase.NewGetTopicResourcesWebUseCase(topicResourceRepov2, s3svc.NewFromConfig())
+	getTopicResourcesWebUseCasev2 := usecase.NewGetTopicResourcesWebUseCase(topicResourceRepov2, topicRepov2, s3svc.NewFromConfig())
 	getTopicResourceAppUseCasev2 := usecase.NewGetTopicResourceAppUseCase(topicRepov2, topicResourceRepov2, s3svc.NewFromConfig())
 	uploadVocabularyUseCase := usecase.NewUploadVocabularyUseCase(topicRepov2, vocabularyRepo, s3svc.NewFromConfig())
 	getVocabularyWebUseCase := usecase.NewGetVocabularyWebUseCase(vocabularyRepo, s3svc.NewFromConfig())

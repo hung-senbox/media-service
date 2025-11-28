@@ -389,3 +389,71 @@ func ToTopicResponse4App(t *model.Topic, appLanguage uint) *response.GetTopicRes
 		MainImageUrl: mainImageUrl,
 	}
 }
+
+func ToTopicResponse2Assign4Web(t *model.Topic, languageID uint) *response.TopicResponse2Assign4Web {
+	if t == nil {
+		return nil
+	}
+
+	var langConfig *model.TopicLanguageConfig
+	for _, lc := range t.LanguageConfig {
+		if lc.LanguageID == languageID {
+			langConfig = &lc
+			break
+		}
+	}
+	if langConfig == nil {
+		return nil
+	}
+
+	mainImageUrl := ""
+	if len(langConfig.Images) > 0 {
+		for _, img := range langConfig.Images {
+			if img.ImageType == string(constants.TopicImageTypeBM) {
+				mainImageUrl = img.UploadedUrl
+				break
+			}
+		}
+	}
+
+	return &response.TopicResponse2Assign4Web{
+		ID:           t.ID.Hex(),
+		Title:        langConfig.Title,
+		MainImageUrl: mainImageUrl,
+		VideoUrl:     langConfig.Video.UploadedUrl,
+	}
+}
+
+func ToTopicResponse(t *model.Topic, languageID uint) *response.TopicResponse {
+	if t == nil {
+		return nil
+	}
+
+	var langConfig *model.TopicLanguageConfig
+	for _, lc := range t.LanguageConfig {
+		if lc.LanguageID == languageID {
+			langConfig = &lc
+			break
+		}
+	}
+	if langConfig == nil {
+		return nil
+	}
+
+	mainImageUrl := ""
+	if len(langConfig.Images) > 0 {
+		for _, img := range langConfig.Images {
+			if img.ImageType == string(constants.TopicImageTypeBM) {
+				mainImageUrl = img.UploadedUrl
+				break
+			}
+		}
+	}
+
+	return &response.TopicResponse{
+		ID:           t.ID.Hex(),
+		Title:        langConfig.Title,
+		MainImageUrl: mainImageUrl,
+		VideoUrl:     langConfig.Video.UploadedUrl,
+	}
+}

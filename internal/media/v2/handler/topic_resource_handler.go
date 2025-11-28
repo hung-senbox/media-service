@@ -242,3 +242,15 @@ func (h *TopicResourceHandler) OffOutputTopicResource(c *fiber.Ctx) error {
 	}
 	return helper.SendSuccess(c, http.StatusOK, "off output topic resource success", nil)
 }
+
+func (h *TopicResourceHandler) GetTopicResourcesByStudent4Web(c *fiber.Ctx) error {
+	studentID := c.Params("student_id")
+	if studentID == "" {
+		return helper.SendError(c, http.StatusBadRequest, nil, helper.ErrInvalidRequest)
+	}
+	res, err := h.topicResourceService.GetTopicResourcesByStudent4Web(c.UserContext(), studentID)
+	if err != nil {
+		return helper.SendError(c, http.StatusInternalServerError, err, helper.ErrInvalidOperation)
+	}
+	return helper.SendSuccess(c, http.StatusOK, "get topic resources success", res)
+}

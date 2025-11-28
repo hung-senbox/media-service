@@ -20,6 +20,8 @@ type TopicResourceRepository interface {
 	GetTopicResouresByStudentID(ctx context.Context, studentID string) ([]*model.TopicResource, error)
 	GetTopicResouresByTopicAndStudent(ctx context.Context, topicID, studentID string) ([]*model.TopicResource, error)
 	SetOutputTopicResource(ctx context.Context, topicResourceID string) error
+	GetTopicResourcesByStudent(ctx context.Context, studentID string) ([]*model.TopicResource, error)
+	GetTopicResouresByStudentIDAndTopicID(ctx context.Context, studentID, topicID string) ([]*model.TopicResource, error)
 }
 
 type topicResourceRepository struct {
@@ -140,4 +142,37 @@ func (r *topicResourceRepository) SetOutputTopicResource(ctx context.Context, to
 	}
 	_, err = r.topicResourceCollection.UpdateOne(ctx, bson.M{"_id": objectID}, bson.M{"$set": bson.M{"is_output": true}})
 	return err
+}
+
+func (r *topicResourceRepository) GetTopicResourcesByStudent(ctx context.Context, studentID string) ([]*model.TopicResource, error) {
+	var result []*model.TopicResource
+	filter := bson.M{
+		"student_id": studentID,
+	}
+	cursor, err := r.topicResourceCollection.Find(ctx, filter)
+	if err != nil {
+		return nil, err
+	}
+	err = cursor.All(ctx, &result)
+	if err != nil {
+		return nil, err
+	}
+	return result, nil
+}
+
+func (r *topicResourceRepository) GetTopicResouresByStudentIDAndTopicID(ctx context.Context, studentID, topicID string) ([]*model.TopicResource, error) {
+	var result []*model.TopicResource
+	filter := bson.M{
+		"student_id": studentID,
+		"topic_id":   topicID,
+	}
+	cursor, err := r.topicResourceCollection.Find(ctx, filter)
+	if err != nil {
+		return nil, err
+	}
+	err = cursor.All(ctx, &result)
+	if err != nil {
+		return nil, err
+	}
+	return result, nil
 }

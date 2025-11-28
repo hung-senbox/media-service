@@ -31,6 +31,7 @@ type TopicResourceService interface {
 	GetOutputResources4Web(ctx context.Context, topicID, studentID string) ([]*response.GetTopicResourcesResponse4Web, error)
 	GetOutputResources4App(ctx context.Context, studentID string, day, month, year int, topicID string) ([]*response.GetTopicResourcesResponse4App, error)
 	OffOutputTopicResource(ctx context.Context, topicResourceID string) error
+	GetTopicResourcesByStudent4Web(ctx context.Context, studentID string) ([]*response.GetTopicResourcesResponseByStudent4Web, error)
 }
 
 type topicResourceService struct {
@@ -313,4 +314,8 @@ func (s *topicResourceService) OffOutputTopicResource(ctx context.Context, topic
 	}
 
 	return nil
+}
+
+func (s *topicResourceService) GetTopicResourcesByStudent4Web(ctx context.Context, studentID string) ([]*response.GetTopicResourcesResponseByStudent4Web, error) {
+	return s.getTopicResourcesWebUseCase.GetTopicResourcesByStudent4Web(ctx, studentID)
 }

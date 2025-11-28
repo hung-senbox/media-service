@@ -9,6 +9,7 @@ import (
 	"media-service/internal/media/v2/dto/response"
 	"media-service/internal/media/v2/repository"
 	"media-service/internal/s3"
+	"time"
 )
 
 func ToGetTopicResourceResponses(
@@ -158,14 +159,17 @@ func ToGetTopicResourcesResponse4Web(
 	ctx context.Context,
 	topicResources *model.TopicResource,
 	resourceImageUrl string,
+	topic *response.TopicResponse2Assign4Web,
 ) *response.GetTopicResourcesResponse4Web {
 
+	loc := time.FixedZone("GMT+7", 7*60*60)
 	return &response.GetTopicResourcesResponse4Web{
 		ID:        topicResources.ID.Hex(),
 		FileName:  topicResources.FileName,
 		ImageUrl:  resourceImageUrl,
 		CreatedAt: topicResources.CreatedAt,
-		PicID:     topicResources.CreatedAt.Format("02 Jan 2006 15:04"),
+		PicID:     topicResources.CreatedAt.In(loc).Format("02 Jan 2006 15:04"),
+		Topic:     topic,
 	}
 }
 

@@ -16,12 +16,21 @@ type GetTopicResourceResponse struct {
 	UpdatedAt time.Time                 `json:"updated_at"`
 }
 
-type GetTopicResourcesResponse4Web struct {
+type TopicResourceResponse struct {
 	ID        string    `json:"id"`
 	FileName  string    `json:"file_name"`
 	ImageUrl  string    `json:"image_url"`
 	CreatedAt time.Time `json:"created_at"`
 	PicID     string    `json:"pic_id"`
+}
+
+type GetTopicResourcesResponse4Web struct {
+	ID        string                    `json:"id"`
+	FileName  string                    `json:"file_name"`
+	ImageUrl  string                    `json:"image_url"`
+	CreatedAt time.Time                 `json:"created_at"`
+	PicID     string                    `json:"pic_id"`
+	Topic     *TopicResponse2Assign4Web `json:"topic"`
 }
 
 type GetTopicResourcesResponse4App struct {
@@ -31,4 +40,9 @@ type GetTopicResourcesResponse4App struct {
 	CreatedAt time.Time            `json:"created_at"`
 	PicID     string               `json:"pic_id"`
 	Topic     GetTopicResponse4App `json:"topic"`
+}
+
+type GetTopicResourcesResponseByStudent4Web struct {
+	Topic     *TopicResponse           `json:"topic"`
+	Resources []*TopicResourceResponse `json:"resources"`
 }
