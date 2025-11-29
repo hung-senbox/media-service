@@ -4,10 +4,22 @@ import (
 	"media-service/internal/media/model"
 	"media-service/internal/media/v2/dto/response"
 	"media-service/pkg/constants"
+	"sort"
 	"strings"
 )
 
 func ToTopicResponses4Web(topics []model.Topic) []response.TopicResponse4Web {
+	// Sắp xếp để "all topic" (IsAllPic = true) hiển thị đầu tiên
+	sort.Slice(topics, func(i, j int) bool {
+		if topics[i].IsAllPic && !topics[j].IsAllPic {
+			return true
+		}
+		if !topics[i].IsAllPic && topics[j].IsAllPic {
+			return false
+		}
+		return false
+	})
+
 	var result = make([]response.TopicResponse4Web, 0)
 
 	for _, t := range topics {
