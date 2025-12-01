@@ -106,22 +106,42 @@ func (uc *getTopicResourcesWebUseCase) GetTopicResourcesByTopic4Web(ctx context.
 }
 
 func (uc *getTopicResourcesWebUseCase) GetOutputResources4Web(ctx context.Context, topicID, studentID string) ([]*response.GetTopicResourcesResponse4Web, error) {
-	topicResources, err := uc.topicResourceRepository.GetTopicResources(ctx, topicID, studentID)
+	var topicResources []*model.TopicResource
+	// get topic de kiem tra isAllPic
+	topic, err := uc.topicRepository.GetByID(ctx, topicID)
 	if err != nil {
 		return nil, err
 	}
+	if topic == nil {
+		return nil, fmt.Errorf("topic not found")
+	}
+
+	if topic.IsAllPic {
+		resources, err := uc.topicResourceRepository.GetTopicResouresByStudentID(ctx, studentID)
+		if err != nil {
+			return nil, err
+		}
+		topicResources = resources
+	} else {
+		resources, err := uc.topicResourceRepository.GetTopicResouresByTopicAndStudent(ctx, topicID, studentID)
+		if err != nil {
+			return nil, err
+		}
+		topicResources = resources
+	}
+
 	result := make([]*response.GetTopicResourcesResponse4Web, 0, len(topicResources))
 	for _, tr := range topicResources {
 		if tr == nil {
 			continue
 		}
-		var imageUrl string
-		if tr.ImageKey != "" {
-			if url, err := uc.s3Service.Get(ctx, tr.ImageKey, nil); err == nil && url != nil {
-				imageUrl = *url
-			}
-		}
 		if tr.IsOutput {
+			var imageUrl string
+			if tr.ImageKey != "" {
+				if url, err := uc.s3Service.Get(ctx, tr.ImageKey, nil); err == nil && url != nil {
+					imageUrl = *url
+				}
+			}
 			result = append(result, mapper.ToGetTopicResourcesResponse4Web(ctx, tr, imageUrl, nil))
 		}
 	}
