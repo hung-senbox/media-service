@@ -10,6 +10,8 @@ import (
 	"strconv"
 	"strings"
 	"time"
+
+	"github.com/google/uuid"
 )
 
 func ParseAppLanguage(header string, defaultVal uint) uint {
@@ -160,4 +162,8 @@ func RemoveDuplicatesString(slice []string) []string {
 		}
 	}
 	return list
+}
+
+func GenerateFileName() string {
+	return fmt.Sprintf("%d_%s", time.Now().UnixNano(), uuid.New().String())
 }

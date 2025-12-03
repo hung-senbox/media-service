@@ -34,10 +34,11 @@ func (h *TopicResourceHandler) CreateTopicResource(c *fiber.Ctx) error {
 	if req.StudentID == "" {
 		return helper.SendError(c, http.StatusBadRequest, fmt.Errorf("student_id is required"), helper.ErrInvalidRequest)
 	}
+	var fileName string
 	if req.FileName == "" {
-		return helper.SendError(c, http.StatusBadRequest, fmt.Errorf("file_name is required"), helper.ErrInvalidRequest)
+		fileName = helper.GenerateFileName()
+		req.FileName = fileName
 	}
-
 	// Get file from form
 	file, err := c.FormFile("file")
 	if err != nil {
