@@ -8,7 +8,13 @@ import (
 	"github.com/gofiber/fiber/v2"
 )
 
-func RegisterTopicRoutes(app *fiber.App, hv2 *handler.TopicHandler, hv *handler.VocabularyHandler, userGw gateway.UserGateway) {
+func RegisterTopicRoutes(
+	app *fiber.App,
+	hv2 *handler.TopicHandler,
+	hv *handler.VocabularyHandler,
+	userGw gateway.UserGateway,
+	uploadFileHandler *handler.UploadFileHandler,
+) {
 	// Admin routes
 	adminGroup := app.Group("/api/v2/admin")
 	adminGroup.Use(middleware.Secured(userGw))
@@ -51,4 +57,8 @@ func RegisterTopicRoutes(app *fiber.App, hv2 *handler.TopicHandler, hv *handler.
 
 	vocabularyGateway := topicsGateway.Group("/:topic_id/vocabularies")
 	vocabularyGateway.Get("", hv.GetVocabularies4Gw)
+
+	// upload image
+	uploadImageGroup := adminGroup.Group("/images/upload")
+	uploadImageGroup.Post("", uploadFileHandler.UploadImage)
 }

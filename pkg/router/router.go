@@ -34,6 +34,7 @@ func SetupRouter(app *fiber.App, consulClient *api.Client, cacheClientRedis *cac
 	// gateway
 	cachedMainGateway := cached.NewCachedMainGateway(cacheClientRedis)
 	userGateway := gateway.NewUserGateway("go-main-service", consulClient, cachedMainGateway)
+	fileGateway := gateway.NewFileGateway("go-main-service", consulClient)
 	redisService := redis.NewRedisService()
 
 	// ========================  Topic ======================== //
@@ -58,10 +59,12 @@ func SetupRouter(app *fiber.App, consulClient *api.Client, cacheClientRedis *cac
 	// --- Service ---
 	topicServicev2 := service.NewTopicService(uploadTopicUseCasev2, getUploadProgressUseCasev2, getTopicAppUseCasev2, getTopicWebUseCasev2, getTopicGatewayUseCasev2, deleteTopicFileUseCasev2)
 	vocabularyService := service.NewVocabularyService(uploadVocabularyUseCase, getVocabularyWebUseCase)
+	uploadFileService := service.NewUploadFileService(fileGateway)
 
 	// --- Handler ---
 	topicHandlerv2 := handler.NewTopicHandler(topicServicev2)
 	vocabularyHandler := handler.NewVocabularyHandler(vocabularyService)
+	uploadFileHandler := handler.NewUploadFileHandler(uploadFileService)
 	// ========================  Topic ======================== //
 
 	// ========================  PDF ======================== //
@@ -80,7 +83,7 @@ func SetupRouter(app *fiber.App, consulClient *api.Client, cacheClientRedis *cac
 	// ========================  Video Uploader ======================== //
 
 	// Register routes
-	route.RegisterTopicRoutes(app, topicHandlerv2, vocabularyHandler, userGateway)
+	route.RegisterTopicRoutes(app, topicHandlerv2, vocabularyHandler, userGateway, uploadFileHandler)
 	route.RegisterTopicResourceRoutes(app, topicResourceHandlerv2, userGateway)
 	route.RegisterVideoUploaderRoutes(app, videoUploaderHandler, userGateway)
 	route2.RegisterRoutes(app, pdfHandlerv2, userGateway)
