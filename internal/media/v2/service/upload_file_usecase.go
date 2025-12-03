@@ -10,6 +10,7 @@ import (
 
 type UploadFileService interface {
 	UploadImage(ctx context.Context, req gw_request.UploadFileRequest) (*gw_response.UploadImageResponse, error)
+	UploadPDF(ctx context.Context, req gw_request.UploadFileRequest) (*gw_response.UploadPDFResponse, error)
 }
 
 type uploadFileService struct {
@@ -27,6 +28,17 @@ func (uc *uploadFileService) UploadImage(ctx context.Context, req gw_request.Upl
 		req.FileName = time.Now().Format("20060102150405")
 	}
 	resp, err := uc.fileGateway.UploadImage(ctx, req)
+	if err != nil {
+		return nil, err
+	}
+	return resp, nil
+}
+
+func (uc *uploadFileService) UploadPDF(ctx context.Context, req gw_request.UploadFileRequest) (*gw_response.UploadPDFResponse, error) {
+	if req.FileName == "" {
+		req.FileName = time.Now().Format("20060102150405")
+	}
+	resp, err := uc.fileGateway.UploadPDF(ctx, req)
 	if err != nil {
 		return nil, err
 	}

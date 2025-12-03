@@ -61,4 +61,7 @@ func RegisterTopicRoutes(
 	// upload image
 	uploadImageGroup := adminGroup.Group("/images/upload")
 	uploadImageGroup.Post("", uploadFileHandler.UploadImage)
+
+	uploadPdfGroup := adminGroup.Group("/pdfs/upload")
+	uploadPdfGroup.Post("", uploadFileHandler.UploadPDF)
 }
