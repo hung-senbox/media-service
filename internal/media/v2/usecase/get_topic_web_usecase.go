@@ -15,7 +15,7 @@ import (
 
 type GetTopicWebUseCase interface {
 	GetTopics4Student4Web(ctx context.Context, studentID string) ([]*response.GetTopic4StudentResponse4Web, error)
-	GetTopics4Web(ctx context.Context, studentID string) ([]response.TopicResponse4Web, error)
+	GetTopics4Web(ctx context.Context) ([]response.TopicResponse4Web, error)
 	GetTopic4Web(ctx context.Context, topicID string) (*response.TopicResponse4Web, error)
 	GetTopics2Assign4Web(ctx context.Context) ([]*response.TopicResponse2Assign4Web, error)
 }
@@ -59,7 +59,7 @@ func (uc *getTopicWebUseCase) GetTopics4Student4Web(ctx context.Context, student
 	return mapper.ToTopic4StudentResponses4Web(topics, 1), nil
 }
 
-func (uc *getTopicWebUseCase) GetTopics4Web(ctx context.Context, studentID string) ([]response.TopicResponse4Web, error) {
+func (uc *getTopicWebUseCase) GetTopics4Web(ctx context.Context) ([]response.TopicResponse4Web, error) {
 	currentUser, _ := ctx.Value(constants.CurrentUserKey).(*gw_response.CurrentUser)
 	if currentUser == nil {
 		return nil, fmt.Errorf("access denied")
