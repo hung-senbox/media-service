@@ -3,7 +3,6 @@ package consul
 import (
 	"fmt"
 	"log"
-	"math/rand"
 	"media-service/pkg/config"
 	"media-service/pkg/zap"
 	"net/http"
@@ -21,7 +20,7 @@ const (
 )
 
 var (
-	serviceId     = fmt.Sprintf("%s-%d", serviceName, rand.Intn(100))
+	serviceId     = serviceName
 	defaultConfig *api.Config
 )
 
