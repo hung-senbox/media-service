@@ -220,9 +220,11 @@ func (s *videoUploaderService) GetVideosUploader4Web(ctx context.Context, langua
 			videoUploaders = filterVideosByTitle(videoUploaders, strings.TrimSpace(title))
 			videoUploaders = sortVideos(videoUploaders, sortBy)
 			createdByName := ""
-			userInfo, _ := s.userGateway.GetUserInfo(ctx, videoUploaders[0].CreatedBy)
-			if userInfo != nil {
-				createdByName = userInfo.Name
+			if len(videoUploaders) > 0 {
+				userInfo, _ := s.userGateway.GetUserInfo(ctx, videoUploaders[0].CreatedBy)
+				if userInfo != nil {
+					createdByName = userInfo.Name
+				}
 			}
 			return mapper.ToGetVideosResponse4Web(videoUploaders, createdByName, langID), nil
 		}
