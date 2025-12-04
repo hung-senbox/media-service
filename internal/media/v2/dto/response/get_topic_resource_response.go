@@ -33,6 +33,22 @@ type GetTopicResourcesResponse4Web struct {
 	Topic     *TopicResponse2Assign4Web `json:"topic"`
 }
 
+type GetTopicResourcesResponse4WebV2 struct {
+	Date     string                     `json:"date"`
+	Pictures []*TopicResourceResponseV2 `json:"pictures"`
+}
+
+type TopicResourceResponseV2 struct {
+	ID        string                    `json:"id"`
+	ImageKey  string                    `json:"image_key"`
+	FileName  string                    `json:"file_name"`
+	ImageUrl  string                    `json:"image_url"`
+	CreatedAt time.Time                 `json:"created_at"`
+	PicID     string                    `json:"pic_id"`
+	TopicID   string                    `json:"topic_id"`
+	Topic     *TopicResponse2Assign4Web `json:"topic"`
+}
+
 type GetTopicResourcesResponse4App struct {
 	ID        string               `json:"id"`
 	FileName  string               `json:"file_name"`

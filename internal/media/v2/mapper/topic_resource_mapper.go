@@ -173,6 +173,42 @@ func ToGetTopicResourcesResponse4Web(
 	}
 }
 
+func ToGetTopicResourcesResponse4WebV2(
+	topicResources []*model.TopicResource,
+) []*response.GetTopicResourcesResponse4WebV2 {
+	loc := time.FixedZone("GMT+7", 7*60*60)
+
+	// group theo created_at (theo ngày)
+	grouped := make(map[string][]*response.TopicResourceResponseV2)
+	for _, tr := range topicResources {
+		if tr == nil {
+			continue
+		}
+
+		dateKey := tr.CreatedAt.In(loc).Format("02 Jan 2006")
+		pic := &response.TopicResourceResponseV2{
+			ID:        tr.ID.Hex(),
+			TopicID:   tr.TopicID,
+			ImageKey:  tr.ImageKey,
+			FileName:  tr.FileName,
+			CreatedAt: tr.CreatedAt,
+			PicID:     tr.CreatedAt.In(loc).Format("02 Jan 2006 15:04"),
+		}
+
+		grouped[dateKey] = append(grouped[dateKey], pic)
+	}
+
+	res := make([]*response.GetTopicResourcesResponse4WebV2, 0, len(grouped))
+	for date, pictures := range grouped {
+		res = append(res, &response.GetTopicResourcesResponse4WebV2{
+			Date:     date,
+			Pictures: pictures,
+		})
+	}
+
+	return res
+}
+
 func ToGetTopicResourcesResponse4App(
 	ctx context.Context,
 	topicResources *model.TopicResource,

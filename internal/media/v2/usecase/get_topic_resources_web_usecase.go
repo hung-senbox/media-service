@@ -15,7 +15,7 @@ import (
 )
 
 type GetTopicResourcesWebUseCase interface {
-	GetTopicResourcesByTopicAndStudent4Web(ctx context.Context, topicID string, studentID string) ([]*response.GetTopicResourcesResponse4Web, error)
+	GetTopicResourcesByTopicAndStudent4Web(ctx context.Context, topicID string, studentID string) ([]*response.GetTopicResourcesResponse4WebV2, error)
 	GetTopicResourcesByTopic4Web(ctx context.Context, topicID string) ([]*response.GetTopicResourcesResponse4Web, error)
 	GetOutputResources4Web(ctx context.Context, topicID, studentID string) ([]*response.GetTopicResourcesResponse4Web, error)
 	GetTopicResourcesByStudent4Web(ctx context.Context, studentID string) ([]*response.GetTopicResourcesResponseByStudent4Web, error)
@@ -39,7 +39,7 @@ func NewGetTopicResourcesWebUseCase(
 	}
 }
 
-func (uc *getTopicResourcesWebUseCase) GetTopicResourcesByTopicAndStudent4Web(ctx context.Context, topicID string, studentID string) ([]*response.GetTopicResourcesResponse4Web, error) {
+func (uc *getTopicResourcesWebUseCase) GetTopicResourcesByTopicAndStudent4Web(ctx context.Context, topicID string, studentID string) ([]*response.GetTopicResourcesResponse4WebV2, error) {
 	currentUser, _ := ctx.Value(constants.CurrentUserKey).(*gw_response.CurrentUser)
 	if currentUser.IsSuperAdmin || currentUser.OrganizationAdmin.ID == "" {
 		return nil, fmt.Errorf("access denied")
@@ -64,20 +64,36 @@ func (uc *getTopicResourcesWebUseCase) GetTopicResourcesByTopicAndStudent4Web(ct
 		topicResources = resources
 	}
 
-	result := make([]*response.GetTopicResourcesResponse4Web, 0, len(topicResources))
-	for _, tr := range topicResources {
-		if tr == nil {
-			continue
-		}
-		var imageUrl string
-		if tr.ImageKey != "" {
-			if url, err := uc.s3Service.Get(ctx, tr.ImageKey, nil); err == nil && url != nil {
-				imageUrl = *url
+	// result := make([]*response.GetTopicResourcesResponse4Web, 0, len(topicResources))
+	// for _, tr := range topicResources {
+	// 	if tr == nil {
+	// 		continue
+	// 	}
+	// 	var imageUrl string
+	// 	if tr.ImageKey != "" {
+	// 		if url, err := uc.s3Service.Get(ctx, tr.ImageKey, nil); err == nil && url != nil {
+	// 			imageUrl = *url
+	// 		}
+	// 	}
+	// 	result = append(result, mapper.ToGetTopicResourcesResponse4Web(ctx, tr, imageUrl, nil))
+	// }
+	// return result, nil
+
+	res := mapper.ToGetTopicResourcesResponse4WebV2(topicResources)
+
+	// loop res de lay topic va image url
+	for _, res := range res {
+		for _, pic := range res.Pictures {
+			var imageUrl string
+			if pic.ImageUrl == "" {
+				if url, err := uc.s3Service.Get(ctx, pic.ImageKey, nil); err == nil && url != nil {
+					imageUrl = *url
+				}
 			}
+			pic.ImageUrl = imageUrl
 		}
-		result = append(result, mapper.ToGetTopicResourcesResponse4Web(ctx, tr, imageUrl, nil))
 	}
-	return result, nil
+	return res, nil
 }
 
 func (uc *getTopicResourcesWebUseCase) GetTopicResourcesByTopic4Web(ctx context.Context, topicID string) ([]*response.GetTopicResourcesResponse4Web, error) {
@@ -89,18 +105,21 @@ func (uc *getTopicResourcesWebUseCase) GetTopicResourcesByTopic4Web(ctx context.
 	if err != nil {
 		return nil, err
 	}
+
 	result := make([]*response.GetTopicResourcesResponse4Web, 0, len(topicResources))
 	for _, tr := range topicResources {
 		if tr == nil {
 			continue
 		}
-		var imageUrl string
-		if tr.ImageKey != "" {
-			if url, err := uc.s3Service.Get(ctx, tr.ImageKey, nil); err == nil && url != nil {
-				imageUrl = *url
+		if tr.IsOutput {
+			var imageUrl string
+			if tr.ImageKey != "" {
+				if url, err := uc.s3Service.Get(ctx, tr.ImageKey, nil); err == nil && url != nil {
+					imageUrl = *url
+				}
 			}
+			result = append(result, mapper.ToGetTopicResourcesResponse4Web(ctx, tr, imageUrl, nil))
 		}
-		result = append(result, mapper.ToGetTopicResourcesResponse4Web(ctx, tr, imageUrl, nil))
 	}
 	return result, nil
 }

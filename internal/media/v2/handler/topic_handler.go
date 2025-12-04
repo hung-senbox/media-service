@@ -141,9 +141,7 @@ func (h TopicHandler) GetPregressUpload(c *fiber.Ctx) error {
 
 func (h TopicHandler) GetTopics4Web(c *fiber.Ctx) error {
 
-	studentID := c.Query("student_id")
-
-	res, err := h.service.GetTopics4Web(c.UserContext(), studentID)
+	res, err := h.service.GetTopics4Web(c.UserContext())
 	if err != nil {
 		return helper.SendError(c, http.StatusInternalServerError, err, helper.ErrInvalidOperation)
 	}
