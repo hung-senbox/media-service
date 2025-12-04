@@ -217,7 +217,7 @@ func (s *videoUploaderService) GetVideosUploader4Web(ctx context.Context, langua
 			if err != nil {
 				return nil, err
 			}
-			videoUploaders = filterVideosByTitle(videoUploaders, strings.TrimSpace(title))
+			videoUploaders = filterVideosByTitleAndNote(videoUploaders, strings.TrimSpace(title), langID)
 			videoUploaders = sortVideos(videoUploaders, sortBy)
 			createdByName := ""
 			if len(videoUploaders) > 0 {
@@ -235,7 +235,7 @@ func (s *videoUploaderService) GetVideosUploader4Web(ctx context.Context, langua
 	if err != nil {
 		return nil, err
 	}
-	videoUploaders = filterVideosByTitle(videoUploaders, strings.TrimSpace(title))
+	videoUploaders = filterVideosByTitleAndNote(videoUploaders, strings.TrimSpace(title), 0)
 	videoUploaders = sortVideos(videoUploaders, sortBy)
 	return mapper.ToGetVideosResponse4Web(videoUploaders, currentUser.Nickname, 0), nil
 
@@ -272,13 +272,46 @@ func (s *videoUploaderService) DeleteVideoUploader(ctx context.Context, videoUpl
 	return s.videoUploaderRepository.DeleteVideoUploader(ctx, videoUploaderID)
 }
 
-func filterVideosByTitle(videoUploaders []model.VideoUploader, title string) []model.VideoUploader {
+func filterVideosByTitleAndNote(videoUploaders []model.VideoUploader, searchString string, languageID uint) []model.VideoUploader {
+	// Nếu không có searchString thì không filter
+	if strings.TrimSpace(searchString) == "" {
+		return videoUploaders
+	}
+
+	search := strings.ToLower(strings.TrimSpace(searchString))
 	var result []model.VideoUploader
+
 	for _, videoUploader := range videoUploaders {
-		if title == "" || strings.Contains(strings.ToLower(videoUploader.Title), strings.ToLower(title)) {
+		// 1. Match theo title (không phụ thuộc language)
+		titleMatch := strings.Contains(strings.ToLower(videoUploader.Title), search)
+
+		// 2. Match theo note trong language_config
+		noteMatch := false
+
+		// Nếu có truyền languageID > 0 thì chỉ check note của language đó
+		if languageID > 0 {
+			for _, cfg := range videoUploader.LanguageConfig {
+				if cfg.LanguageID == languageID &&
+					strings.Contains(strings.ToLower(cfg.Note), search) {
+					noteMatch = true
+					break
+				}
+			}
+		} else {
+			// Không truyền languageID → tìm trong tất cả language_config
+			for _, cfg := range videoUploader.LanguageConfig {
+				if strings.Contains(strings.ToLower(cfg.Note), search) {
+					noteMatch = true
+					break
+				}
+			}
+		}
+
+		if titleMatch || noteMatch {
 			result = append(result, videoUploader)
 		}
 	}
+
 	return result
 }
 
