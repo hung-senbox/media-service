@@ -167,3 +167,11 @@ func RemoveDuplicatesString(slice []string) []string {
 func GenerateFileName() string {
 	return fmt.Sprintf("%d_%s", time.Now().UnixNano(), uuid.New().String())
 }
+
+func ValidateDateFilter(date string) bool {
+	if date == "" {
+		return true
+	}
+	_, err := time.Parse("2006-01-02", date)
+	return err == nil
+}

@@ -26,7 +26,7 @@ type TopicResourceService interface {
 	UpdateTopicResource(ctx context.Context, topicResourceID string, req request.UpdateTopicResourceRequest) (string, error)
 	DeleteTopicResource(ctx context.Context, topicResourceID string) error
 	GetTopicResourcesByTopic4Web(ctx context.Context, topicID string) ([]*response.GetTopicResourcesResponse4Web, error)
-	GetTopicResourcesByTopicAndStudent4Web(ctx context.Context, topicID, studentID string) ([]*response.GetTopicResourcesResponse4WebV2, error)
+	GetTopicResourcesByTopicAndStudent4Web(ctx context.Context, topicID, studentID, date string) ([]*response.GetTopicResourcesResponse4WebV2, error)
 	SetOutputTopicResource(ctx context.Context, req request.SetOutputTopicResourceRequest) error
 	GetOutputResources4Web(ctx context.Context, topicID, studentID string) ([]*response.GetTopicResourcesResponse4Web, error)
 	GetOutputResources4App(ctx context.Context, studentID string, day, month, year int, topicID string) ([]*response.GetTopicResourcesResponse4App, error)
@@ -246,8 +246,8 @@ func (s *topicResourceService) GetTopicResourcesByTopic4Web(ctx context.Context,
 	return s.getTopicResourcesWebUseCase.GetTopicResourcesByTopic4Web(ctx, topicID)
 }
 
-func (s *topicResourceService) GetTopicResourcesByTopicAndStudent4Web(ctx context.Context, topicID, studentID string) ([]*response.GetTopicResourcesResponse4WebV2, error) {
-	return s.getTopicResourcesWebUseCase.GetTopicResourcesByTopicAndStudent4Web(ctx, topicID, studentID)
+func (s *topicResourceService) GetTopicResourcesByTopicAndStudent4Web(ctx context.Context, topicID, studentID, date string) ([]*response.GetTopicResourcesResponse4WebV2, error) {
+	return s.getTopicResourcesWebUseCase.GetTopicResourcesByTopicAndStudent4Web(ctx, topicID, studentID, date)
 }
 
 func (s *topicResourceService) SetOutputTopicResource(ctx context.Context, req request.SetOutputTopicResourceRequest) error {
