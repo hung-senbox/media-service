@@ -158,7 +158,11 @@ func (h *TopicResourceHandler) GetOutputResources4Web(c *fiber.Ctx) error {
 	if topicID == "" {
 		return helper.SendError(c, http.StatusBadRequest, nil, helper.ErrInvalidRequest)
 	}
-	res, err := h.topicResourceService.GetOutputResources4Web(c.UserContext(), topicID, studentID)
+	date := c.Query("date")
+	if !helper.ValidateDateFilter(date) {
+		return helper.SendError(c, http.StatusBadRequest, fmt.Errorf("date must be in format yyyy-mm-dd"), helper.ErrInvalidRequest)
+	}
+	res, err := h.topicResourceService.GetOutputResources4Web(c.UserContext(), topicID, studentID, date)
 	if err != nil {
 		return helper.SendError(c, http.StatusInternalServerError, err, helper.ErrInvalidOperation)
 	}
